@@ -328,6 +328,8 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	    a->ai = (void *)1;
 	} else {
 	    /* unkonwn proto */
+	    free(data);
+
 	    return 0;
 	}
     }
