@@ -313,24 +313,27 @@ static int resolve_address(lo_address a)
 	}
 	a->ai = ai;
 
+#if 0
 	if (a->proto == LO_UDP && lo_client_sockets.udp) {
 	    a->socket = lo_client_sockets.udp;
-#if 0
+	    
 // XXX this code doesnt work
 	} else if (a->proto == LO_TCP && lo_client_sockets.tcp) {
 	    a->socket = lo_client_sockets.tcp;
-#endif
 	} else {
-	    a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
-	}
+#endif
+	a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
 
 	if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
 	    a->errnum = errno;
 	    a->errstr = NULL;
-	    freeaddrinfo(a->ai);
+	    //XXX freeaddrinfo(a->ai);
 
 	    return ret;
 	}
+#if 0
+	}
+#endif
     } else if (a->proto == LO_UNIX) {
 	struct sockaddr_un sa;
 
@@ -385,8 +388,9 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     }
     data = lo_message_serialise(msg, path, NULL, NULL);
 
-    if (a->proto == LO_UDP) {
-	sendto(a->socket, data, data_len, MSG_NOSIGNAL, a->ai->ai_addr, a->ai->ai_addrlen);
+    if (a->proto == LO_UDP && lo_client_sockets.udp) {
+	sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
+	       a->ai->ai_addr, a->ai->ai_addrlen);
     } else {
 	if (a->proto == LO_TCP) {
 	    int32_t size;
@@ -397,7 +401,7 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
 
 	if (a->proto == LO_TCP) {
-	    //XXX not sure this is hte right behviour
+	    //XXX not sure this is the right behviour
 	    close(a->socket);
 	}
     }

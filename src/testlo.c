@@ -49,6 +49,8 @@ static int done = 0;
 static int bundle_count = 0;
 static int pattern_count = 0;
 static int reply_count = 0;
+static int subtest_count = 0;
+static int subtest_reply_count = 0;
 
 char testdata[5] = "ABCDE";
 
@@ -81,6 +83,12 @@ int jitter_handler(const char *path, const char *types, lo_arg **argv, int argc,
 int pattern_handler(const char *path, const char *types, lo_arg **argv,
 	            int argc, lo_message data, void *user_data);
 
+int subtest_handler(const char *path, const char *types, lo_arg **argv,
+	            int argc, lo_message data, void *user_data);
+
+int subtest_reply_handler(const char *path, const char *types, lo_arg **argv,
+	            int argc, lo_message data, void *user_data);
+
 int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
@@ -98,6 +106,7 @@ int main()
     union end_test64 et64;
     lo_timetag tt = {0x1, 0x80000000}, sched;
     int count;
+    char cmd[256];
 
     sta = lo_server_thread_new("7591", error);
     stb = lo_server_thread_new("7591", rep_error);
@@ -247,6 +256,12 @@ int main()
     lo_server_thread_add_method(st, "/pattern/baz", NULL,
 				pattern_handler, "baz");
 
+    lo_server_thread_add_method(st, "/subtest", "i",
+				subtest_handler, NULL);
+
+    lo_server_thread_add_method(st, "/subtest-reply", "i",
+				subtest_reply_handler, NULL);
+
     /* add method that will match any path and args */
     lo_server_thread_add_method(st, NULL, NULL, generic_handler, NULL);
 
@@ -285,9 +300,20 @@ int main()
 
     lo_send(a, "/pattern/*", "s", "a");
     lo_send(a, "/pattern/ba[rz]", "s", "b");
-    sleep(1);
+
+    server_url = lo_server_thread_get_url(st);
+    sprintf(cmd, "./subtest %s &", server_url);
+    if (system(cmd) != 0) {
+	fprintf(stderr, "Cannot execute subtest command\n");
+	exit(1);
+    }
+    system(cmd);
+
+    sleep(2);
     TEST(reply_count == 2);
     TEST(pattern_count == 5);
+    TEST(subtest_count == 2);
+    TEST(subtest_reply_count == 2);
     printf("\n");
 
     b = lo_bundle_new((lo_timetag){10,0xFFFFFFFC});
@@ -308,7 +334,16 @@ int main()
     lo_message_add_string(m2, "24");
     lo_message_add_int32(m2, 24);
     lo_bundle_add_message(b, "/bundle", m2);
+
+/* 
+    lo_send_bundle(a, b);
+    if (a->errnum) {
+	printf("error %d: %s\n", a->errnum, a->errstr);
+	exit(1);
+    }
+*/
     TEST(lo_send_bundle(a, b) == 64);
+
     lo_message_free(m1);
     lo_message_free(m2);
     lo_bundle_free(b);
@@ -368,6 +403,7 @@ int main()
     printf("\n");
 
     server_url = lo_server_get_url(s);
+
     lo_server_add_method(s, NULL, NULL, generic_handler, NULL);
     a = lo_address_new_from_url(server_url);
     TEST(lo_server_recv_noblock(s, 0) == 0);
@@ -587,6 +623,27 @@ int pattern_handler(const char *path, const char *types, lo_arg **argv,
 {
     pattern_count++;
     printf("pattern matched %s\n", (char *)user_data);
+
+    return 0;
+}
+
+int subtest_handler(const char *path, const char *types, lo_arg **argv,
+		    int argc, lo_message data, void *user_data)
+{
+    lo_address a = lo_message_get_source(data);
+
+    subtest_count++;
+    printf("got subtest message %d\n", subtest_count);
+    lo_send(a, "/subtest", "i", subtest_count);
+
+    return 0;
+}
+
+int subtest_reply_handler(const char *path, const char *types, lo_arg **argv,
+		    int argc, lo_message data, void *user_data)
+{
+    subtest_reply_count++;
+    printf("got subtest reply message %d\n", subtest_reply_count);
 
     return 0;
 }

@@ -12,11 +12,15 @@ liblo_la_SOURCES = $(SOURCE_FILES)
 liblo_la_LIBADD = -lpthread
 liblo_la_LDFLAGS  = -export-dynamic -version-info @LO_SO_VERSION@
 
-noinst_PROGRAMS = testlo
+noinst_PROGRAMS = testlo subtest
 
 testlo_CFLAGS = -Wall -I$(top_srcdir)
 testlo_SOURCES = testlo.c
 testlo_LDADD = liblo.la
+
+subtest_CFLAGS = -Wall -I$(top_srcdir)
+subtest_SOURCES = subtest.c
+subtest_LDADD = liblo.la
 
 test: all
 	./testlo
