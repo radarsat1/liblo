@@ -186,6 +186,12 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	return NULL;
     }
 
+    if (proto == LO_UDP) {
+	lo_client_sockets.udp = s->socket;
+    } else if (proto == LO_TCP) {
+        lo_client_sockets.tcp = s->socket;
+    }
+
     /* Try it the IPV6 friendly way first */
     hostname[0] = '\0';
     for (it = ai; it; it = it->ai_next) {
@@ -201,7 +207,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	hostname[0] = '\0';
     }
 
-    /* Fallback to the oldschool (i.e. reliable) way */
+    /* Fallback to the oldschool (i.e. more reliable) way */
     if (!hostname[0]) {
 	struct hostent *he;
 
@@ -369,7 +375,7 @@ again:
     } else {
 	return dispatch_queued(s);
     }
-    
+
     if (s->protocol == LO_TCP) {
 	data = lo_server_recv_raw_stream(s, &size);
     } else {
@@ -448,6 +454,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     lo_arg **argv = NULL;
     lo_method it;
     int ret = 1;
+    int err;
     int endian_fixed = 0;
     int pattern = strpbrk(path, " #*,?[]{}") != NULL;
     lo_message msg = lo_message_new();
@@ -464,30 +471,52 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     msg->datasize = 0;
     msg->source = src;
 
-    inet_ntop(s->addr.sa_family, &s->addr, hostname, sizeof(hostname));
+    //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
+    if (s->protocol == LO_UDP) {
+	err = getnameinfo((struct sockaddr *)&s->addr, sizeof(s->addr),
+	    hostname, sizeof(hostname), portname, sizeof(portname),
+	    NI_NUMERICHOST | NI_NUMERICSERV);
+	if (err) {
+	    switch (err) {
+	    case EAI_AGAIN:
+		lo_throw(s, err, "Try again", path);
+		break;
+	    case EAI_BADFLAGS:
+		lo_throw(s, err, "Bad flags", path);
+		break;
+	    case EAI_FAIL:
+		lo_throw(s, err, "Failed", path);
+		break;
+	    case EAI_FAMILY:
+		lo_throw(s, err, "Cannot resolve address family", path);
+		break;
+	    case EAI_MEMORY:
+		lo_throw(s, err, "Out of memory", path);
+		break;
+	    case EAI_NONAME:
+		lo_throw(s, err, "Cannot resolve", path);
+		break;
+	    case EAI_SYSTEM:
+		lo_throw(s, err, strerror(err), path);
+		break;
+	    default:
+		lo_throw(s, err, "Unknown error", path);
+		break;
+	    }
 
-    free (src->host);
-    src->host = hostname;
-
-    switch (s->addr.sa_family) {
-	case AF_INET: {
-	    struct sockaddr_in *sin = (struct sockaddr_in *)&s->addr;
-
-	    snprintf(portname, sizeof(portname)-1, "%d", sin->sin_port);
-	    break;
+	    return;
 	}
-	case AF_INET6: {
-	    struct sockaddr_in6 *sin = (struct sockaddr_in6 *)&s->addr;
-
-	    snprintf(portname, sizeof(portname)-1, "%d", sin->sin6_port);
-	    break;
-	}
-	default:
-	    sprintf(portname, "???");
-	    break;
+    } else {
+	hostname[0] = '\0';
+	portname[0] = '\0';
     }
-    free (src->port);
+
+    free(src->host);
+    free(src->port);
+
+    src->host = hostname;
     src->port = portname;
+    src->proto = s->protocol;
 
     for (it = s->first; it; it = it->next) {
 	/* If paths match or handler is wildcard */
@@ -553,16 +582,71 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	    }
 	}
     }
+
+    /* If we find no matching methods, check for protocol level stuff */
+    if (ret == 1 && s->protocol == LO_UDP) {
+	char *pos = strrchr(path, '/');
+
+	/* if its a method enumeration call */
+	if (pos && *(pos+1) == '\0') {
+	    lo_message reply = lo_message_new();
+	    int len = strlen(path);
+	    lo_strlist *sl = NULL, *slit, *slnew, *slend;
+
+	    if (!strcmp(types, "i")) {
+		lo_message_add_int32(reply, argv[0]->i);
+	    }
+	    lo_message_add_string(reply, path);
+
+	    for (it = s->first; it; it = it->next) {
+		/* If paths match */
+		if (it->path && !strncmp(path, it->path, len)) {
+		    char *tmp;
+		    char *sec;
+
+		    tmp = malloc(strlen(it->path + len) + 1);
+		    strcpy(tmp, it->path + len);
+		    sec = index(tmp, '/');
+		    if (sec) *sec = '\0';
+		    slend = sl;
+		    for (slit = sl; slit; slend = slit, slit = slit->next) {
+			if (!strcmp(slit->str, tmp)) {
+			    free(tmp);
+			    tmp = NULL;
+			    break;
+			}
+		    }
+		    if (tmp) {
+			slnew = calloc(1, sizeof(lo_strlist));
+			slnew->str = tmp;
+			slnew->next = NULL;
+			if (!slend) {
+			    sl = slnew;
+			} else {
+			    slend->next = slnew;
+			}
+		    }
+		}
+	    }
+
+	    for (slit = sl; slit; slit = slit->next) {
+		lo_message_add_string(reply, slit->str);
+		free(slit->str);
+	    }
+	    lo_send_message(src, "#reply", reply);
+	    lo_message_free(reply);
+	}
+    }
+
     free(argv);
 
     /* the address got assigned static stuff, hence not using address_free */
-    free (src);
+    free(src);
 
     /* these are already part of data and will be freed later */
     msg->data = NULL;
     msg->types = NULL;
-    lo_message_free (msg);
-    printf("updated version!\n");
+    lo_message_free(msg);
 }
 
 int lo_server_events_pending(lo_server s)

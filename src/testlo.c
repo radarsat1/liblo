@@ -48,6 +48,7 @@ union end_test64 {
 static int done = 0;
 static int bundle_count = 0;
 static int pattern_count = 0;
+static int reply_count = 0;
 
 char testdata[5] = "ABCDE";
 
@@ -60,6 +61,9 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
 		    int argc, lo_message data, void *user_data);
 
 int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
+		 lo_message data, void *user_data);
+
+int reply_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
 int lots_handler(const char *path, const char *types, lo_arg **argv, int argc,
@@ -95,6 +99,14 @@ int main()
     lo_timetag tt = {0x1, 0x80000000}, sched;
     int count;
 
+    sta = lo_server_thread_new("7591", error);
+    stb = lo_server_thread_new("7591", rep_error);
+    if (stb) {
+	fprintf(stderr, "FAILED: create bad server thread object!\n");
+	exit(1);
+    }
+    lo_server_thread_free(sta);
+
     /* leak check */
     st = lo_server_thread_new(NULL, error);
     lo_server_thread_start(st);
@@ -110,14 +122,6 @@ int main()
     st = lo_server_thread_new(NULL, error);
     lo_server_thread_free(st);
     st = lo_server_thread_new(NULL, error);
-
-    sta = lo_server_thread_new("7591", error);
-    stb = lo_server_thread_new("7591", rep_error);
-    if (stb) {
-	fprintf(stderr, "FAILED: create bad server thread object!\n");
-	exit(1);
-    }
-    lo_server_thread_free(sta);
 
     a = lo_address_new_from_url("osc://localhost/");
     TEST(a != NULL);
@@ -223,6 +227,8 @@ int main()
      * to float and int */
     lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler, NULL);
 
+    lo_server_thread_add_method(st, "/reply", "s", reply_handler, NULL);
+
     lo_server_thread_add_method(st, "/lotsofformats", "fisbmhtdSccTFNI",
 				lots_handler, NULL);
 
@@ -254,10 +260,17 @@ int main()
 
     if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
 	printf("OSC error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
+	exit(1);
     }
+
     if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
 	printf("OSC error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
+	exit(1);
     }
+
+    lo_send(a, "/", "i", 242);
+    lo_send(a, "/pattern/", "i", 243);
+
     lo_send(a, "/bar", "ff", 0.12345678f, 1.0/0.0);
     lo_send(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
 	    btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999, "sym",
@@ -273,6 +286,7 @@ int main()
     lo_send(a, "/pattern/*", "s", "a");
     lo_send(a, "/pattern/ba[rz]", "s", "b");
     sleep(1);
+    TEST(reply_count == 2);
     TEST(pattern_count == 5);
     printf("\n");
 
@@ -475,8 +489,22 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
     lo_address src = lo_message_get_source(data);
     char *url = lo_address_get_url(src);
     printf("%s <- f:%f, i:%d\n", path, argv[0]->f, argv[1]->i);
-    printf("source url: %s\n\n", url);
+    if (lo_send(src, "/reply", "s", "a reply") == -1) {
+	printf("OSC reply error %d: %s\nSending to %s\n", lo_address_errno(src), lo_address_errstr(src), url);
+	exit(1);
+    } else {
+	printf("Reply sent to %s\n\n", url);
+    }
     free(url);
+
+    return 0;
+}
+
+int reply_handler(const char *path, const char *types, lo_arg **argv, int argc,
+		 lo_message data, void *user_data)
+{
+    printf("Reply received\n");
+    reply_count++;
 
     return 0;
 }

@@ -313,10 +313,21 @@ static int resolve_address(lo_address a)
 	}
 	a->ai = ai;
 
-	a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
+	if (a->proto == LO_UDP && lo_client_sockets.udp) {
+	    a->socket = lo_client_sockets.udp;
+#if 0
+// XXX this code doesnt work
+	} else if (a->proto == LO_TCP && lo_client_sockets.tcp) {
+	    a->socket = lo_client_sockets.tcp;
+#endif
+	} else {
+	    a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
+	}
+
 	if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
 	    a->errnum = errno;
 	    a->errstr = NULL;
+	    freeaddrinfo(a->ai);
 
 	    return ret;
 	}
@@ -381,9 +392,12 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
     }
     ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+
     if (a->proto == LO_TCP) {
+	//XXX not sure this is hte right behviour
 	close(a->socket);
     }
+
     free(data);
 
     if (ret == -1) {
@@ -426,9 +440,11 @@ int lo_send_bundle(lo_address a, lo_bundle b)
 	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
     }
     ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+
     if (a->proto == LO_TCP) {
 	close(a->socket);
     }
+
     free(data);
 
     if (ret == -1) {
