@@ -73,7 +73,7 @@ int main()
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
     lo_server_thread st;
     lo_server s = lo_server_new(NULL, error);
-    char *server_url;
+    char *server_url, *path;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
     union end_test32 et32;
@@ -131,6 +131,14 @@ int main()
 	printf("passed 64bit endian conversion\n");
     }
     printf("\n");
+
+    /* OSC URL tests */
+    path = lo_url_get_path("osc.udp://localhost:9999/a/path/is/here");
+    if (strcmp(path, "/a/path/is/here")) {
+	printf("failed lo_url_get_path() test1\n");
+	printf("'%s' != '/a/path/is/here'\n", path);
+	exit(1);
+    }
 
     if (lo_blob_datasize(btest) != 5 || lo_blobsize(btest) != 12) {
 	printf("blob is %d (%d) bytes long, should be 5 (12)\n",
@@ -251,7 +259,7 @@ void exitcheck(void)
 {
     if (!done) {
 	fprintf(stderr, "\ntest run not completed\n" PACKAGE_NAME
-		"test FAILED\n");
+		" test FAILED\n");
     } else {
 	printf(PACKAGE_NAME " test PASSED\n");
     }

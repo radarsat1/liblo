@@ -1,3 +1,7 @@
+2004-08-19  Steve Harris  <steve@plugin.org.uk>
+
+	* address.c: more bugfixes to URL handling
+
 2004-08-02  Steve Harris  <steve@plugin.org.uk>
 
 	* server.c, address.c: fixed bugs and ommisions in URL handling
