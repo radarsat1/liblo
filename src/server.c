@@ -181,6 +181,12 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	}
     }
 
+    /* check to make sure getnameinfo() didn't just set the hostname to "::".
+       Needed on Darwin. */
+    if (hostname[0] == ':') {
+	hostname[0] = '\0';
+    }
+
     /* Fallback to the oldschool (i.e. reliable) way */
     if (!hostname[0]) {
 	struct hostent *he;
