@@ -20,6 +20,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
+#include <float.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/poll.h>
@@ -428,7 +429,10 @@ double lo_server_next_event_delay(lo_server s)
 	lo_timetag_now(&now);
 	delay = lo_timetag_diff(((queued_msg_list *)s->queued)->ts, now);
 
-	return delay > 100.0 ? 100.0 : delay;
+	delay = delay > 100.0 ? 100.0 : delay;
+	delay = delay < 0.0 ? 0.0 : delay;
+
+	return delay;
     }
 
     return 100.0;
@@ -558,6 +562,7 @@ static int dispatch_queued(lo_server s)
     char *path, *types, *data;
     queued_msg_list *head = s->queued;
     queued_msg_list *tailhead;
+    lo_timetag disp_time;
 
     if (!head) {
 	lo_throw(s, LO_INT_ERR, "attempted to dispatch with empty queue",
@@ -565,16 +570,21 @@ static int dispatch_queued(lo_server s)
 	return 1;
     }
 
-    tailhead = head->next;
+    disp_time = head->ts;
 
-    path = ((queued_msg_list *)s->queued)->data;
-    types = path + lo_strsize(path) + 1;
-    data = types + lo_strsize(types);
-    dispatch_method(s, path, types, data);
+    do {
+	tailhead = head->next;
+	path = ((queued_msg_list *)s->queued)->data;
+	types = path + lo_strsize(path) + 1;
+	data = types + lo_strsize(types);
+	dispatch_method(s, path, types, data);
 
-    free(((queued_msg_list *)s->queued)->data);
-    free((queued_msg_list *)s->queued);
-    s->queued = tailhead;
+	free(((queued_msg_list *)s->queued)->data);
+	free((queued_msg_list *)s->queued);
+
+	s->queued = tailhead;
+	head = tailhead;
+    } while (head && lo_timetag_diff(disp_time, head->ts) < FLT_EPSILON);
 
     return 0;
 }

@@ -71,6 +71,9 @@ int coerce_handler(const char *path, const char *types, lo_arg **argv, int argc,
 int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
+int jitter_handler(const char *path, const char *types, lo_arg **argv, int argc,
+		 lo_message data, void *user_data);
+
 int pattern_handler(const char *path, const char *types, lo_arg **argv,
 	            int argc, lo_message data, void *user_data);
 
@@ -204,6 +207,8 @@ int main()
 
     lo_server_thread_add_method(st, "/bundle", NULL,
 				bundle_handler, NULL);
+    lo_server_thread_add_method(st, "/jitter", "t",
+				jitter_handler, NULL);
 
     lo_server_thread_add_method(st, "/pattern/foo", NULL,
 				pattern_handler, "foo");
@@ -288,9 +293,28 @@ int main()
     lo_message_free(m1);
     lo_bundle_free(b);
 
+    lo_send_timestamped(a, sched, "/bundle", "s", "lo_send_timestamped() test");
+
+#if 0
+    /* jitter tests */
+    {
+	lo_timetag stamps[1000];
+	lo_timetag now;
+	int i;
+
+	for (i=0; i<1000; i++) {
+	    lo_timetag_now(&now);
+	    stamps[i] = now;
+	    stamps[i].sec += 1;
+	    stamps[i].frac += 0x8FFFFFFF;
+	    lo_send_timestamped(a, stamps[i], "/jitter", "t", stamps[i]);
+	}
+    }
+#endif
+
     lo_address_free(a);
 
-    sleep(1);
+    sleep(2);
 
     TEST(lo_server_thread_events_pending(st));
 
@@ -299,7 +323,7 @@ int main()
 	sleep(1);
     }
     
-    TEST(bundle_count == 5);
+    TEST(bundle_count == 6);
     printf("\n");
 
     server_url = lo_server_get_url(s);
@@ -484,6 +508,17 @@ int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 {
     bundle_count++;
     printf("received bundle\n");
+
+    return 0;
+}
+
+int jitter_handler(const char *path, const char *types, lo_arg **argv, int argc,
+		 lo_message data, void *user_data)
+{
+    lo_timetag now;
+
+    lo_timetag_now(&now);
+    printf("jitter: %f\n", lo_timetag_diff(now, argv[0]->t));
 
     return 0;
 }
