@@ -112,6 +112,8 @@ typedef union {
     lo_timetag t;
 } lo_arg;
 
+#define LO_TT_IMMEDIATE ((lo_timetag){0U,0U})
+
 /** @} */
 
 #endif

@@ -49,6 +49,15 @@ typedef void *lo_blob;
 typedef void *lo_message;
 
 /**
+ * \brief A low-level object used to represent bundles of messages passed over
+ * OSC.
+ *
+ * Created by calls to lo_bundle_new(), messages can be added with calls to
+ * lo_bundle_add_message().
+ */
+typedef void *lo_bundle;
+
+/**
  * \brief An object representing an method on a server.
  *
  * Returned by calls to lo_server_thread_add_method() and

@@ -39,19 +39,6 @@ static char lo_string_types[] = {
     '\0'
 };
 
-typedef union {
-    int32_t  i;
-    float    f;
-    uint32_t nl;
-} lo_pcast32;
-
-typedef union {
-    int64_t    i;
-    double     f;
-    uint64_t   nl;
-    lo_timetag tt;
-} lo_pcast64;
-
 static void lo_message_add_typechar(lo_message m, char t);
 static void *lo_message_add_data(lo_message m, size_t s);
 void lo_arg_pp_internal(lo_type type, void *data, int bigendian);
@@ -263,7 +250,7 @@ size_t lo_arg_size(lo_type type, void *data)
 	return lo_blobsize((lo_blob)data);
 
     default:
-	fprintf(stderr, "liblo warning: unhandled OSC type at %s:%d\n", __FILE__, __LINE__);
+	fprintf(stderr, "liblo warning: unhandled OSC type '%c' at %s:%d\n", type, __FILE__, __LINE__);
 	return 0;
     }
 
@@ -310,21 +297,23 @@ size_t lo_message_length(lo_message m, const char *path)
     return lo_strsize(path) + lo_strsize(m->types) + m->datalen;
 }
 
-void *lo_message_serialise(lo_message m, const char *path, size_t *size)
+void *lo_message_serialise(lo_message m, const char *path, void *to,
+			   size_t *size)
 {
     size_t s = lo_message_length(m, path);
-    void *ret;
 
     if (size) {
 	*size = s;
     }
 
-    ret = calloc(1, s);
-    memcpy(ret, path, strlen(path));
-    memcpy(ret + lo_strsize(path), m->types, m->typelen);
-    memcpy(ret + lo_strsize(path) + lo_strsize(m->types), m->data, m->datalen);
+    if (!to) {
+	to = calloc(1, s);
+    }
+    memcpy(to, path, strlen(path));
+    memcpy(to + lo_strsize(path), m->types, m->typelen);
+    memcpy(to + lo_strsize(path) + lo_strsize(m->types), m->data, m->datalen);
 
-    return ret;
+    return to;
 }
 
 void lo_message_pp(lo_message m)
@@ -334,8 +323,8 @@ void lo_message_pp(lo_message m)
     int i;
 
     printf("%s ", m->types);
-    for (i = 0; m->types[i]; i++) {
-	if (i) {
+    for (i = 1; m->types[i]; i++) {
+	if (i > 1) {
 	    printf(" ");
 	}
 
@@ -449,7 +438,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 	break;
 
     default:
-	fprintf(stderr, "liblo warning: unhandled type: %c", type);
+	fprintf(stderr, "liblo warning: unhandled type: %c\n", type);
 	break;
     }
 }

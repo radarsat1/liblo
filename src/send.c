@@ -32,10 +32,12 @@
 #define MSG_NOSIGNAL 0
 #endif
 
+static int resolve_address(lo_address a);
+
 static void add_varargs(lo_address t, lo_message m, va_list ap,
 			const char *types, const char *file, int line);
 
-/* Don't call this function directly, use lo_send, a macro wrapping this
+/* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
  * function with appropraite values for file and line */
 
 int lo_send_internal(lo_address t, const char *file, const int line,
@@ -66,7 +68,7 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 #if 0
 
 This (incmplete) function converts from printf-style formats to OSC typetags,
-but I think its dangerous and mislieading so its not availabel at the moment.
+but I think its dangerous and mislieading so its not available at the moment.
 
 static char *format_to_types(const char *format);
 
@@ -252,6 +254,71 @@ static void add_varargs(lo_address t, lo_message msg, va_list ap,
     va_end(ap);
 }
 
+static int resolve_address(lo_address a)
+{
+    int ret;
+
+    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+	struct addrinfo *ai;
+	struct addrinfo hints;
+
+	hints.ai_flags = 0;
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = a->proto == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
+	hints.ai_protocol = 0;
+	hints.ai_addrlen = 0;
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
+
+	if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
+	    a->errnum = ret;
+	    a->errstr = gai_strerror(ret);
+	    freeaddrinfo(a->ai);
+	    a->ai = NULL;
+
+	    return -1;
+	}
+	a->ai = ai;
+
+	a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
+	if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
+	    a->errnum = errno;
+	    a->errstr = NULL;
+
+	    return ret;
+	}
+    } else if (a->proto == LO_UNIX) {
+	struct sockaddr_un sa;
+
+	a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
+	if (a->socket == -1) {
+	    a->errnum = errno;
+	    a->errstr = NULL;
+
+	    return -1;
+	}
+
+	sa.sun_family = AF_UNIX;
+	strncpy(sa.sun_path, a->port, 107);
+
+	if ((ret = connect(a->socket, (struct sockaddr *)&sa,
+			sizeof(sa))) < 0) {
+	    a->errnum = errno;
+	    a->errstr = NULL;
+
+	    return -1;
+	}
+	a->ai = (void *)1;
+    } else {
+	/* unkonwn proto */
+
+	return -2;
+    }
+
+    return 0;
+}
+
 int lo_send_message(lo_address a, const char *path, lo_message msg)
 {
     const size_t data_len = lo_message_length(msg, path);
@@ -268,65 +335,12 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     }
 
     if (!a->ai || a->proto == LO_TCP) {
-	if (a->proto == LO_UDP || a->proto == LO_TCP) {
-	    struct addrinfo *ai;
-	    struct addrinfo hints;
-
-	    hints.ai_flags = 0;
-	    hints.ai_family = PF_UNSPEC;
-	    hints.ai_socktype = a->proto == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
-	    hints.ai_protocol = 0;
-	    hints.ai_addrlen = 0;
-	    hints.ai_canonname = NULL;
-	    hints.ai_addr = NULL;
-	    hints.ai_next = NULL;
-
-	    if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
-		a->errnum = ret;
-		a->errstr = gai_strerror(ret);
-		freeaddrinfo(a->ai);
-		a->ai = NULL;
-
-		return -1;
-	    }
-	    a->ai = ai;
-
-	    a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
-	    if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-		a->errnum = errno;
-		a->errstr = NULL;
-
-		return ret;
-	    }
-	} else if (a->proto == LO_UNIX) {
-	    struct sockaddr_un sa;
-
-	    a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
-	    if (a->socket == -1) {
-		a->errnum = errno;
-		a->errstr = NULL;
-
-		return -1;
-	    }
-
-	    sa.sun_family = AF_UNIX;
-	    strncpy(sa.sun_path, a->port, 107);
-
-	    if ((ret = connect(a->socket, (struct sockaddr *)&sa,
-			    sizeof(sa))) < 0) {
-		a->errnum = errno;
-		a->errstr = NULL;
-
-		return -1;
-	    }
-	    a->ai = (void *)1;
-	} else {
-	    /* unkonwn proto */
-
-	    return 0;
+	ret = resolve_address(a);
+	if (ret) {
+	    return ret;
 	}
     }
-    data = lo_message_serialise(msg, path, NULL);
+    data = lo_message_serialise(msg, path, NULL, NULL);
 
     if (a->proto == LO_TCP) {
 	int32_t size;
@@ -338,6 +352,53 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     if (a->proto == LO_TCP) {
 	close(a->socket);
     }
+    free(data);
+
+    if (ret == -1) {
+	a->errnum = errno;
+	a->errstr = NULL;
+    } else {
+	a->errnum = 0;
+	a->errstr = NULL;
+    }
+
+    return ret;
+}
+
+int lo_send_bundle(lo_address a, lo_bundle b)
+{
+    const size_t data_len = lo_bundle_length(b);
+    char *data;
+    int ret;
+
+    if (data_len > LO_MAX_MSG_SIZE) {
+	a->errnum = 99;
+	a->errstr = "Attempted to send bundle in excess of maximum "
+		    "message size";
+
+	return -1;
+    }
+
+    if (!a->ai || a->proto == LO_TCP) {
+	ret = resolve_address(a);
+	if (ret) {
+	    return ret;
+	}
+    }
+    data = lo_bundle_serialise(b, NULL, NULL);
+
+    if (a->proto == LO_TCP) {
+	int32_t size;
+
+	size = htonl(data_len); 
+	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
+    }
+    ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+    if (a->proto == LO_TCP) {
+	close(a->socket);
+    }
+printf("XXXXX sent %d byte bundle\n--%s--\n", ret, data);
+lo_bundle_pp(b);
     free(data);
 
     if (ret == -1) {

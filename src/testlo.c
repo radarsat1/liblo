@@ -74,12 +74,15 @@ int main()
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
     lo_server_thread st, sta, stb;
     lo_server s = lo_server_new(NULL, error);
+    lo_bundle b;
+    lo_message m;
     char *server_url, *path, *protocol, *port;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
     union end_test32 et32;
     union end_test64 et64;
     lo_timetag tt = {0x1, 0x80000000};
+    int count;
 
     /* leak check */
     st = lo_server_thread_new(NULL, error);
@@ -223,11 +226,25 @@ int main()
     lo_server_add_method(s, NULL, NULL, generic_handler, NULL);
     a = lo_address_new_from_url(server_url);
     TEST(lo_server_recv_noblock(s, 0) == 0);
+    printf("Testing noblock API on %s\n", server_url);
     lo_send(a, "/non-block-test", "f", 23.0);
-    lo_address_free(a);
-    while (!lo_server_recv_noblock(s, 10)) {
-	printf("  poll()\n");
+
+    count = 0;
+    while (!lo_server_recv_noblock(s, 10) && count++ < 1000) { }
+    if (count >= 1000) {
+	printf("lo_server_recv_noblock() test failed\n");
+
+	exit(1);
     }
+
+    b = lo_bundle_new((lo_timetag){1,2});
+    m = lo_message_new();
+    lo_message_add_int32(m, 23);
+    lo_message_add_string(m, "23");
+    lo_bundle_add_message(b, "/foo", m);
+    TEST(lo_send_bundle(a, b) == 40);
+    
+    lo_address_free(a);
     lo_server_free(s);
     free(server_url);
 

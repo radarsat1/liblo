@@ -53,6 +53,15 @@ typedef long double lo_hires;
 int lo_send_message(lo_address targ, const char *path, lo_message msg);
 
 /**
+ * \brief send a lo_bundle object to address targ
+ *
+ * This is slightly more efficient than lo_send_bundled if you want to send a
+ * lot of similar bundles. The bundles are constructed with the
+ * lo_bundle_new() and lo_bundle_add_message() functions.
+ */
+int lo_send_bundle(lo_address targ, lo_bundle b);
+
+/**
  * \brief Create a new lo_message object
  */
 lo_message lo_message_new();
@@ -154,7 +163,7 @@ void lo_message_add_infinitum(lo_message m);
 /**
  * \brief  Return the length of a message in bytes.
  *
- * \param m The mesaage to be serialised
+ * \param m The message to be sized
  * \param path The path the message will be sent to
  */
 size_t lo_message_length(lo_message m, const char *path);
@@ -165,13 +174,65 @@ size_t lo_message_length(lo_message m, const char *path);
  *
  * \param m The mesaage to be serialised
  * \param path The path the message will be sent to
+ * \param to The address to serialise to, memory will be allocated if to is
+ * NULL.
  * \param size If this pointer is non-NULL the size of the memory area
  * will be written here
  *
  * The returned form is suitable to be sent over a low level OSC transport,
  * having the correct endianess and bit-packed structure.
  */
-void *lo_message_serialise(lo_message m, const char *path, size_t *size);
+void *lo_message_serialise(lo_message m, const char *path, void *to,
+			   size_t *size);
+
+/**
+ * \brief  Create a new bundle object.
+ *
+ * OSC Bundles ecapsulate one or more OSC messages and may include a timestamp
+ * indicating when the bundle should be dispatched.
+ *
+ * \param tt The timestamp when the bundle should be handled by the receiver.
+ *           Pass LO_TT_IMMEDIATE if you want the receiving server to dispatch
+ *           the bundle as soon as it receives it.
+ */
+lo_bundle lo_bundle_new(lo_timetag tt);
+
+/**
+ * \brief  Adds an OSC message to an existing bundle.
+ *
+ * The message passsed is appended to the list of messages in the bundle to be
+ * dispatched to 'path'.
+ */
+void lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
+
+/**
+ * \brief  Return the length of a bundle in bytes.
+ *
+ * Includes the marker and typetage length.
+ *
+ * \param b The bundle to be sized
+ */
+size_t lo_bundle_length(lo_bundle b);
+
+/**
+ * \brief  Serialise the bundle object to an area of memory and return a
+ * pointer to the serialised form.
+ *
+ * \param b The bundle to be serialised
+ * \param to The address to serialise to, memory will be allocated if to is
+ * NULL.
+ * \param size If this pointer is non-NULL the size of the memory area
+ * will be written here
+ *
+ * The returned form is suitable to be sent over a low level OSC transport,
+ * having the correct endianess and bit-packed structure.
+ */
+void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size);
+
+/**
+ * \brief  Frees the memory taken by a bundle object.
+*/
+void lo_bundle_free(lo_bundle b);
 
 /**
  * \brief return true if the type specified has a numerical value, such as
@@ -392,6 +453,7 @@ int lo_send_internal(lo_address t, const char *file, const int line,
  * stdout. Useful for debugging.
  * @{
  */
+void lo_bundle_pp(lo_bundle b);
 void lo_message_pp(lo_message m);
 void lo_arg_pp(lo_type type, void *data);
 void lo_server_pp(lo_server s);

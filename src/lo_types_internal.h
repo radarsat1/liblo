@@ -59,10 +59,31 @@ typedef struct _lo_server {
 } *lo_server;
 
 typedef struct _lo_server_thread {
-	lo_server    s;
+lo_server    s;
 	pthread_t    thread;
 	volatile int active;
 	volatile int done;
 } *lo_server_thread;
+
+typedef struct _lo_bundle {
+	size_t      size;
+	size_t	    len;
+	lo_timetag  ts;
+	lo_message *msgs;
+	char      **paths;
+} *lo_bundle;
+
+typedef union {
+    int32_t  i;
+    float    f;
+    uint32_t nl;
+} lo_pcast32;
+    
+typedef union {
+    int64_t    i;
+    double     f;
+    uint64_t   nl;
+    lo_timetag tt;
+} lo_pcast64;
 
 #endif

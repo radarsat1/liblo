@@ -327,7 +327,13 @@ int lo_server_recv(lo_server s)
     path = data;
 
     types = data + lo_strsize(path);
-    if (*types != ',') {
+printf("PATH: %s\n", path);
+    if (!strcmp(path, "#bundle")) {
+printf("bundle XXXXXXXXXXXX %s XXXXXXXXXXXXXXXXXXXX\n", types);
+	free(data);
+
+	return size;
+    } else if (*types != ',') {
 	lo_throw(s, LO_ENOTYPE, "Missing typetag", path);
 
 	return -1;
@@ -438,8 +444,7 @@ lo_method lo_server_add_method(lo_server s, const char *path,
     return m;
 }
 
-int
-lo_server_get_socket_fd(lo_server s)
+int lo_server_get_socket_fd(lo_server s)
 {
     if (s->protocol != LO_UDP &&
         s->protocol != LO_TCP &&
