@@ -1,0 +1,52 @@
+2004-08-02  Steve Harris  <steve@plugin.org.uk>
+
+	* server.c, address.c: fixed bugs and ommisions in URL handling
+
+2004-07-28  Steve Harris  <steve@plugin.org.uk>
+
+	* send.c, server.c: added code to handle UNIX domain sockets.
+
+2004-07-12  Steve Harris  <steve@plugin.org.uk>
+
+	* server_thread.c: added a lo_server_thread_stop() function for
+	  symmetry with lo_server_thread_start()
+
+2004-06-07  Steve Harris  <steve@plugin.org.uk>
+
+	* server.c: added a lo_server_recv_noblock() that will not wait for
+	  a packet to be received
+
+2004-03-26  Steve Harris  <steve@plugin.org.uk>
+
+	* doc/, *.h: added doxygen documentation
+	* address.c: changed URL methods to accept/expect protocol
+	  specifiers (eg. osc.udp://...)
+	* examples/*.c: added comments, slightly simplified
+
+2004-03-21  Steve Harris  <steve@plugin.org.uk>
+
+	* server.c: made binding to unspecified ports work
+
+2004-03-21  Steve Harris  <steve@plugin.org.uk>
+
+	* message.c: fixed coercion type bugs
+	* server.c: fixed endian conversion bug
+	* testlo.c: added lots of tests
+	* send.c: added implicit guard variable to end of send arguments
+
+2004-03-20  Steve Harris  <steve@plugin.org.uk>
+
+	* message.c, send.c: added support for the remaining types OSC
+
+2004-03-15  Steve Harris  <steve@plugin.org.uk>
+
+	* message.c: changed the definition of the string argument accessor
+	  member (it was wrong before).
+
+	* target.c, *.[ch]: lo_target* is now called lo_address*, this
+	  makes the api much clearer, %s/lo_target/lo_address/g, should
+	  bring all source files up to date.
+
+2004-02-29  Steve Harris  <steve@plugin.org.uk>
+
+	* configure.in, Makefile.am: added auto* stuff

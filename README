@@ -1,0 +1,6 @@
+This is a lightweight, easy to use implementation of the OSC protocol (see
+http://www.cnmat.berkeley.edu/OpenSoundControl/ for details).
+
+Examples of use can be found in src/testlo.c
+
+Steve Harris  2004-02-29  steve@plugin.org.uk
