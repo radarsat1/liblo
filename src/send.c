@@ -28,6 +28,10 @@
 #include "lo_types_internal.h"
 #include "lo/lo.h"
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 static void add_varargs(lo_address t, lo_message m, va_list ap,
 			const char *types, const char *file, int line);
 

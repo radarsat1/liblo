@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 #include "lo/lo_types.h"
 #include "lo/lo_errors.h"
 
