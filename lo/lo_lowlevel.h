@@ -371,6 +371,11 @@ lo_method lo_server_add_method(lo_server s, const char *path,
  * If the server protocol supports exposing the server's underlying
  * receive mechanism for monitoring with select() or poll(), this function
  * returns the file descriptor needed, otherwise, it returns -1.
+ *
+ * WARNING: when using this function beware that not all OSC packets that are
+ * received are dispatched immediatly. lo_server_events_pending() and
+ * lo_server_next_event_delay() can be used to tell if there are pending
+ * events and how long before you should attempt to receive them.
  */
 int lo_server_get_socket_fd(lo_server s);
 
@@ -447,6 +452,14 @@ int lo_strsize(const char *s);
  * Returns the storage size in bytes, will always be a multiple of four.
  */
 uint32_t lo_blobsize(lo_blob b);
+
+/**
+ * \brief Test a string against an OSC pattern glob
+ *
+ * \param str The tring to test
+ * \param p   The pattern to test against
+ */
+int lo_pattern_match(const char *str, const char *p);
 
 /** \brief the real send function (don't call directly) */
 int lo_send_internal(lo_address t, const char *file, const int line,

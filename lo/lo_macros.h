@@ -41,6 +41,10 @@ extern "C" {
         lo_send_internal(targ, __FILE__, __LINE__, path, types, \
 			 LO_MARKER_A, LO_MARKER_B)
 
+#define lo_send_timestamped(targ, ts, path, types...) \
+        lo_send_timestamped_internal(targ, __FILE__, __LINE__, ts, path, \
+		       	             types, LO_MARKER_A, LO_MARKER_B)
+
 #if 0
 
 This function is deliberatly not avialable, see send.c for details.

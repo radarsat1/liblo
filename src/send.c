@@ -65,6 +65,38 @@ int lo_send_internal(lo_address t, const char *file, const int line,
     return ret;
 }
 
+/* Don't call lo_send_timestamped_internal directly, use lo_send_timestamped, a
+ * macro wrapping this function with appropraite values for file and line */
+
+int lo_send_timestamped_internal(lo_address t, const char *file,
+                               	 const int line, lo_timetag ts,
+				 const char *path, const char *types, ...)
+{
+    va_list ap;
+    int ret;
+
+    lo_message msg = lo_message_new();
+    lo_bundle b = lo_bundle_new(ts);
+
+    t->errnum = 0;
+    t->errstr = NULL;
+
+    va_start(ap, types);
+    add_varargs(t, msg, ap, types, file, line);
+
+    if (t->errnum) {
+	lo_message_free(msg);
+	return t->errnum;
+    }
+
+    lo_bundle_add_message(b, path, msg);
+    ret = lo_send_bundle(t, b);
+    lo_message_free(msg);
+    lo_bundle_free(b);
+
+    return ret;
+}
+
 #if 0
 
 This (incmplete) function converts from printf-style formats to OSC typetags,
@@ -397,8 +429,6 @@ int lo_send_bundle(lo_address a, lo_bundle b)
     if (a->proto == LO_TCP) {
 	close(a->socket);
     }
-printf("XXXXX sent %d byte bundle\n--%s--\n", ret, data);
-lo_bundle_pp(b);
     free(data);
 
     if (ret == -1) {

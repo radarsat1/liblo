@@ -47,6 +47,7 @@ union end_test64 {
 
 static int done = 0;
 static int bundle_count = 0;
+static int pattern_count = 0;
 
 char testdata[5] = "ABCDE";
 
@@ -69,6 +70,9 @@ int coerce_handler(const char *path, const char *types, lo_arg **argv, int argc,
 
 int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
+
+int pattern_handler(const char *path, const char *types, lo_arg **argv,
+	            int argc, lo_message data, void *user_data);
 
 int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
@@ -201,6 +205,13 @@ int main()
     lo_server_thread_add_method(st, "/bundle", NULL,
 				bundle_handler, NULL);
 
+    lo_server_thread_add_method(st, "/pattern/foo", NULL,
+				pattern_handler, "foo");
+    lo_server_thread_add_method(st, "/pattern/bar", NULL,
+				pattern_handler, "bar");
+    lo_server_thread_add_method(st, "/pattern/baz", NULL,
+				pattern_handler, "baz");
+
     /* add method that will match any path and args */
     lo_server_thread_add_method(st, NULL, NULL, generic_handler, NULL);
 
@@ -227,12 +238,20 @@ int main()
     lo_send(a, "/a/b/c/d", "b", btest);
     lo_blob_free(btest);
 
+    lo_send(a, "/pattern/*", "s", "a");
+    lo_send(a, "/pattern/ba[rz]", "s", "b");
+    sleep(1);
+    TEST(pattern_count == 5);
+    printf("\n");
+
     b = lo_bundle_new((lo_timetag){10,0xFFFFFFFC});
     m1 = lo_message_new();
     lo_message_add_string(m1, "abcdefghijklmnopqrstuvwxyz");
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
+    lo_message_free(m1);
+    lo_bundle_free(b);
 
     b = lo_bundle_new((lo_timetag){1,2});
     m1 = lo_message_new();
@@ -246,6 +265,7 @@ int main()
     TEST(lo_send_bundle(a, b) == 64);
     lo_message_free(m1);
     lo_message_free(m2);
+    lo_bundle_free(b);
 
     b = lo_bundle_new((lo_timetag){10,0xFFFFFFFE});
     m1 = lo_message_new();
@@ -253,6 +273,8 @@ int main()
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
+    lo_message_free(m1);
+    lo_bundle_free(b);
 
     lo_timetag_now(&sched);
     sched.sec += 4;
@@ -263,6 +285,8 @@ int main()
     lo_message_add_string(m1, "test");
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
+    lo_message_free(m1);
+    lo_bundle_free(b);
 
     lo_address_free(a);
 
@@ -460,6 +484,15 @@ int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 {
     bundle_count++;
     printf("received bundle\n");
+
+    return 0;
+}
+
+int pattern_handler(const char *path, const char *types, lo_arg **argv,
+		    int argc, lo_message data, void *user_data)
+{
+    pattern_count++;
+    printf("pattern matched %s\n", (char *)user_data);
 
     return 0;
 }

@@ -3,7 +3,7 @@ MAINTAINERCLEANFILES = Makefile.in
 noinst_HEADERS = lo_types_internal.h
 
 SOURCE_FILES = address.c send.c message.c server.c method.c \
-	server_thread.c blob.c bundle.c timetag.c
+	server_thread.c blob.c bundle.c timetag.c pattern_match.c
 
 lib_LTLIBRARIES = liblo.la
 

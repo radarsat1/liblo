@@ -87,7 +87,7 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size)
     }
 
     if (!to) {
-	to = malloc(s);
+	to = calloc(1, s);
     }
 
     pos = to;

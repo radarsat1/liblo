@@ -442,10 +442,12 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     lo_method it;
     int ret = 1;
     int endian_fixed = 0;
+    int pattern = strpbrk(path, " #*,?[]{}") != NULL;
 
     for (it = s->first; it; it = it->next) {
 	/* If paths match or handler is wildcard */
-	if (!it->path || !strcmp(path, it->path)) {
+	if (!it->path || !strcmp(path, it->path) ||
+	    (pattern && lo_pattern_match(it->path, path))) {
 	    /* If types match or handler is wildcard */
 	    if (!it->typespec || !strcmp(types, it->typespec)) {
 
@@ -500,7 +502,8 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		free(data_co);
 		argv = NULL;
 	    }
-	    if (ret == 0) {
+
+	    if (ret == 0 && !pattern) {
 		break;
 	    }
 	}
@@ -582,6 +585,10 @@ lo_method lo_server_add_method(lo_server s, const char *path,
 {
     lo_method m = calloc(1, sizeof(struct _lo_method));
     lo_method it;
+
+    if (path && strpbrk(path, " #*,?[]{}")) {
+	return NULL;
+    }
 
     if (path) {
 	m->path = strdup(path);

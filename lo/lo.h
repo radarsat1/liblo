@@ -80,6 +80,28 @@ void lo_address_free(lo_address t);
 int lo_send(lo_address targ, const char *path, const char *type, ...);
 
 /**
+ * \brief Send a OSC formatted message to the address specified, scheduled to
+ * be dispatch at some time in the future.
+ *
+ * \param targ The target OSC address
+ * \param ts The OSC timetag timestamp at which the message will be processed
+ * \param path The OSC path the message will be delivered to
+ * \param type The types of the data items in the message, types are defined in
+ * lo_types_common.h
+ * \param ... The data values to be transmitted. The types of the arguments
+ * passed here must agree with the types specified in the type parameter.
+ *
+ * example:<br>
+ * lo_timetag now;<br>
+ * lo_timetag_now(&now);<br>
+ * lo_send(t, now, "/foo/bar", "ff", 0.1f, 23.0f);
+ *
+ * on success returns the number of bytes sent, returns -1 on failure.
+ */
+int lo_send_timestamped(lo_address targ, lo_timetag ts, const char *path,
+	       		const char *types, ...);
+
+/**
  * \brief Return the error number from the last failed lo_send or
  * lo_address_new call
  */
