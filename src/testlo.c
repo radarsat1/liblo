@@ -72,7 +72,7 @@ int main()
 {
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
     lo_server_thread st;
-//XXX    lo_server s = lo_server_new(NULL, error);
+    lo_server s = lo_server_new(NULL, error);
     char *server_url;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
@@ -80,7 +80,6 @@ int main()
     union end_test64 et64;
     lo_timetag tt = {0x1, 0x80000000};
 
-#if 0
     /* leak check */
     st = lo_server_thread_new(NULL, error);
     lo_server_thread_start(st);
@@ -206,7 +205,6 @@ int main()
 	lo_server_free(us);
 	lo_address_free(ua);
     }
-#endif
 
     { /* TCP tests */
 	lo_address ta;
@@ -215,31 +213,24 @@ int main()
 
 	ts = lo_server_new_with_proto(NULL, LO_TCP, error);
 	addr = lo_server_get_url(ts);
-printf("ADDR: %s\n", addr);
-printf("PID: %d\n", getpid());
-//sleep(1000);
 	ta = lo_address_new_from_url(addr);
 	if (lo_address_errno(ta)) {
-	    printf("err XXX: %s\n", lo_address_errstr(ta));
+	    printf("err: %s\n", lo_address_errstr(ta));
+	    exit(1);
 	}
-printf("send = %d\n", lo_send(ta, "/unix", "f", 23.0));
 	if (lo_address_errno(ta)) {
-	    printf("err YYY: %s\n", lo_address_errstr(ta));
+	    printf("err: %s\n", lo_address_errstr(ta));
+	    exit(1);
 	}
-printf("send = %d\n", lo_send(ta, "/this/is/a/long/path/name", "ffii", 23.0, 22.0, 21, 20));
-	TEST(lo_send(ta, "/unix", "f", 23.0) == 16);
-	//TEST(lo_server_recv(ts) == 16);
-printf("recv = %d\n", lo_server_recv(ts));
-printf("send = %d\n", lo_send(ta, "/unix", "f", 23.0));
-printf("recv = %d\n", lo_server_recv(ts));
-	//TEST(lo_server_recv(ts) == 16);
-//sleep(1000);
+	TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
+	TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
+	TEST(lo_server_recv(ts) == 16);
+	TEST(lo_server_recv(ts) == 16);
 	free(addr);
 	lo_server_free(ts);
 	lo_address_free(ta);
     }
 
-#if 0
     server_url = lo_server_thread_get_url(st);
     a = lo_address_new_from_url(server_url);
     /* exit */
@@ -252,7 +243,6 @@ printf("recv = %d\n", lo_server_recv(ts));
 
     lo_server_thread_free(st);
     free(server_url);
-#endif
 
     return 0;
 }
