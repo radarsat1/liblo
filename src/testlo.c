@@ -313,7 +313,7 @@ int main()
     TEST(reply_count == 2);
     TEST(pattern_count == 5);
     TEST(subtest_count == 2);
-    TEST(subtest_reply_count == 2);
+    TEST(subtest_reply_count == 22);
     printf("\n");
 
     b = lo_bundle_new((lo_timetag){10,0xFFFFFFFC});
@@ -643,7 +643,7 @@ int subtest_reply_handler(const char *path, const char *types, lo_arg **argv,
 		    int argc, lo_message data, void *user_data)
 {
     subtest_reply_count++;
-    printf("got subtest reply message %d\n", subtest_reply_count);
+    //printf("got subtest reply message %d\n", subtest_reply_count);
 
     return 0;
 }

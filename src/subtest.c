@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "lo/lo.h"
 
@@ -47,14 +49,34 @@ int main(int argc, char *argv[])
 int subtest_handler(const char *path, const char *types, lo_arg **argv,
                     int argc, lo_message data, void *user_data)
 {
+    int i;
     lo_address a = lo_message_get_source(data);
+    static char *uri = NULL;
 
     printf("subtest: got reply (%s)\n", path);
+    if (!uri) {
+	uri = lo_address_get_url(a);
+    } else {
+	char *new_uri = lo_address_get_url(a);
+
+	if (strcmp(uri, new_uri)) {
+	    printf("ERROR: %s != %s\n", uri, new_uri);
+
+	    exit(1);
+	}
+	free(new_uri);
+    }
     lo_send(a, "/subtest-reply", "i", 0xbaa);
     if (lo_address_errno(a)) {
-	fprintf(stderr, "subtest error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
+	fprintf(stderr, "subtest error %d: %s\n", lo_address_errno(a),
+		lo_address_errstr(a));
 
 	exit(1);
+    }
+
+    for (i=0; i<10; i++) {
+	usleep(2233);
+	lo_send(a, "/subtest-reply", "i", 0xbaa+i);
     }
 }
 

@@ -388,22 +388,21 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     }
     data = lo_message_serialise(msg, path, NULL, NULL);
 
+    if (a->proto == LO_TCP) {
+	int32_t size;
+
+	size = htonl(data_len); 
+	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
+    }
     if (a->proto == LO_UDP && lo_client_sockets.udp) {
-	sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
+	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
     } else {
-	if (a->proto == LO_TCP) {
-	    int32_t size;
-
-	    size = htonl(data_len); 
-	    ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
-	}
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
-
-	if (a->proto == LO_TCP) {
-	    //XXX not sure this is the right behviour
-	    close(a->socket);
-	}
+    }
+    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+	//XXX not sure this is the right behviour
+	close(a->socket);
     }
 
     free(data);
@@ -447,9 +446,14 @@ int lo_send_bundle(lo_address a, lo_bundle b)
 	size = htonl(data_len); 
 	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
     }
-    ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+    if (a->proto == LO_UDP && lo_client_sockets.udp) {
+	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
+	       a->ai->ai_addr, a->ai->ai_addrlen);
+    } else {
+	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+    }
 
-    if (a->proto == LO_TCP) {
+    if (a->proto == LO_UDP || a->proto == LO_TCP) {
 	close(a->socket);
     }
 

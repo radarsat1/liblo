@@ -24,3 +24,6 @@ subtest_LDADD = liblo.la
 
 test: all
 	./testlo
+
+memtest: all
+	LD_LIBRARY_PATH=.libs valgrind --tool=memcheck .libs/testlo

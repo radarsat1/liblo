@@ -78,6 +78,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
+    s->socket = -1;
 
     if (proto == LO_UDP) {
 	hints.ai_socktype = SOCK_DGRAM;
