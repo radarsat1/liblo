@@ -94,7 +94,7 @@ typedef union {
     lo_timetag tt;
 } lo_pcast64;
 
-struct {
+extern struct lo_cs {
 	int udp;
 	int tcp;
 } lo_client_sockets;

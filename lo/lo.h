@@ -47,6 +47,10 @@ extern "C" {
  * \param port a decimal port number or service name.
  *
  * The lo_address object may be used as the target of OSC messages.
+ *
+ * Note: if you wish to receive replies from the target of this address, you
+ * must first create a lo_server_thread or lo_server object which will receive
+ * the replies. The last lo_server(_thread) object creted will be the receiver.
  */
 lo_address lo_address_new(const char *host, const char *port);
 

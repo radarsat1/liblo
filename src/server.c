@@ -40,6 +40,8 @@ typedef struct {
     void *next;
 } queued_msg_list;
 
+struct lo_cs lo_client_sockets;
+
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
 static void dispatch_method(lo_server s, const char *path, char *types,

@@ -49,8 +49,8 @@ extern "C" {
 
 This function is deliberatly not avialable, see send.c for details.
 
-#define lo_sendf(targ, path, types...) \
-        lo_sendf_internal(targ, __FILE__, __LINE__, path, types, \
+#define lo_sendf(targ, path...) \
+        lo_sendf_internal(targ, __FILE__, __LINE__, path, \
 			 LO_MARKER_A, LO_MARKER_B)
 #endif
 
