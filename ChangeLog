@@ -1,5 +1,10 @@
 2004-08-19  Steve Harris  <steve@plugin.org.uk>
 
+	Release 0.9
+	* testlo.c: added more URL tests
+
+2004-08-19  Steve Harris  <steve@plugin.org.uk>
+
 	* address.c: more bugfixes to URL handling
 
 2004-08-02  Steve Harris  <steve@plugin.org.uk>

@@ -73,7 +73,7 @@ int main()
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
     lo_server_thread st;
     lo_server s = lo_server_new(NULL, error);
-    char *server_url, *path;
+    char *server_url, *path, *protocol, *port;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
     union end_test32 et32;
@@ -138,7 +138,32 @@ int main()
 	printf("failed lo_url_get_path() test1\n");
 	printf("'%s' != '/a/path/is/here'\n", path);
 	exit(1);
+    } else {
+	printf("passed lo_url_get_path() test\n");
     }
+    free(path);
+
+    protocol = lo_url_get_protocol("osc.udp://localhost:9999/a/path/is/here");
+    if (strcmp(protocol, "udp")) {
+	printf("failed lo_url_get_protocol() test1\n");
+	printf("'%s' != 'udp'\n", protocol);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol() test\n");
+    }
+    free(protocol);
+
+    port = lo_url_get_port("osc.udp://localhost:9999/a/path/is/here");
+    if (strcmp(port, "9999")) {
+	printf("failed lo_url_get_port() test1\n");
+	printf("'%s' != '9999'\n", port);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_port() test\n");
+    }
+    free(port);
+    printf("\n");
+
 
     if (lo_blob_datasize(btest) != 5 || lo_blobsize(btest) != 12) {
 	printf("blob is %d (%d) bytes long, should be 5 (12)\n",

@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([liblo], [0.8], [steve@plugin.org.uk])
+AC_INIT([liblo], [0.9], [steve@plugin.org.uk])
 
 # libtool version: current:revision:age
 #
@@ -15,7 +15,7 @@ AC_INIT([liblo], [0.8], [steve@plugin.org.uk])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-LO_SO_VERSION=1:0:1
+LO_SO_VERSION=1:1:1
 
 AC_CONFIG_SRCDIR([src/address.c])
 AM_CONFIG_HEADER([config.h])
