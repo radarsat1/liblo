@@ -91,7 +91,7 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size)
     }
 
     pos = to;
-    strncpy(pos, "#bundle", 8);
+    strcpy(pos, "#bundle");
     pos += 8;
 
     be.tt = b->ts;

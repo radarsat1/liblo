@@ -31,10 +31,20 @@
 
 #define LO_HOST_SIZE 1024
 
+typedef struct {
+    lo_timetag ts;
+    size_t len;
+    void *data;
+    void *next;
+} queued_msg_list;
+
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
 static void dispatch_method(lo_server s, const char *path, char *types,
 			    void *data);
+static int dispatch_queued(lo_server s);
+static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len);
+static double lo_server_next_event_delay(lo_server s);
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
@@ -48,7 +58,7 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h)
 lo_server lo_server_new_with_proto(const char *port, int proto,
 				   lo_err_handler err_h)
 {
-    lo_server s = malloc(sizeof(struct _lo_server));
+    lo_server s = calloc(1, sizeof(struct _lo_server));
     struct addrinfo *ai = NULL, *it, *used;
     struct addrinfo hints;
     int ret = -1;
@@ -64,6 +74,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     s->protocol = proto;
     s->port = 0;
     s->path = NULL;
+    s->queued = NULL;
 
     if (proto == LO_UDP) {
 	hints.ai_socktype = SOCK_DGRAM;
@@ -117,7 +128,8 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     do {
 	if (!port) {
 	    /* not a good way to get random numbers, but its not critical */
-	    snprintf(pnum, 15, "%d", 10000 + rand() % 10000);
+	    snprintf(pnum, 15, "%ld", 10000 + ((unsigned int)rand() +
+		     time(NULL)) % 10000);
 	}
 
 	if (ai) {
@@ -157,6 +169,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	    lo_throw(s, errno, strerror(errno), "bind()");
 
 	    lo_server_free(s);
+
 	    return NULL;
 	}
     } while (!used && tries++ < 16);
@@ -246,7 +259,7 @@ void *lo_server_recv_raw(lo_server s, size_t *size)
     void *data = NULL;
 
     ret = recvfrom(s->socket, buffer, LO_MAX_MSG_SIZE, 0,
-		  (struct sockaddr *)&addr, &addr_len);
+		   (struct sockaddr *)&addr, &addr_len);
     if (ret <= 0) {
 	return NULL;
     }
@@ -299,12 +312,17 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
 int lo_server_recv_noblock(lo_server s, int timeout)
 {
     struct pollfd ps;
+    int sched_timeout = lo_server_next_event_delay(s) * 1000;
 
     ps.fd = s->socket;
-    ps.events = POLLIN | POLLPRI;
+    ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
     ps.revents = 0;
-    poll(&ps, 1, timeout);
-    if (ps.revents) {
+    poll(&ps, 1, timeout > sched_timeout ? sched_timeout : timeout);
+
+    if (ps.revents == POLLERR || ps.revents == POLLHUP) {
+	return 0;
+    }
+    if (ps.revents || lo_server_next_event_delay(s) < 0.01) {
 	return lo_server_recv(s);
     }
 
@@ -317,7 +335,38 @@ int lo_server_recv(lo_server s)
     size_t size;
     char *path;
     char *types;
+    struct pollfd ps;
+    double sched_time;
 
+    sched_time = lo_server_next_event_delay(s);
+
+again:
+    if (sched_time > 0.01) {
+	if (sched_time > 10.0) {
+	    sched_time = 10.0;
+	}
+	ps.fd = s->socket;
+	ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+	ps.revents = 0;
+	poll(&ps, 1, (int)(sched_time * 1000.0));
+
+	if (ps.revents == POLLERR || ps.revents == POLLHUP) {
+	    return 0;
+	}
+
+	if (!ps.revents) {
+	    sched_time = lo_server_next_event_delay(s);
+
+	    if (sched_time > 0.01) {
+		goto again;
+	    }
+
+	    return dispatch_queued(s);
+	}
+    } else {
+	return dispatch_queued(s);
+    }
+    
     if (s->protocol == LO_TCP) {
 	data = lo_server_recv_raw_stream(s, &size);
     } else {
@@ -331,7 +380,29 @@ int lo_server_recv(lo_server s)
 
     types = data + lo_strsize(path);
     if (!strcmp(path, "#bundle")) {
-printf("bundle XXXXXXXXXXXX %s XXXXXXXXXXXXXXXXXXXX\n", types);
+	char *pos = types;
+	uint32_t len;
+	lo_pcast64 ats;
+	lo_timetag ts, now;
+
+	lo_timetag_now(&now);
+	ats.nl = lo_otoh64(*((uint64_t *)pos));
+	ts = ats.tt;
+	pos += 8;
+	while (pos - (char *)data < size) {
+	    len = lo_otoh32(*((uint32_t *)pos));
+	    pos += 4;
+	    /* test for immedaite dispatch */
+	    if ((ts.sec == 0 && ts.frac == 1) ||
+				lo_timetag_diff(ts, now) <= 0.0) {
+		types = pos + lo_strsize(pos);
+		dispatch_method(s, pos, types + 1, types + lo_strsize(types));
+	    } else {
+		queue_data(s, ts, pos, len);
+	    }
+	    pos += len;
+	}
+
 	free(data);
 
 	return size;
@@ -346,6 +417,22 @@ printf("bundle XXXXXXXXXXXX %s XXXXXXXXXXXXXXXXXXXX\n", types);
     free(data);
 
     return size;
+}
+
+/* returns the time in seconds until the next scheduled event */
+static double lo_server_next_event_delay(lo_server s)
+{
+    if (s->queued) {
+	lo_timetag now;
+	double delay;
+
+	lo_timetag_now(&now);
+	delay = lo_timetag_diff(((queued_msg_list *)s->queued)->ts, now);
+
+	return delay > 100.0 ? 100.0 : delay;
+    }
+
+    return 100.0;
 }
 
 static void dispatch_method(lo_server s, const char *path, char *types,
@@ -420,6 +507,74 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	}
     }
     free(argv);
+}
+
+int lo_server_events_pending(lo_server s)
+{
+    return s->queued != 0;
+}
+
+static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len)
+{
+    /* insert blob into future dispatch queue */
+    queued_msg_list *it = s->queued;
+    queued_msg_list *prev = NULL;
+    queued_msg_list *ins = calloc(1, sizeof(queued_msg_list));
+
+    ins->ts = ts;
+    ins->len = len;
+    ins->data = malloc(len);
+    memcpy(ins->data, data, len);
+
+    while (it) {
+	if (lo_timetag_diff(it->ts, ts) > 0.0) {
+	    if (prev) {
+		prev->next = ins;
+	    } else {
+		s->queued = ins;
+		ins->next = NULL;
+	    }
+	    ins->next = it;
+
+	    return;
+	}
+	prev = it;
+	it = it->next;
+    }
+
+    /* fell through, so this event is last */
+    if (prev) {
+	prev->next = ins;
+    } else {
+	s->queued = ins;
+    }
+    ins->next = NULL;
+}
+
+static int dispatch_queued(lo_server s)
+{
+    char *path, *types, *data;
+    queued_msg_list *head = s->queued;
+    queued_msg_list *tailhead;
+
+    if (!head) {
+	lo_throw(s, LO_INT_ERR, "attempted to dispatch with empty queue",
+		 "timeout");
+	return 1;
+    }
+
+    tailhead = head->next;
+
+    path = ((queued_msg_list *)s->queued)->data;
+    types = path + lo_strsize(path) + 1;
+    data = types + lo_strsize(types);
+    dispatch_method(s, path, types, data);
+
+    free(((queued_msg_list *)s->queued)->data);
+    free((queued_msg_list *)s->queued);
+    s->queued = tailhead;
+
+    return 0;
 }
 
 lo_method lo_server_add_method(lo_server s, const char *path,
@@ -512,13 +667,6 @@ char *lo_server_get_url(lo_server s)
     return NULL;
 }
 
-void lo_throw(lo_server s, int errnum, const char *message, const char *path)
-{
-    if (s->err_h) {
-	(*s->err_h)(errnum, message, path);
-    }
-}
-
 void lo_server_pp(lo_server s)
 {
     lo_method it;
@@ -553,6 +701,13 @@ static int lo_can_coerce(char a, char b)
     return ((a == b) ||
            (lo_is_numerical_type(a) && lo_is_numerical_type(b)) ||
            (lo_is_string_type(a) && lo_is_string_type (b)));
+}
+
+void lo_throw(lo_server s, int errnum, const char *message, const char *path)
+{
+    if (s->err_h) {
+	(*s->err_h)(errnum, message, path);
+    }
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

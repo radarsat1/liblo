@@ -389,6 +389,10 @@ int lo_server_get_port(lo_server s);
  */
 char *lo_server_get_url(lo_server s);
 
+/** \brief Return true if there are scheduled events (eg. from bundles) waiting
+ *  * to be dispatched by the server */
+int lo_server_events_pending(lo_server s);
+
 /**
  * \brief Return the protocol portion of an OSC URL, eg. udp, tcp.
  *
@@ -441,6 +445,19 @@ uint32_t lo_blobsize(lo_blob b);
 /** \brief the real send function (don't call directly) */
 int lo_send_internal(lo_address t, const char *file, const int line,
      const char *path, const char *types, ...);
+
+/** \brief Find the time difference between two timetags
+ *
+ * Returns a - b in seconds.
+ */
+double lo_timetag_diff(lo_timetag a, lo_timetag b);
+
+/** \brief Return a timetag for the current time
+ *
+ * On exit the timetag pointed to by t is filled with the OSC represenation
+ * of this instant in time.
+ */
+void lo_timetag_now(lo_timetag *t);
 
 /** @} */
 

@@ -159,6 +159,10 @@ int lo_server_thread_get_port(lo_server_thread st);
  */
 char *lo_server_thread_get_url(lo_server_thread st);
 
+/** \brief Return true if there are scheduled events (eg. from bundles) waiting
+ * to be dispatched by the thread */
+int lo_server_thread_events_pending(lo_server_thread st);
+
 /**
  * \brief Create a new OSC blob type.
  *

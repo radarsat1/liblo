@@ -1,3 +1,8 @@
+2004-11-17  Steve Harris  <steve@plugin.org.uk>
+
+	* server.c: added code to handle bundle reception
+	* bundle.c: code to build bundle objects
+	* timetag.c: code to manipulate and test timetags
 
 2004-10-19  Steve Harris  <steve@plugin.org.uk>
 

@@ -93,6 +93,11 @@ char *lo_server_thread_get_url(lo_server_thread st)
     return lo_server_get_url(st->s);
 }
 
+int lo_server_thread_events_pending(lo_server_thread st)
+{
+    return lo_server_events_pending(st->s);
+}
+
 static void thread_func(void *data)
 {
     lo_server_thread st = (lo_server_thread)data;

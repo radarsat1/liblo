@@ -14,22 +14,25 @@
  *  $Id$
  */
 
-#ifndef LO_ERRORS_H
-#define LO_ERRORS_H
+#include <sys/time.h>
+#include <time.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "lo_types_internal.h"
+#include "lo/lo.h"
 
-#define LO_ENOPATH      9901
-#define LO_ENOTYPE      9902
-#define LO_UNKNOWNPROTO 9903
-#define LO_NOPORT       9904
-#define LO_TOOBIG       9905
-#define LO_INT_ERR      9906
+#define JAN_1970 0x83aa7e80      /* 2208988800 1970 - 1900 in seconds */
 
-#ifdef __cplusplus
+double lo_timetag_diff(lo_timetag a, lo_timetag b)
+{
+	return (double)a.sec - (double)b.sec +
+		((double)a.frac - (double)b.frac) * 0.00000000093132257461;
 }
-#endif
 
-#endif
+void lo_timetag_now(lo_timetag *t)
+{
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	t->sec = tv.tv_sec + JAN_1970;
+	t->frac = tv.tv_usec * 4294.967296;
+}

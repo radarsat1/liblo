@@ -309,8 +309,8 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     if (!to) {
 	to = calloc(1, s);
     }
-    memcpy(to, path, strlen(path));
-    memcpy(to + lo_strsize(path), m->types, m->typelen);
+    strcpy(to, path);
+    strcpy(to + lo_strsize(path), m->types);
     memcpy(to + lo_strsize(path) + lo_strsize(m->types), m->data, m->datalen);
 
     return to;

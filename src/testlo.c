@@ -79,13 +79,13 @@ int main()
     lo_server_thread st, sta, stb;
     lo_server s = lo_server_new(NULL, error);
     lo_bundle b;
-    lo_message m;
+    lo_message m1, m2;
     char *server_url, *path, *protocol, *port;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
     union end_test32 et32;
     union end_test64 et64;
-    lo_timetag tt = {0x1, 0x80000000};
+    lo_timetag tt = {0x1, 0x80000000}, sched;
     int count;
 
     /* leak check */
@@ -118,7 +118,6 @@ int main()
     free(server_url);
 
     atexit(exitcheck);
-
 
     printf("type tests\n");
     TEST(sizeof(float) == sizeof(int32_t));
@@ -228,15 +227,57 @@ int main()
     lo_send(a, "/a/b/c/d", "b", btest);
     lo_blob_free(btest);
 
+    b = lo_bundle_new((lo_timetag){10,0xFFFFFFFC});
+    m1 = lo_message_new();
+    lo_message_add_string(m1, "abcdefghijklmnopqrstuvwxyz");
+    lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    lo_bundle_add_message(b, "/bundle", m1);
+    lo_send_bundle(a, b);
+
     b = lo_bundle_new((lo_timetag){1,2});
-    m = lo_message_new();
-    lo_message_add_int32(m, 23);
-    lo_message_add_string(m, "23");
-    lo_bundle_add_message(b, "/bundle", m);
-    TEST(lo_send_bundle(a, b) == 40);
+    m1 = lo_message_new();
+    lo_message_add_int32(m1, 23);
+    lo_message_add_string(m1, "23");
+    lo_bundle_add_message(b, "/bundle", m1);
+    m2 = lo_message_new();
+    lo_message_add_string(m2, "24");
+    lo_message_add_int32(m2, 24);
+    lo_bundle_add_message(b, "/bundle", m2);
+    TEST(lo_send_bundle(a, b) == 64);
+    lo_message_free(m1);
+    lo_message_free(m2);
+
+    b = lo_bundle_new((lo_timetag){10,0xFFFFFFFE});
+    m1 = lo_message_new();
+    lo_message_add_string(m1, "abcdefghijklmnopqrstuvwxyz");
+    lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    lo_bundle_add_message(b, "/bundle", m1);
+    lo_send_bundle(a, b);
+
+    lo_timetag_now(&sched);
+    sched.sec += 4;
+    b = lo_bundle_new(sched);
+    m1 = lo_message_new();
+    lo_message_add_string(m1, "future");
+    lo_message_add_string(m1, "time");
+    lo_message_add_string(m1, "test");
+    lo_bundle_add_message(b, "/bundle", m1);
+    lo_send_bundle(a, b);
 
     lo_address_free(a);
+
+    sleep(1);
+
+    TEST(lo_server_thread_events_pending(st));
+
+    while (lo_server_thread_events_pending(st)) {
+	printf("pending events, wait...\n");
+	sleep(1);
+    }
     
+    TEST(bundle_count == 5);
+    printf("\n");
+
     server_url = lo_server_get_url(s);
     lo_server_add_method(s, NULL, NULL, generic_handler, NULL);
     a = lo_address_new_from_url(server_url);
@@ -303,8 +344,6 @@ int main()
     /* exit */
     lo_send(a, "/quit", NULL);
     lo_address_free(a);
-
-    TEST(bundle_count == 1);
 
     while (!done) {
 	usleep(1000);
@@ -420,6 +459,9 @@ int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data)
 {
     bundle_count++;
+    printf("received bundle\n");
+
+    return 0;
 }
 
 int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,

@@ -56,6 +56,7 @@ typedef struct _lo_server {
 	char            *hostname;
 	char            *path;
 	int              protocol;
+	void		*queued;
 } *lo_server;
 
 typedef struct _lo_server_thread {
