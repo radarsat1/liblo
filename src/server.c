@@ -206,7 +206,9 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 
 	gethostname(hostname, sizeof(hostname));
 	he = gethostbyname(hostname);
-	strncpy(hostname, he->h_name, sizeof(hostname));
+	if (he) {
+	    strncpy(hostname, he->h_name, sizeof(hostname));
+	}
     }
 
     /* soethings gone really wrong, just hope its local only */
