@@ -1,6 +1,12 @@
+2005-03-31  Steve Harris  <steve@plugin.org.uk>
+
+	* server.c: Patch from Martin Habets that expands wildcarded patch to
+	  the matching path where possible (eg. not when using the NULL
+	  wildcard path).
+
 2005-03-04  Steve Harris  <steve@plugin.org.uk>
 
-	* serverc: try to fix the global struct thing that keeps track of
+	* server.c: try to fix the global struct thing that keeps track of
 	  server sockets.
 
 2005-02-03  Steve Harris  <steve@plugin.org.uk>
@@ -10,7 +16,7 @@
 
 2005-02-03  Taybin Rutkin <taybin@earthlink.net>
 
-	* server.c: commited resource leak fix from Jesse Campbell
+	* server.c: commited resource leak fix from Jesse Chappell
 
 2005-01-22  Steve Harris  <steve@plugin.org.uk>
 

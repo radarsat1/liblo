@@ -464,6 +464,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     lo_address src = lo_address_new(NULL, NULL);
     char hostname[LO_HOST_SIZE];
     char portname[32];
+    const char *pptr;
 
     free(msg->types);
     msg->types = types;
@@ -543,7 +544,12 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		    }
 		}
 
-		ret = it->handler(path, types, argv, argc, msg,
+		/* Send wildcard path to generic handler, expanded path
+		  to others.
+		*/
+		pptr = path;
+		if (it->path) pptr = it->path;
+		ret = it->handler(pptr, types, argv, argc, msg,
 				      it->user_data);
 
 	    } else if (lo_can_coerce_spec(types, it->typespec)) {
@@ -573,7 +579,12 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		}
 		endian_fixed = 1;
 
-		ret = it->handler(path, it->typespec, argv, argc, msg,
+		/* Send wildcard path to generic handler, expanded path
+		  to others.
+		*/
+		pptr = path;
+		if (it->path) pptr = it->path;
+		ret = it->handler(pptr, it->typespec, argv, argc, msg,
 				      it->user_data);
 		free(argv);
 		free(data_co);

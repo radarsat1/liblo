@@ -6,4 +6,4 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liblo.pc
 
 test: all
-	./src/testlo
+	(cd src && make test)
