@@ -44,7 +44,6 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 			    void *data);
 static int dispatch_queued(lo_server s);
 static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len);
-static double lo_server_next_event_delay(lo_server s);
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
@@ -420,7 +419,7 @@ again:
 }
 
 /* returns the time in seconds until the next scheduled event */
-static double lo_server_next_event_delay(lo_server s)
+double lo_server_next_event_delay(lo_server s)
 {
     if (s->queued) {
 	lo_timetag now;

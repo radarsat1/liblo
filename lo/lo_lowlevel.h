@@ -393,6 +393,12 @@ char *lo_server_get_url(lo_server s);
  *  * to be dispatched by the server */
 int lo_server_events_pending(lo_server s);
 
+/** \brief Return the time in seconds until the next scheduled event.
+ *
+ * If the delay is greater than 100 seconds then it will return 100.0.
+ */
+double lo_server_next_event_delay(lo_server s);
+
 /**
  * \brief Return the protocol portion of an OSC URL, eg. udp, tcp.
  *
