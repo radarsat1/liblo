@@ -40,10 +40,10 @@ void lo_bundle_add_message(lo_bundle b, const char *path, lo_message m)
 	return;
     }
 
-    if (b->len > b->size) {
+    if (b->len >= b->size) {
 	b->size *= 2;
-	b->msgs = realloc(b->msgs, b->size);
-	b->paths = realloc(b->paths, b->size);
+	b->msgs = realloc(b->msgs, b->size * sizeof(lo_message));
+	b->paths = realloc(b->paths, b->size * sizeof(char *));
     }
 
     b->msgs[b->len] = m;

@@ -87,6 +87,39 @@ lo_address lo_address_new_from_url(const char *url)
     return a;
 }
 
+const char *lo_address_get_hostname(lo_address a)
+{
+    return a->host;
+}
+
+const char *lo_address_get_port(lo_address a)
+{
+    return a->port;
+}
+
+char *lo_address_get_url(lo_address a)
+{
+    char *buf;
+    int ret;
+    int needquote = (int)(strchr(a->host, ':'));
+    char *fmt;
+
+    if (needquote) {
+	fmt = "osc.%s://[%s]:%s/";
+    } else {
+	fmt = "osc.%s://%s:%s/";
+    }
+    ret = snprintf(NULL, 0, fmt, "udp", a->host, a->port);
+    if (ret <= 0) {
+	/* this libc is not C99 compliant, guess a size */
+	ret = 1023;
+    }
+    buf = malloc((ret + 2) * sizeof(char));
+    snprintf(buf, ret+1, fmt, "udp", a->host, a->port);
+
+    return buf;
+}
+
 void lo_address_free(lo_address a)
 {
     if (a) {
@@ -149,10 +182,13 @@ char *lo_url_get_hostname(const char *url)
 {
     char *hostname = malloc(strlen(url));
 
-    if (sscanf(url, "osc://%[^:/]", hostname)) {
+    if (sscanf(url, "osc://%[^[:/]", hostname)) {
         return hostname;
     }
-    if (sscanf(url, "osc.%*[^:/]://%[^:/]", hostname)) {
+    if (sscanf(url, "osc.%*[^:/]://[%[^]/]]", hostname)) {
+        return hostname;
+    }
+    if (sscanf(url, "osc.%*[^:/]://%[^[:/]", hostname)) {
         return hostname;
     }
 

@@ -92,7 +92,7 @@ void lo_message_add_float(lo_message m, float a);
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
  */
-void lo_message_add_string(lo_message m, char *a);
+void lo_message_add_string(lo_message m, const char *a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
@@ -122,7 +122,7 @@ void lo_message_add_double(lo_message m, double a);
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
  */
-void lo_message_add_symbol(lo_message m, char *a);
+void lo_message_add_symbol(lo_message m, const char *a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
@@ -161,6 +161,13 @@ void lo_message_add_nil(lo_message m);
 void lo_message_add_infinitum(lo_message m);
 
 /**
+ * \brief  Returns the source (lo_address) of an incoming message.
+ *
+ * Returns NULL if the message is outgoing. Do not free the returned address.
+ */
+lo_address lo_message_get_source(lo_message m);
+
+/**
  * \brief  Return the length of a message in bytes.
  *
  * \param m The message to be sized
@@ -184,6 +191,29 @@ size_t lo_message_length(lo_message m, const char *path);
  */
 void *lo_message_serialise(lo_message m, const char *path, void *to,
 			   size_t *size);
+
+/**
+ * \brief  Return the hostname of a lo_address object
+ *
+ * Returned value most not be modified or free'd. Value will be a dotted quad,
+ * colon'd IPV6 address, or resolvable name.
+ */
+const char *lo_address_get_hostname(lo_address a);
+
+/**
+ * \brief  Return the port/service name of a lo_address object
+ *
+ * Returned value most not be modified or free'd. Value will be a service name
+ * or ASCII representation of the port number.
+ */
+const char *lo_address_get_port(lo_address a);
+
+/**
+ * \brief  Return a URL representing an OSC address
+ *
+ * Returned value must be free'd.
+ */
+char *lo_address_get_url(lo_address a);
 
 /**
  * \brief  Create a new bundle object.

@@ -1,3 +1,19 @@
+2005-01-13  Steve Harris  <steve@plugin.org.uk>
+
+	* bundle.c: patch from Dave Robillard that fixes bundles of more than 4
+	  messages.
+
+2005-01-13  Steve Harris  <steve@plugin.org.uk>
+
+	* message.c: made the arguments to _add_string and _add_symbol const
+	  char * for C++ compatibility.
+
+2005-01-10  Steve Harris  <steve@plugin.org.uk>
+
+	* message.c: added a source field that represents the source from which
+	  a message was received. Useful in method handlers to determine which
+	  client sent the message.
+
 2004-12-21  Steve Harris  <steve@plugin.org.uk>
 
 	* server.c: added patch from Walco van Loon and Pix that fixes a bug

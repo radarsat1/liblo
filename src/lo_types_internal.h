@@ -52,11 +52,13 @@ typedef struct _lo_server {
 	struct addrinfo *ai;
 	lo_method        first;
 	lo_err_handler   err_h;
-	int		 port;
-	char            *hostname;
-	char            *path;
-	int              protocol;
+	int	 	 port;
+	char           	*hostname;
+	char           	*path;
+	int            	 protocol;
 	void		*queued;
+	struct sockaddr  addr;
+	socklen_t 	 addr_len;
 } *lo_server;
 
 typedef struct _lo_server_thread {

@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([liblo], [0.15], [steve@plugin.org.uk])
+AC_INIT([liblo], [0.16pre1], [steve@plugin.org.uk])
 
 # libtool version: current:revision:age
 #

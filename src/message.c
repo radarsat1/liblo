@@ -55,9 +55,9 @@ lo_message lo_message_new()
     m->types[1] = '\0';
     m->typelen = 1;
     m->typesize = LO_DEF_TYPE_SIZE;
-    m->data = calloc(1, LO_DEF_DATA_SIZE);
+    m->data = NULL;
     m->datalen = 0;
-    m->datasize = LO_DEF_DATA_SIZE;
+    m->datasize = 0;
     m->source = NULL;
 
     return m;
@@ -92,7 +92,7 @@ void lo_message_add_float(lo_message m, float a)
     *nptr = lo_htoo32(b.nl);
 }
 
-void lo_message_add_string(lo_message m, char *a)
+void lo_message_add_string(lo_message m, const char *a)
 {
     const int size = lo_strsize(a);
     char *nptr = lo_message_add_data(m, size);
@@ -144,7 +144,7 @@ void lo_message_add_double(lo_message m, double a)
     *nptr = lo_htoo64(b.nl);
 }
 
-void lo_message_add_symbol(lo_message m, char *a)
+void lo_message_add_symbol(lo_message m, const char *a)
 {
     const int size = lo_strsize(a);
     char *nptr = lo_message_add_data(m, size);
@@ -197,6 +197,9 @@ static void lo_message_add_typechar(lo_message m, char t)
 {
     if (m->typelen + 1 >= m->typesize) {
 	m->typesize *= 2;
+	if (!m->typesize) {
+	    m->typesize = LO_DEF_TYPE_SIZE;
+	}
 	m->types = realloc(m->types, m->typesize);
     }
     m->types[m->typelen] = t;
@@ -211,6 +214,9 @@ static void *lo_message_add_data(lo_message m, size_t s)
     m->datalen += s;
     while (m->datalen > m->datasize) {
 	m->datasize *= 2;
+	if (!m->datasize) {
+	    m->datasize = LO_DEF_DATA_SIZE;
+	}
 	m->data = realloc(m->data, m->datasize);
     }
 
@@ -290,6 +296,11 @@ void lo_arg_host_endian(lo_type type, void *data)
 		type, __FILE__, __LINE__);
 	break;
     }
+}
+
+lo_address lo_message_get_source(lo_message m)
+{
+    return m->source;
 }
 
 size_t lo_message_length(lo_message m, const char *path)

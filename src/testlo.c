@@ -87,7 +87,7 @@ int main()
     lo_server s = lo_server_new(NULL, error);
     lo_bundle b;
     lo_message m1, m2;
-    char *server_url, *path, *protocol, *port;
+    char *server_url, *path, *protocol, *host, *port;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
     union end_test32 et32;
@@ -175,6 +175,26 @@ int main()
     }
     free(protocol);
 
+    host = lo_url_get_hostname("osc.udp://foo.example.com:9999/a/path/is/here");
+    if (strcmp(host, "foo.example.com")) {
+	printf("failed lo_url_get_hostname() test1\n");
+	printf("'%s' != 'foo.example.com'\n", host);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_hostname() test1\n");
+    }
+    free(host);
+
+    host = lo_url_get_hostname("osc.udp://[0000::::0001]:9999/a/path/is/here");
+    if (strcmp(host, "0000::::0001")) {
+	printf("failed lo_url_get_hostname() test2\n");
+	printf("'%s' != '0000::::0001'\n", host);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_hostname() test2\n");
+    }
+    free(host);
+
     port = lo_url_get_port("osc.udp://localhost:9999/a/path/is/here");
     if (strcmp(port, "9999")) {
 	printf("failed lo_url_get_port() test1\n");
@@ -228,6 +248,9 @@ int main()
     lo_server_thread_stop(st);
     lo_server_thread_start(st);
 
+    if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
+	printf("OSC error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
+    }
     if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
 	printf("OSC error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
     }
@@ -445,7 +468,11 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
 int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data)
 {
-    printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
+    lo_address src = lo_message_get_source(data);
+    char *url = lo_address_get_url(src);
+    printf("%s <- f:%f, i:%d\n", path, argv[0]->f, argv[1]->i);
+    printf("source url: %s\n\n", url);
+    free(url);
 
     return 0;
 }

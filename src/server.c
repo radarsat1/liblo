@@ -25,6 +25,7 @@
 #include <sys/socket.h>
 #include <sys/poll.h>
 #include <sys/un.h>
+#include <arpa/inet.h>
 
 #include "lo_types_internal.h"
 #include "lo/lo.h"
@@ -254,14 +255,14 @@ void lo_server_free(lo_server s)
 
 void *lo_server_recv_raw(lo_server s, size_t *size)
 {
-    struct sockaddr_storage addr;
-    socklen_t addr_len = sizeof(addr);
     char buffer[LO_MAX_MSG_SIZE];
     int ret;
     void *data = NULL;
 
+    s->addr_len = sizeof(s->addr);
+
     ret = recvfrom(s->socket, buffer, LO_MAX_MSG_SIZE, 0,
-		   (struct sockaddr *)&addr, &addr_len);
+		   (struct sockaddr *)&s->addr, &s->addr_len);
     if (ret <= 0) {
 	return NULL;
     }
@@ -449,6 +450,41 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     int ret = 1;
     int endian_fixed = 0;
     int pattern = strpbrk(path, " #*,?[]{}") != NULL;
+    lo_message msg = lo_message_new();
+    lo_address src = lo_address_new(NULL, NULL);
+    char hostname[LO_HOST_SIZE];
+    char portname[32];
+
+    free(msg->types);
+    msg->types = types;
+    msg->typelen = strlen(types);
+    msg->typesize = 0;
+    msg->data = data;
+    msg->datalen = 0;
+    msg->datasize = 0;
+    msg->source = src;
+
+    inet_ntop(s->addr.sa_family, &s->addr, hostname, sizeof(hostname));
+    src->host = hostname;
+
+    switch (s->addr.sa_family) {
+	case AF_INET: {
+	    struct sockaddr_in *sin = (struct sockaddr_in *)&s->addr;
+
+	    snprintf(portname, sizeof(portname)-1, "%d", sin->sin_port);
+	    break;
+	}
+	case AF_INET6: {
+	    struct sockaddr_in6 *sin = (struct sockaddr_in6 *)&s->addr;
+
+	    snprintf(portname, sizeof(portname)-1, "%d", sin->sin6_port);
+	    break;
+	}
+	default:
+	    sprintf(portname, "???");
+	    break;
+    }
+    src->port = portname;
 
     for (it = s->first; it; it = it->next) {
 	/* If paths match or handler is wildcard */
@@ -461,7 +497,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		    int i;
 		    char *ptr = types - 1 + lo_strsize(types - 1);
 
-		    argv = calloc(argc+1, sizeof(lo_arg *));
+		    argv = calloc(argc + 1, sizeof(lo_arg *));
 		    if (!endian_fixed) {
 			for (i=0; i<argc; i++) {
 			    argv[i] = (lo_arg *)ptr;
@@ -472,7 +508,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		    }
 		}
 
-		ret = it->handler(path, types, argv, argc, data,
+		ret = it->handler(path, types, argv, argc, msg,
 				      it->user_data);
 
 	    } else if (lo_can_coerce_spec(types, it->typespec)) {
@@ -502,7 +538,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		}
 		endian_fixed = 1;
 
-		ret = it->handler(path, it->typespec, argv, argc, NULL,
+		ret = it->handler(path, it->typespec, argv, argc, msg,
 				      it->user_data);
 		free(argv);
 		free(data_co);
