@@ -30,7 +30,6 @@ extern "C" {
 #include "lo/lo_osc_types.h"
 #include "lo/lo_errors.h"
 #include "lo/lo_lowlevel.h"
-#include "lo/lo_backcompat.h"
 
 /**
  * \defgroup liblo High-level OSC API
