@@ -1,3 +1,16 @@
 Steve Harris	<steve@plugin.org.uk>
 Uwe Koloska
 Jesse Chappel
+
+Guidelines for authors:
+
+As liblo is an implementation of a fairly widespread protocol I'd like to keep
+any changes in check to try to prevent it deviating too far from the agreed OSC
+standard and the intended niche of liblo (ie. easy to use). To help that,
+please try to follow the following guidelines:
+
+* Keep to the current, fairly minimal, OO-C API style where possible
+* Document any API changes in Doxygen style. my current docs aren't great, but
+  the're better than nothing :)
+* Update the ChangeLog whenever neccesary.
+* Add tests for any changes or discovered bugs to the regression test file.
