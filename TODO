@@ -1,10 +1,20 @@
- * Bundle support [needs NTP, argh]
- * More/better regression tests
- * More/better example code
- * Unify URI handling [needs discussion]
- * GTK/Qt/etc. linking code [maybe belongs in another library]
- * Add source address to received messages
- * OSC pattern matching [still not sure about this one]
- * Rendevous/OpenWhatever (eg. howl) service discovery [low priority]
- * Make TCP work to spec (currently the TCP server only reads the 1st packet
-   from every conneciton) [low priority]
+* Bundle support [needs NTP, argh]
+
+* Add source address to received messages
+
+* More/better regression tests
+
+* More/better example code
+
+* Normalise URI handling [needs discussion]
+
+* GTK/Qt/etc. linking code [maybe belongs in another library]
+
+* OSC pattern matching [still not sure about this one]
+
+* Rendevous/OpenWhatever (eg. howl) service discovery [low priority]
+
+* Add a JACK transport layer [maybe, low priority]
+
+* Make TCP work to spec (currently the TCP server only reads the 1st packet
+  from every conneciton) [low priority]
