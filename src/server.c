@@ -33,6 +33,8 @@
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
+static void dispatch_method(lo_server s, const char *path, char *types,
+			    void *data);
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
@@ -309,11 +311,6 @@ int lo_server_recv(lo_server s)
     size_t size;
     char *path;
     char *types;
-    lo_method it;
-    lo_arg **argv = NULL;
-    int argc;
-    int ret = 1;
-    int endian_fixed = 0;
 
     if (s->protocol == LO_TCP) {
 	data = lo_server_recv_raw_stream(s, &size);
@@ -337,8 +334,22 @@ printf("bundle XXXXXXXXXXXX %s XXXXXXXXXXXXXXXXXXXX\n", types);
 
 	return -1;
     }
-    types++;
-    argc = strlen(types);
+
+    dispatch_method(s, path, types+1, data);
+
+    free(data);
+
+    return size;
+}
+
+static void dispatch_method(lo_server s, const char *path, char *types,
+			    void *data)
+{
+    int argc = strlen(types);
+    lo_arg **argv = NULL;
+    lo_method it;
+    int ret = 1;
+    int endian_fixed = 0;
 
     for (it = s->first; it; it = it->next) {
 	/* If paths match or handler is wildcard */
@@ -403,9 +414,6 @@ printf("bundle XXXXXXXXXXXX %s XXXXXXXXXXXXXXXXXXXX\n", types);
 	}
     }
     free(argv);
-    free(data);
-
-    return size;
 }
 
 lo_method lo_server_add_method(lo_server s, const char *path,

@@ -46,6 +46,7 @@ union end_test64 {
 };
 
 static int done = 0;
+static int bundle_count = 0;
 
 char testdata[5] = "ABCDE";
 
@@ -64,6 +65,9 @@ int lots_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
 int coerce_handler(const char *path, const char *types, lo_arg **argv, int argc,
+		 lo_message data, void *user_data);
+
+int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
 int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
@@ -195,6 +199,9 @@ int main()
     lo_server_thread_add_method(st, "/coerce", "dfhiSs",
 				coerce_handler, NULL);
 
+    lo_server_thread_add_method(st, "/bundle", NULL,
+				bundle_handler, NULL);
+
     /* add method that will match any path and args */
     lo_server_thread_add_method(st, NULL, NULL, generic_handler, NULL);
 
@@ -225,7 +232,7 @@ int main()
     m = lo_message_new();
     lo_message_add_int32(m, 23);
     lo_message_add_string(m, "23");
-    lo_bundle_add_message(b, "/foo", m);
+    lo_bundle_add_message(b, "/bundle", m);
     TEST(lo_send_bundle(a, b) == 40);
 
     lo_address_free(a);
@@ -296,6 +303,8 @@ int main()
     /* exit */
     lo_send(a, "/quit", NULL);
     lo_address_free(a);
+
+    TEST(bundle_count == 1);
 
     while (!done) {
 	usleep(1000);
@@ -405,6 +414,12 @@ int coerce_handler(const char *path, const char *types, lo_arg **argv, int argc,
     printf("\n");
 
     return 0;
+}
+
+int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
+		 lo_message data, void *user_data)
+{
+    bundle_count++;
 }
 
 int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
