@@ -385,17 +385,21 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     }
     data = lo_message_serialise(msg, path, NULL, NULL);
 
-    if (a->proto == LO_TCP) {
-	int32_t size;
+    if (a->proto == LO_UDP) {
+	sendto(a->socket, data, data_len, MSG_NOSIGNAL, a->ai->ai_addr, a->ai->ai_addrlen);
+    } else {
+	if (a->proto == LO_TCP) {
+	    int32_t size;
 
-	size = htonl(data_len); 
-	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
-    }
-    ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+	    size = htonl(data_len); 
+	    ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
+	}
+	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
 
-    if (a->proto == LO_TCP) {
-	//XXX not sure this is hte right behviour
-	close(a->socket);
+	if (a->proto == LO_TCP) {
+	    //XXX not sure this is hte right behviour
+	    close(a->socket);
+	}
     }
 
     free(data);
