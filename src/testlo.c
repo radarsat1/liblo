@@ -52,6 +52,7 @@ char testdata[5] = "ABCDE";
 void exitcheck(void);
 
 void error(int num, const char *m, const char *path);
+void rep_error(int num, const char *m, const char *path);
 
 int generic_handler(const char *path, const char *types, lo_arg **argv,
 		    int argc, lo_message data, void *user_data);
@@ -71,7 +72,7 @@ int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 int main()
 {
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
-    lo_server_thread st;
+    lo_server_thread st, sta, stb;
     lo_server s = lo_server_new(NULL, error);
     char *server_url, *path, *protocol, *port;
     lo_address a;
@@ -95,6 +96,14 @@ int main()
     st = lo_server_thread_new(NULL, error);
     lo_server_thread_free(st);
     st = lo_server_thread_new(NULL, error);
+
+    sta = lo_server_thread_new("7591", error);
+    stb = lo_server_thread_new("7591", rep_error);
+    if (stb) {
+	fprintf(stderr, "FAILED: create bad server thread object!\n");
+	exit(1);
+    }
+    lo_server_thread_free(sta);
 
     server_url = lo_server_thread_get_url(st);
     a = lo_address_new_from_url(server_url);
@@ -294,6 +303,13 @@ void error(int num, const char *msg, const char *path)
 {
     printf("liblo server error %d in %s: %s\n", num, path, msg);
     exit(1);
+}
+
+void rep_error(int num, const char *msg, const char *path)
+{
+    if (num != 9904) {
+	error(num, msg, path);
+    }
 }
 
 int generic_handler(const char *path, const char *types, lo_arg **argv,

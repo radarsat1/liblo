@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([liblo], [0.12], [steve@plugin.org.uk])
+AC_INIT([liblo], [0.13], [steve@plugin.org.uk])
 
 # libtool version: current:revision:age
 #
@@ -22,7 +22,7 @@ AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
 
-AC_ENABLE_STATIC(yes)
+AC_ENABLE_STATIC(no)
 AC_ENABLE_SHARED(yes)
 AC_SUBST(LO_SO_VERSION)
 

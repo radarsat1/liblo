@@ -254,8 +254,7 @@ static void add_varargs(lo_address t, lo_message msg, va_list ap,
 
 int lo_send_message(lo_address a, const char *path, lo_message msg)
 {
-    const size_t data_len = lo_strsize(path) + lo_strsize(msg->types) +
-			    msg->datalen;
+    const size_t data_len = lo_message_length(msg, path);
     char *data;
     int ret;
 
@@ -268,7 +267,6 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	return -1;
     }
 
-    data = calloc(1, data_len);
     if (!a->ai || a->proto == LO_TCP) {
 	if (a->proto == LO_UDP || a->proto == LO_TCP) {
 	    struct addrinfo *ai;
@@ -288,7 +286,6 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 		a->errstr = gai_strerror(ret);
 		freeaddrinfo(a->ai);
 		a->ai = NULL;
-		free(data);
 
 		return -1;
 	    }
@@ -298,7 +295,6 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	    if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
 		a->errnum = errno;
 		a->errstr = NULL;
-		free(data);
 
 		return ret;
 	    }
@@ -309,7 +305,6 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	    if (a->socket == -1) {
 		a->errnum = errno;
 		a->errstr = NULL;
-		free(data);
 
 		return -1;
 	    }
@@ -321,23 +316,18 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 			    sizeof(sa))) < 0) {
 		a->errnum = errno;
 		a->errstr = NULL;
-		free(data);
 
 		return -1;
 	    }
 	    a->ai = (void *)1;
 	} else {
 	    /* unkonwn proto */
-	    free(data);
 
 	    return 0;
 	}
     }
+    data = lo_message_serialise(msg, path, NULL);
 
-    memcpy(data, path, strlen(path));
-    memcpy(data + lo_strsize(path), msg->types, msg->typelen);
-    memcpy(data + lo_strsize(path) + lo_strsize(msg->types), msg->data, msg->datalen);
- 
     if (a->proto == LO_TCP) {
 	int32_t size;
 

@@ -1,3 +1,9 @@
+
+2004-10-19  Steve Harris  <steve@plugin.org.uk>
+
+	Release 0.13
+	* lo.h: removed reference to obsolete header lo_backcompat.h
+
 2004-10-17  Steve Harris  <steve@plugin.org.uk>
 
 	* lo_server.c: added code to allow servers to poll() on the server

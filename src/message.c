@@ -305,6 +305,28 @@ void lo_arg_host_endian(lo_type type, void *data)
     }
 }
 
+size_t lo_message_length(lo_message m, const char *path)
+{
+    return lo_strsize(path) + lo_strsize(m->types) + m->datalen;
+}
+
+void *lo_message_serialise(lo_message m, const char *path, size_t *size)
+{
+    size_t s = lo_message_length(m, path);
+    void *ret;
+
+    if (size) {
+	*size = s;
+    }
+
+    ret = calloc(1, s);
+    memcpy(ret, path, strlen(path));
+    memcpy(ret + lo_strsize(path), m->types, m->typelen);
+    memcpy(ret + lo_strsize(path) + lo_strsize(m->types), m->data, m->datalen);
+
+    return ret;
+}
+
 void lo_message_pp(lo_message m)
 {
     void *d = m->data;

@@ -152,6 +152,28 @@ void lo_message_add_nil(lo_message m);
 void lo_message_add_infinitum(lo_message m);
 
 /**
+ * \brief  Return the length of a message in bytes.
+ *
+ * \param m The mesaage to be serialised
+ * \param path The path the message will be sent to
+ */
+size_t lo_message_length(lo_message m, const char *path);
+
+/**
+ * \brief  Serialise the message object to an area of memory and return a
+ * pointer to the serialised form.
+ *
+ * \param m The mesaage to be serialised
+ * \param path The path the message will be sent to
+ * \param size If this pointer is non-NULL the size of the memory area
+ * will be written here
+ *
+ * The returned form is suitable to be sent over a low level OSC transport,
+ * having the correct endianess and bit-packed structure.
+ */
+void *lo_message_serialise(lo_message m, const char *path, size_t *size);
+
+/**
  * \brief return true if the type specified has a numerical value, such as
  * LO_INT32, LO_FLOAT etc.
  *
