@@ -17,6 +17,7 @@
 #ifndef LO_ENDIAN_H
 #define LO_ENDIAN_H
 
+#include <stdint.h>
 #include <netinet/in.h>
 
 #ifdef __cplusplus
