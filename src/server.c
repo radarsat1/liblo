@@ -465,6 +465,8 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     msg->source = src;
 
     inet_ntop(s->addr.sa_family, &s->addr, hostname, sizeof(hostname));
+
+    free (src->host);
     src->host = hostname;
 
     switch (s->addr.sa_family) {
@@ -484,6 +486,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	    sprintf(portname, "???");
 	    break;
     }
+    free (src->port);
     src->port = portname;
 
     for (it = s->first; it; it = it->next) {
@@ -551,6 +554,15 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	}
     }
     free(argv);
+
+    /* the address got assigned static stuff, hence not using address_free */
+    free (src);
+
+    /* these are already part of data and will be freed later */
+    msg->data = NULL;
+    msg->types = NULL;
+    lo_message_free (msg);
+    printf("updated version!\n");
 }
 
 int lo_server_events_pending(lo_server s)
