@@ -1,3 +1,7 @@
+2004-11-19  Steve Harris  <steve@plugin.org.uk>
+
+	* send.c: added lo_send_timestamped()
+
 2004-11-17  Steve Harris  <steve@plugin.org.uk>
 
 	* server.c: added code to handle bundle reception

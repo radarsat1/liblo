@@ -464,6 +464,9 @@ int lo_pattern_match(const char *str, const char *p);
 /** \brief the real send function (don't call directly) */
 int lo_send_internal(lo_address t, const char *file, const int line,
      const char *path, const char *types, ...);
+/** \brief the real send_timestamped function (don't call directly) */
+int lo_send_timestamped_internal(lo_address t, const char *file, const int line,
+     lo_timetag ts, const char *path, const char *types, ...);
 
 /** \brief Find the time difference between two timetags
  *

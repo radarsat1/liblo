@@ -99,7 +99,7 @@ int lo_send(lo_address targ, const char *path, const char *type, ...);
  * on success returns the number of bytes sent, returns -1 on failure.
  */
 int lo_send_timestamped(lo_address targ, lo_timetag ts, const char *path,
-	       		const char *types, ...);
+	       		const char *type, ...);
 
 /**
  * \brief Return the error number from the last failed lo_send or
