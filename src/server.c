@@ -327,7 +327,6 @@ int lo_server_recv(lo_server s)
     path = data;
 
     types = data + lo_strsize(path);
-printf("PATH: %s\n", path);
     if (!strcmp(path, "#bundle")) {
 printf("bundle XXXXXXXXXXXX %s XXXXXXXXXXXXXXXXXXXX\n", types);
 	free(data);

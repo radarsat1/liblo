@@ -219,9 +219,17 @@ int main()
     lo_send(a, "/a/b/c/d", "sfsff", "one", 0.12345678f, "three",
 	    -0.00000023001f, 1.0);
     lo_send(a, "/a/b/c/d", "b", btest);
-    lo_address_free(a);
     lo_blob_free(btest);
 
+    b = lo_bundle_new((lo_timetag){1,2});
+    m = lo_message_new();
+    lo_message_add_int32(m, 23);
+    lo_message_add_string(m, "23");
+    lo_bundle_add_message(b, "/foo", m);
+    TEST(lo_send_bundle(a, b) == 40);
+
+    lo_address_free(a);
+    
     server_url = lo_server_get_url(s);
     lo_server_add_method(s, NULL, NULL, generic_handler, NULL);
     a = lo_address_new_from_url(server_url);
@@ -237,13 +245,6 @@ int main()
 	exit(1);
     }
 
-    b = lo_bundle_new((lo_timetag){1,2});
-    m = lo_message_new();
-    lo_message_add_int32(m, 23);
-    lo_message_add_string(m, "23");
-    lo_bundle_add_message(b, "/foo", m);
-    TEST(lo_send_bundle(a, b) == 40);
-    
     lo_address_free(a);
     lo_server_free(s);
     free(server_url);
