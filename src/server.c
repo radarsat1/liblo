@@ -438,6 +438,17 @@ lo_method lo_server_add_method(lo_server s, const char *path,
     return m;
 }
 
+int
+lo_server_get_socket_fd(lo_server s)
+{
+    if (s->protocol != LO_UDP &&
+        s->protocol != LO_TCP &&
+        s->protocol != LO_UNIX) {
+        return -1;  /* assume it is not supported */
+    }
+    return s->socket;
+}
+
 int lo_server_get_port(lo_server s)
 {
     if (!s) {

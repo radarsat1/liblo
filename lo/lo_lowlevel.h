@@ -283,6 +283,15 @@ lo_method lo_server_add_method(lo_server s, const char *path,
                                void *user_data);
 
 /**
+ * \brief Return the file descriptor of the server socket.
+ *
+ * If the server protocol supports exposing the server's underlying
+ * receive mechanism for monitoring with select() or poll(), this function
+ * returns the file descriptor needed, otherwise, it returns -1.
+ */
+int lo_server_get_socket_fd(lo_server s);
+
+/**
  * \brief Return the port number that the server has bound to.
  *
  * Useful when NULL is passed for the port number and you wish to know how to
