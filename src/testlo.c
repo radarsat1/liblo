@@ -119,6 +119,10 @@ int main()
     }
     lo_server_thread_free(sta);
 
+    a = lo_address_new_from_url("osc://localhost/");
+    TEST(a != NULL);
+    lo_address_free(a);
+
     server_url = lo_server_thread_get_url(st);
     a = lo_address_new_from_url(server_url);
     printf("Server URL: %s\n", server_url);
@@ -305,7 +309,7 @@ int main()
     lo_bundle_free(b);
 
     lo_timetag_now(&sched);
-    sched.sec += 4;
+    sched.sec += 5;
     b = lo_bundle_new(sched);
     m1 = lo_message_new();
     lo_message_add_string(m1, "future");

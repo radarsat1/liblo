@@ -166,7 +166,7 @@ char *lo_url_get_protocol(const char *url)
 
     protocol = alloca(strlen(url));
 
-    if (sscanf(url, "osc://")) {
+    if (sscanf(url, "osc://%s", protocol)) {
 	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
 		"assuming UDP.\n");
         return strdup("udp");

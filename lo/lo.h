@@ -53,7 +53,7 @@ lo_address lo_address_new(const char *host, const char *port);
 /**
  * \brief Create a lo_address object from an OSC URL.
  *
- * example: osc://localhost:4444/my/path/
+ * example: osc.udp://localhost:4444/my/path/
  */
 lo_address lo_address_new_from_url(const char *url);
 
