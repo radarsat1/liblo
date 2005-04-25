@@ -30,9 +30,24 @@ double lo_timetag_diff(lo_timetag a, lo_timetag b)
 
 void lo_timetag_now(lo_timetag *t)
 {
-	struct timeval tv;
+#ifdef WIN32
+    /* 
+        FILETIME is the time in units of 100 nsecs from 1601-Jan-01
+        1601 and 1900 are 9435484800 seconds apart.
+    */
+    FILETIME ftime;
+    GetSystemTimeAsFileTime(&ftime);
+    double dtime = 
+        ((ftime.dwHighDateTime*4294967296.e-7)-9435484800.)+
+        (ftime.dwLowDateTime*1.e-7);
+
+	t->sec = (uint32_t)dtime;
+	t->frac = (uint32_t)((dtime-t->sec)*4294967296.);
+#else
+    struct timeval tv;
 
 	gettimeofday(&tv, NULL);
 	t->sec = tv.tv_sec + JAN_1970;
 	t->frac = tv.tv_usec * 4294.967296;
+#endif
 }

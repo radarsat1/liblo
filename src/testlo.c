@@ -30,6 +30,12 @@
 #include "lo/lo.h"
 #include "config.h"
 
+#ifdef WIN32
+#define PATHDELIM "\\"
+#else
+#define PATHDELIM "/"
+#endif
+
 #define TEST(cond) if (!(cond)) { fprintf(stderr, "FAILED " #cond \
 					  " at %s:%d\n", __FILE__, __LINE__); \
 				  exit(1); } \
@@ -119,7 +125,11 @@ int main()
     /* leak check */
     st = lo_server_thread_new(NULL, error);
     lo_server_thread_start(st);
+#ifdef WIN32
+    Sleep(4);
+#else
     usleep(4000);
+#endif
     lo_server_thread_stop(st);
     lo_server_thread_free(st);
     st = lo_server_thread_new(NULL, error);
@@ -223,7 +233,6 @@ int main()
     free(port);
     printf("\n");
 
-
     if (lo_blob_datasize(btest) != 5 || lo_blobsize(btest) != 12) {
 	printf("blob is %d (%d) bytes long, should be 5 (12)\n",
                lo_blob_datasize(btest), lo_blobsize(btest));
@@ -302,14 +311,18 @@ int main()
     lo_send(a, "/pattern/ba[rz]", "s", "b");
 
     server_url = lo_server_thread_get_url(st);
-    sprintf(cmd, "./subtest %s &", server_url);
+    sprintf(cmd, "." PATHDELIM "subtest %s &", server_url);
     if (system(cmd) != 0) {
 	fprintf(stderr, "Cannot execute subtest command\n");
 	exit(1);
     }
     system(cmd);
 
+#ifdef WIN32
+    Sleep(2000);
+#else
     sleep(2);
+#endif
     TEST(reply_count == 2);
     TEST(pattern_count == 5);
     TEST(subtest_count == 2);
@@ -358,6 +371,7 @@ int main()
     lo_bundle_free(b);
 
     lo_timetag_now(&sched);
+
     sched.sec += 5;
     b = lo_bundle_new(sched);
     m1 = lo_message_new();
@@ -365,6 +379,7 @@ int main()
     lo_message_add_string(m1, "time");
     lo_message_add_string(m1, "test");
     lo_bundle_add_message(b, "/bundle", m1);
+
     lo_send_bundle(a, b);
     lo_message_free(m1);
     lo_bundle_free(b);
@@ -390,13 +405,22 @@ int main()
 
     lo_address_free(a);
 
+#ifdef WIN32
+    Sleep(2000);
+#else
     sleep(2);
+#endif
 
     TEST(lo_server_thread_events_pending(st));
 
     while (lo_server_thread_events_pending(st)) {
 	printf("pending events, wait...\n");
+#ifdef WIN32
+    fflush(stdout);
+    Sleep(1000);
+#else
 	sleep(1);
+#endif
     }
     
     TEST(bundle_count == 6);
@@ -422,6 +446,7 @@ int main()
     lo_server_free(s);
     free(server_url);
 
+#ifndef WIN32
     { /* UNIX domain tests */
 	lo_address ua;
 	lo_server us;
@@ -438,6 +463,7 @@ int main()
 	lo_server_free(us);
 	lo_address_free(ua);
     }
+#endif
 
     { /* TCP tests */
 	lo_address ta;
@@ -471,7 +497,11 @@ int main()
     lo_address_free(a);
 
     while (!done) {
+#ifdef WIN32
+    Sleep(1);
+#else
 	usleep(1000);
+#endif
     }
 
     lo_server_thread_free(st);

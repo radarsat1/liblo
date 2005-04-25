@@ -17,11 +17,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <netdb.h>
 #include <string.h>
 #include <pthread.h>
 #include <sys/types.h>
+
+#ifdef WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netdb.h>
 #include <sys/socket.h>
+#endif
 
 #include "lo_types_internal.h"
 #include "lo/lo.h"
@@ -78,7 +84,11 @@ void lo_server_thread_stop(lo_server_thread st)
     if (st->active) {
 	st->active = 0;
 	while (!st->done) {
+#ifdef WIN32
+        Sleep(1);
+#else
 	    usleep(1000);
+#endif
 	}
     }
 }

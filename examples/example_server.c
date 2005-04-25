@@ -51,7 +51,11 @@ int main()
     lo_server_thread_start(st);
 
     while (!done) {
+#ifdef WIN32
+    Sleep(1);
+#else
 	usleep(1000);
+#endif
     }
 
     return 0;
@@ -60,6 +64,7 @@ int main()
 void error(int num, const char *msg, const char *path)
 {
     printf("liblo server error %d in path %s: %s\n", num, path, msg);
+    fflush(stdout);
 }
 
 /* catch any incoming messages and display them. returning 1 means that the
@@ -76,6 +81,7 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
 	printf("\n");
     }
     printf("\n");
+    fflush(stdout);
 
     return 1;
 }
@@ -85,6 +91,7 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 {
     /* example showing pulling the argument values out of the argv array */
     printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
+    fflush(stdout);
 
     return 0;
 }
@@ -94,6 +101,7 @@ int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 {
     done = 1;
     printf("quiting\n\n");
+    fflush(stdout);
 
     return 0;
 }

@@ -17,7 +17,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <netinet/in.h>
+#endif
 
 #include "lo_types_internal.h"
 #include "lo/lo.h"

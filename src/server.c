@@ -17,15 +17,28 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <netdb.h>
 #include <string.h>
 #include <errno.h>
 #include <float.h>
 #include <sys/types.h>
+
+#ifdef WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#define EADDRINUSE WSAEADDRINUSE
+#else
+#include <netdb.h>
 #include <sys/socket.h>
 #include <sys/poll.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
+#endif
+
+#ifdef WIN32
+#define geterror() WSAGetLastError()
+#else
+#define geterror() errno
+#endif
 
 #include "lo_types_internal.h"
 #include "lo/lo.h"
@@ -49,11 +62,70 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 static int dispatch_queued(lo_server s);
 static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len);
 
+
+#ifdef WIN32
+// Copied from the Win32 SDK 
+
+// WARNING: The gai_strerror inline functions below use static buffers,
+// and hence are not thread-safe.  We'll use buffers long enough to hold
+// 1k characters.  Any system error messages longer than this will be
+// returned as empty strings.  However 1k should work for the error codes
+// used by getaddrinfo().
+#define GAI_STRERROR_BUFFER_SIZE 1024
+
+char *WSAAPI gai_strerrorA(int ecode)
+{
+    DWORD dwMsgLen;
+    static char buff[GAI_STRERROR_BUFFER_SIZE + 1];
+
+    dwMsgLen = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM
+                             |FORMAT_MESSAGE_IGNORE_INSERTS
+                             |FORMAT_MESSAGE_MAX_WIDTH_MASK,
+                              NULL,
+                              ecode,
+                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                              (LPSTR)buff,
+                              GAI_STRERROR_BUFFER_SIZE,
+                              NULL);
+    return buff;
+}
+
+
+static int stateWSock = -1;
+
+int initWSock()
+{
+    if(stateWSock >= 0) return stateWSock;
+    /* TODO - which version of Winsock do we actually need? */
+
+    WORD reqversion = MAKEWORD( 2, 2 );
+    WSADATA wsaData;
+    if(WSAStartup(reqversion,&wsaData) != 0) {
+        /* Couldn't initialize Winsock */
+        stateWSock = 0;
+    }
+    else if ( LOBYTE( wsaData.wVersion ) != LOBYTE(reqversion) ||
+            HIBYTE( wsaData.wVersion ) != HIBYTE(reqversion) ) {
+        /* wrong version */
+        WSACleanup();
+        stateWSock = 0; 
+    }
+    else
+        stateWSock = 1;
+
+    return stateWSock;
+}
+#endif
+
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
+#ifndef WIN32
     if (port && *port == '/') {
 	return lo_server_new_with_proto(port, LO_UNIX, err_h);
-    } else {
+    } 
+    else 
+#endif
+    {
 	return lo_server_new_with_proto(port, LO_UDP, err_h);
     }
 }
@@ -61,7 +133,7 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h)
 lo_server lo_server_new_with_proto(const char *port, int proto,
 				   lo_err_handler err_h)
 {
-    lo_server s = calloc(1, sizeof(struct _lo_server));
+    lo_server s;
     struct addrinfo *ai = NULL, *it, *used;
     struct addrinfo hints;
     int ret = -1;
@@ -69,6 +141,12 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     char pnum[16];
     const char *service;
     char hostname[LO_HOST_SIZE];
+
+#ifdef WIN32
+    if(!initWSock()) return NULL;
+#endif
+    
+    s = calloc(1, sizeof(struct _lo_server));
 
     s->err_h = err_h;
     s->first = NULL;
@@ -84,13 +162,17 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	hints.ai_socktype = SOCK_DGRAM;
     } else if (proto == LO_TCP) {
 	hints.ai_socktype = SOCK_STREAM;
-    } else if (proto == LO_UNIX) {
+    } 
+#ifndef WIN32
+    else if (proto == LO_UNIX) {
+
 	struct sockaddr_un sa;
 
 	s->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (s->socket == -1) {
+        int err = geterror();
 	    used = NULL;
-	    lo_throw(s, errno, strerror(errno), "socket()");
+	    lo_throw(s, err, strerror(err), "socket()");
 	    lo_server_free(s);
 
 	    return NULL;
@@ -100,7 +182,8 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	strncpy(sa.sun_path, port, 107);
 
 	if ((ret = bind(s->socket, (struct sockaddr *)&sa, sizeof(sa))) < 0) {
-	    lo_throw(s, errno, strerror(errno), "bind()");
+        int err = geterror();      
+	    lo_throw(s, err, strerror(err), "bind()");
 
 	    lo_server_free(s);
 	    return NULL;
@@ -109,7 +192,9 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	s->path = strdup(port);
 
 	return s;
-    } else {
+    } 
+#endif
+    else {
 	lo_throw(s, LO_UNKNOWNPROTO, "Unknown protocol", NULL);
 	lo_server_free(s);
 
@@ -157,20 +242,22 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	    s->socket = socket(it->ai_family, hints.ai_socktype, 0);
 	}
 	if (s->socket == -1) {
+        int err = geterror();
 	    used = NULL;
-	    lo_throw(s, errno, strerror(errno), "socket()");
+	    lo_throw(s, err, strerror(err), "socket()");
 
 	    lo_server_free(s);
 	    return NULL;
 	}
 
 	if ((ret = bind(s->socket, used->ai_addr, used->ai_addrlen)) < 0) {
-	    if (errno == EINVAL || errno == EADDRINUSE) {
+        int err = geterror();
+	    if (err == EINVAL || err == EADDRINUSE) {
 		used = NULL;
 
 		continue;
 	    }
-	    lo_throw(s, errno, strerror(errno), "bind()");
+	    lo_throw(s, err, strerror(err), "bind()");
 
 	    lo_server_free(s);
 
@@ -268,6 +355,10 @@ void *lo_server_recv_raw(lo_server s, size_t *size)
     int ret;
     void *data = NULL;
 
+#ifdef WIN32
+    if(!initWSock()) return NULL;
+#endif
+
     s->addr_len = sizeof(s->addr);
 
     ret = recvfrom(s->socket, buffer, LO_MAX_MSG_SIZE, 0,
@@ -291,13 +382,23 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
     int32_t read_size;
     int ret;
     void *data = NULL;
-    struct pollfd ps;
     int sock;
 
+#ifdef WIN32
+    if(!initWSock()) return NULL;
+
+    fd_set ps;
+    FD_ZERO(&ps);
+    FD_SET(s->socket,&ps);
+    if(select(1,&ps,NULL,NULL,NULL) == SOCKET_ERROR)
+        return NULL;
+#else
+    struct pollfd ps;
     ps.fd = s->socket;
     ps.events = POLLIN | POLLPRI;
     ps.revents = 0;
     poll(&ps, 1, -1);
+#endif
     sock = accept(s->socket, (struct sockaddr *)&addr, &addr_len);
 
     ret = recv(sock, &read_size, sizeof(read_size), 0);
@@ -323,9 +424,33 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
 
 int lo_server_recv_noblock(lo_server s, int timeout)
 {
-    struct pollfd ps;
     int sched_timeout = lo_server_next_event_delay(s) * 1000;
+#ifdef WIN32
+    fd_set ps;
+    struct timeval stimeout;
+#else
+    struct pollfd ps;
+#endif
 
+#ifdef WIN32
+    int res,to;
+
+    if(!initWSock()) return 0;
+
+    to = timeout > sched_timeout ? sched_timeout : timeout;
+    stimeout.tv_sec = to/1000;
+    stimeout.tv_usec = (to%1000)*1000;
+
+    FD_ZERO(&ps);
+    FD_SET(s->socket,&ps);
+    res = select(1,&ps,NULL,NULL,&stimeout);
+
+    if(res == SOCKET_ERROR)
+        return 0;
+
+    if (res || lo_server_next_event_delay(s) < 0.01)
+	    return lo_server_recv(s);
+#else
     ps.fd = s->socket;
     ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
     ps.revents = 0;
@@ -337,7 +462,7 @@ int lo_server_recv_noblock(lo_server s, int timeout)
     if (ps.revents || lo_server_next_event_delay(s) < 0.01) {
 	return lo_server_recv(s);
     }
-
+#endif
     return 0;
 }
 
@@ -347,17 +472,45 @@ int lo_server_recv(lo_server s)
     size_t size;
     char *path;
     char *types;
+    double sched_time = lo_server_next_event_delay(s);
+#ifdef WIN32
+    fd_set ps;
+    struct timeval stimeout;
+    int res;
+#else
     struct pollfd ps;
-    double sched_time;
-
-    sched_time = lo_server_next_event_delay(s);
+#endif
 
 again:
     if (sched_time > 0.01) {
 	if (sched_time > 10.0) {
 	    sched_time = 10.0;
 	}
-	ps.fd = s->socket;
+
+#ifdef WIN32
+    if(!initWSock()) return 0;
+
+    ps.fd_count = 1;
+    ps.fd_array[0] = s->socket;
+
+    stimeout.tv_sec = sched_time;
+    stimeout.tv_usec = (sched_time-stimeout.tv_sec)*1.e6;
+	res = select(1,&ps,NULL,NULL,&stimeout);
+	if(res == SOCKET_ERROR) {
+	    return 0;
+	}
+
+	if(!res) {
+	    sched_time = lo_server_next_event_delay(s);
+
+	    if (sched_time > 0.01) {
+		goto again;
+	    }
+
+	    return dispatch_queued(s);
+	}
+#else
+    ps.fd = s->socket;
 	ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
 	ps.revents = 0;
 	poll(&ps, 1, (int)(sched_time * 1000.0));
@@ -375,10 +528,10 @@ again:
 
 	    return dispatch_queued(s);
 	}
+#endif
     } else {
 	return dispatch_queued(s);
     }
-
     if (s->protocol == LO_TCP) {
 	data = lo_server_recv_raw_stream(s, &size);
     } else {
@@ -500,9 +653,11 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	    case EAI_NONAME:
 		lo_throw(s, err, "Cannot resolve", path);
 		break;
+#ifndef WIN32
 	    case EAI_SYSTEM:
 		lo_throw(s, err, strerror(err), path);
 		break;
+#endif
 	    default:
 		lo_throw(s, err, "Unknown error", path);
 		break;
@@ -620,7 +775,11 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 
 		    tmp = malloc(strlen(it->path + len) + 1);
 		    strcpy(tmp, it->path + len);
+#ifdef WIN32
+            sec = strchr(tmp,'/');
+#else
 		    sec = index(tmp, '/');
+#endif
 		    if (sec) *sec = '\0';
 		    slend = sl;
 		    for (slit = sl; slit; slend = slit, slit = slit->next) {
@@ -779,8 +938,11 @@ lo_method lo_server_add_method(lo_server s, const char *path,
 int lo_server_get_socket_fd(lo_server s)
 {
     if (s->protocol != LO_UDP &&
-        s->protocol != LO_TCP &&
-        s->protocol != LO_UNIX) {
+        s->protocol != LO_TCP 
+#ifndef WIN32
+        && s->protocol != LO_UNIX
+#endif
+    ) {
         return -1;  /* assume it is not supported */
     }
     return s->socket;
@@ -816,7 +978,9 @@ char *lo_server_get_url(lo_server s)
 	snprintf(buf, ret+1, "osc.%s://%s:%d/", proto, s->hostname, s->port);
 
 	return buf;
-    } else if (s->protocol == LO_UNIX) {
+    } 
+#ifndef WIN32
+    else if (s->protocol == LO_UNIX) {
 	ret = snprintf(NULL, 0, "osc.unix:///%s", s->path);
 	if (ret <= 0) {
 	    /* this libc is not C99 compliant, guess a size */
@@ -827,7 +991,7 @@ char *lo_server_get_url(lo_server s)
 
 	return buf;
     }
-
+#endif
     return NULL;
 }
 

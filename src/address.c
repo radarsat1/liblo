@@ -14,12 +14,18 @@
  *  $Id$
  */
 
-#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+
+#ifdef WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netdb.h>
 #include <sys/socket.h>
+#endif
 
 #include "lo_types_internal.h"
 #include "lo/lo.h"
@@ -65,9 +71,11 @@ lo_address lo_address_new_from_url(const char *url)
     } else if (!strcmp(protocol, "tcp")) {
 	a->proto = LO_TCP;
 	a->port = lo_url_get_port(url);
+#ifndef WIN32
     } else if (!strcmp(protocol, "unix")) {
 	a->proto = LO_UNIX;
 	a->port = lo_url_get_path(url);
+#endif
     } else {
 	fprintf(stderr, PACKAGE_NAME ": protocol '%s' not supported by this "
 	        "version\n", protocol);
@@ -157,25 +165,34 @@ const char *lo_address_errstr(lo_address a)
 
 char *lo_url_get_protocol(const char *url)
 {
-    char *protocol = alloca(strlen(url));
+    char *protocol,*ret;
 
 
     if (!url) {
 	return NULL;
     }
 
+#ifdef WIN32
+    protocol = malloc(strlen(url));
+#else
     protocol = alloca(strlen(url));
+#endif
 
     if (sscanf(url, "osc://%s", protocol)) {
 	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
 		"assuming UDP.\n");
-        return strdup("udp");
+        ret = strdup("udp");
     }
-    if (sscanf(url, "osc.%[^:/]", protocol)) {
-        return strdup(protocol);
+    else if (sscanf(url, "osc.%[^:/]", protocol)) {
+        ret = strdup(protocol);
     }
+    else
+        ret = NULL;
 
-    return NULL;
+#ifdef WIN32
+    free(protocol);
+#endif
+    return ret;
 }
 
 char *lo_url_get_hostname(const char *url)

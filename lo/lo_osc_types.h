@@ -17,6 +17,8 @@
 #ifndef LO_OSC_TYPES_H
 #define LO_OSC_TYPES_H
 
+#include <stdint.h>
+
 /**
  * \addtogroup liblo
  * @{

@@ -73,7 +73,9 @@ int main()
         do {
 
             FD_ZERO(&rfds);
+#ifndef WIN32
             FD_SET(0, &rfds);  /* stdin */
+#endif
             FD_SET(lo_fd, &rfds);
 
             retval = select(lo_fd + 1, &rfds, NULL, NULL, NULL); /* no timeout */
@@ -103,7 +105,10 @@ int main()
 
         /* lo_server protocol does not support select(), so we'll watch
          * stdin while polling the lo_server. */
-
+#ifdef WIN32
+        printf("non-blocking input from stdin not supported under Windows\n");
+        exit(1);
+#else
         do {
 
             FD_ZERO(&rfds);
@@ -127,6 +132,7 @@ int main()
             lo_server_recv_noblock(s, 0);
 
         } while (!done);
+#endif
     }
     
     return 0;
@@ -151,6 +157,7 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
 	printf("\n");
     }
     printf("\n");
+    fflush(stdout);
 
     return 1;
 }
@@ -160,6 +167,7 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 {
     /* example showing pulling the argument values out of the argv array */
     printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
+    fflush(stdout);
 
     return 0;
 }
@@ -181,6 +189,7 @@ void read_stdin(void)
         printf("stdin: ");
         fwrite(buf, len, 1, stdout);
         printf("\n");
+        fflush(stdout);
     }
 }
 

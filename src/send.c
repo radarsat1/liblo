@@ -18,18 +18,34 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <netdb.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+
+#ifdef WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netdb.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#endif
 
 #include "lo_types_internal.h"
 #include "lo/lo.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
+#endif
+
+#ifdef WIN32
+int initWSock();
+#endif
+
+#ifdef WIN32
+#define geterror() WSAGetLastError()
+#else
+#define geterror() errno
 #endif
 
 static int resolve_address(lo_address a);
@@ -325,7 +341,7 @@ static int resolve_address(lo_address a)
 	a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
 
 	if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-	    a->errnum = errno;
+	    a->errnum = geterror();
 	    a->errstr = NULL;
 	    //XXX freeaddrinfo(a->ai);
 
@@ -334,12 +350,14 @@ static int resolve_address(lo_address a)
 #if 0
 	}
 #endif
-    } else if (a->proto == LO_UNIX) {
+    }
+#ifndef WIN32
+    else if (a->proto == LO_UNIX) {
 	struct sockaddr_un sa;
 
 	a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (a->socket == -1) {
-	    a->errnum = errno;
+	    a->errnum = geterror();
 	    a->errstr = NULL;
 
 	    return -1;
@@ -350,13 +368,15 @@ static int resolve_address(lo_address a)
 
 	if ((ret = connect(a->socket, (struct sockaddr *)&sa,
 			sizeof(sa))) < 0) {
-	    a->errnum = errno;
+	    a->errnum = geterror();
 	    a->errstr = NULL;
 
 	    return -1;
 	}
 	a->ai = (void *)1;
-    } else {
+    } 
+#endif
+    else {
 	/* unkonwn proto */
 
 	return -2;
@@ -370,6 +390,10 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     const size_t data_len = lo_message_length(msg, path);
     char *data;
     int ret;
+
+#ifdef WIN32
+    if(!initWSock()) return -1;
+#endif
 
     if (lo_strsize(path) + lo_strsize(msg->types) + msg->datalen >
 	LO_MAX_MSG_SIZE) {
@@ -408,7 +432,7 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     free(data);
 
     if (ret == -1) {
-	a->errnum = errno;
+	a->errnum = geterror();
 	a->errstr = NULL;
     } else {
 	a->errnum = 0;
@@ -423,6 +447,10 @@ int lo_send_bundle(lo_address a, lo_bundle b)
     const size_t data_len = lo_bundle_length(b);
     char *data;
     int ret;
+
+#ifdef WIN32
+    if(!initWSock()) return -1;
+#endif
 
     if (data_len > LO_MAX_MSG_SIZE) {
 	a->errnum = 99;
@@ -460,7 +488,7 @@ int lo_send_bundle(lo_address a, lo_bundle b)
     free(data);
 
     if (ret == -1) {
-	a->errnum = errno;
+	a->errnum = geterror();
 	a->errstr = NULL;
     } else {
 	a->errnum = 0;
