@@ -1,3 +1,8 @@
+2005-06-05  Steve Harris  <steve@plugin.org.uk>
+
+	* server.c: Path from Lorenz Schori to optionally disable IPV6 support
+	  with --disable-ipv6
+
 2005-03-31  Steve Harris  <steve@plugin.org.uk>
 
 	* server.c: Patch from Martin Habets that expands wildcarded patch to

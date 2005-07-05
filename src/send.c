@@ -14,6 +14,10 @@
  *  $Id$
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -310,15 +314,14 @@ static int resolve_address(lo_address a)
 	struct addrinfo *ai;
 	struct addrinfo hints;
 
-	hints.ai_flags = 0;
-	hints.ai_family = PF_UNSPEC;
+	memset(&hints, 0, sizeof(hints));
+#ifdef DISABLE_IPV6
+	hints.ai_family = PF_INET;
+#else
+    hints.ai_family = PF_UNSPEC;
+#endif	
 	hints.ai_socktype = a->proto == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
-	hints.ai_protocol = 0;
-	hints.ai_addrlen = 0;
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
-
+	
 	if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
 	    a->errnum = ret;
 	    a->errstr = gai_strerror(ret);
@@ -421,6 +424,7 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     if (a->proto == LO_UDP && lo_client_sockets.udp) {
 	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
+printf("XXX %p -> %d\n", a->ai->ai_addr, ret);
     } else {
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
     }

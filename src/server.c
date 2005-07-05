@@ -14,6 +14,10 @@
  *  $Id$
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -158,6 +162,8 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     s->queued = NULL;
     s->socket = -1;
 
+	memset(&hints, 0, sizeof(hints));
+
     if (proto == LO_UDP) {
 	hints.ai_socktype = SOCK_DGRAM;
     } else if (proto == LO_TCP) {
@@ -201,13 +207,12 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	return NULL;
     }
 
-    hints.ai_flags = AI_PASSIVE;
+#ifdef DISABLE_IPV6
+    hints.ai_family = PF_INET;
+#else
     hints.ai_family = PF_UNSPEC;
-    hints.ai_protocol = 0;
-    hints.ai_addrlen = 0;
-    hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+#endif
+    hints.ai_flags = AI_PASSIVE;
 
     if (!port) {
 	service = pnum;

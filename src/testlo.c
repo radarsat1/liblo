@@ -283,12 +283,12 @@ int main()
     lo_server_thread_start(st);
 
     if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
-	printf("OSC error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
+	printf("OSC error A %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
 	exit(1);
     }
 
     if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
-	printf("OSC error %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
+	printf("OSC error B %d: %s\n", lo_address_errno(a), lo_address_errstr(a));
 	exit(1);
     }
 
@@ -601,6 +601,7 @@ int lots_handler(const char *path, const char *types, lo_arg **argv, int argc,
 	 argv[6]->t.frac == 0x80000000);
     TEST(types[7] == 'd' && argv[7]->d == 0.9999);
     TEST(types[8] == 'S' && !strcmp(&argv[8]->S, "sym"));
+printf("char: %d\n", argv[9]->c);
     TEST(types[9] == 'c' && argv[9]->c == 'X');
     TEST(types[10] == 'c' && argv[10]->c == 'Y');
     TEST(types[11] == 'T');

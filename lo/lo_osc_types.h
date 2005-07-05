@@ -107,7 +107,7 @@ typedef union {
 	  * distinguish strings and symbols. */
     char       S;
 	/** Standard C, 8 bit, char. */
-    char       c;
+    uint32_t   c;
 	/** A 4 byte MIDI packet. */
     uint8_t    m[4];
 	/** OSC TimeTag value. */
