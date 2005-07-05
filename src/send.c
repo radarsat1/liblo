@@ -424,7 +424,6 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     if (a->proto == LO_UDP && lo_client_sockets.udp) {
 	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
-printf("XXX %p -> %d\n", a->ai->ai_addr, ret);
     } else {
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
     }

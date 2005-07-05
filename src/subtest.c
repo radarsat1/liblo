@@ -87,6 +87,8 @@ int subtest_handler(const char *path, const char *types, lo_arg **argv,
 #endif
 	lo_send(a, "/subtest-reply", "i", 0xbaa+i);
     }
+
+    return 0;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */
