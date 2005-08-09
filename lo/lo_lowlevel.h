@@ -396,6 +396,17 @@ lo_method lo_server_add_method(lo_server s, const char *path,
                                void *user_data);
 
 /**
+ * \brief Delete an OSC method from the specifed server.
+ *
+ * \param s The server the method is to be removed from.
+ * \param path The OSC path of the method to delete. If NULL is passed the
+ * method will match the generic handler.
+ * \param typespec The typespec the method accepts.
+ */
+void lo_server_del_method(lo_server s, const char *path,
+                               const char *typespec);
+
+/**
  * \brief Return the file descriptor of the server socket.
  *
  * If the server protocol supports exposing the server's underlying

@@ -158,6 +158,16 @@ void lo_server_thread_free(lo_server_thread st);
 lo_method lo_server_thread_add_method(lo_server_thread st, const char *path,
                                const char *typespec, lo_method_handler h,
                                void *user_data);
+/**
+ * \brief Delete an OSC method from the specifed server thread.
+ *
+ * \param st The server thread the method is to be removed from.
+ * \param path The OSC path of the method to delete. If NULL is passed the
+ * method will match the generic handler.
+ * \param typespec The typespec the method accepts.
+ */
+void lo_server_thread_del_method(lo_server_thread st, const char *path,
+				 const char *typespec);
 
 /**
  * \brief Start the server thread

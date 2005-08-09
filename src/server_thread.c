@@ -70,6 +70,12 @@ lo_method lo_server_thread_add_method(lo_server_thread st, const char *path,
     return lo_server_add_method(st->s, path, typespec, h, user_data);
 }
 
+void lo_server_thread_del_method(lo_server_thread st, const char *path,
+			       const char *typespec)
+{
+    lo_server_del_method(st->s, path, typespec);
+}
+
 void lo_server_thread_start(lo_server_thread st)
 {
     if (!st->active) {

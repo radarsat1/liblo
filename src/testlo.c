@@ -442,6 +442,10 @@ int main()
 	exit(1);
     }
 
+    /* Delete methods */
+    lo_server_thread_del_method(st, "/coerce", "dfhiSs");
+    lo_server_del_method(s, NULL, NULL);
+
     lo_address_free(a);
     lo_server_free(s);
     free(server_url);

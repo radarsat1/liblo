@@ -1,3 +1,8 @@
+2005-08-09  Martin Habets  <mhabets@users.sourceforge.net>
+
+	* server.c: Add lo_server_del_method()
+	* server_thread.c: Add lo_server_thread_del_method()
+
 2005-06-05  Steve Harris  <steve@plugin.org.uk>
 
 	* server.c: Path from Lorenz Schori to optionally disable IPV6 support

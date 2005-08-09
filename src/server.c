@@ -940,6 +940,43 @@ lo_method lo_server_add_method(lo_server s, const char *path,
     return m;
 }
 
+void lo_server_del_method(lo_server s, const char *path,
+			  const char *typespec)
+{
+    lo_method it, prev;
+    int pattern = 0;
+
+    if (!s->first) return;
+    if (path) pattern = strpbrk(path, " #*,?[]{}") != NULL;
+
+    it = s->first;
+    prev = it;
+    while (it) {
+	/* If paths match or handler is wildcard */
+	if ((it->path == path) ||
+	    (path && it->path && !strcmp(path, it->path)) ||
+	    (pattern && lo_pattern_match(it->path, path))) {
+	    /* If types match or handler is wildcard */
+	    if ((it->typespec == typespec) ||
+		(typespec && it->typespec && !strcmp(typespec, it->typespec))
+	        ) {
+		/* Take care when removing the head. */
+		if (it == s->first) {
+		    s->first = it->next;
+		} else {
+		    prev->next = it->next;
+		}
+		free((void *)it->path);
+		free((void *)it->typespec);
+		free(it);
+		it = prev;
+	    }
+	}
+	prev = it;
+	if (it) it = it->next;
+    }
+}
+
 int lo_server_get_socket_fd(lo_server s)
 {
     if (s->protocol != LO_UDP &&
