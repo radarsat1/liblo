@@ -28,7 +28,7 @@ AC_SUBST(LO_SO_VERSION)
 
 # disable support for ipv6.
 AC_ARG_ENABLE(ipv6, [  --disable-ipv6          Disable ipv6 support],want_ipv6=no,)
-if test $want_ipv6 = "no"; then
+if test "$want_ipv6" = "no"; then
 	AC_DEFINE(DISABLE_IPV6, 1, Define this to disable ipv6.)
 fi
 

@@ -1,3 +1,7 @@
+2005-08-11  Martin Habets  <mhabets@users.sourceforge.net>
+
+	* message.c: Fix LO_CHAR sending on big endian architectures.
+
 2005-08-09  Martin Habets  <mhabets@users.sourceforge.net>
 
 	* server.c: Add lo_server_del_method()

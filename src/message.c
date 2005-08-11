@@ -164,7 +164,7 @@ void lo_message_add_char(lo_message m, char a)
     lo_pcast32 b;
     int32_t *nptr = lo_message_add_data(m, sizeof(int32_t));
 
-    b.i = a;
+    b.c = a;
 
     lo_message_add_typechar(m, LO_CHAR);
     *nptr = lo_htoo32(b.nl);
@@ -426,7 +426,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 	break;
 
     case LO_CHAR:
-	printf("'%c'", (char)val32.i);
+	printf("'%c'", (char)val32.c);
 	break;
 
     case LO_MIDI:

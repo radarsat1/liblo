@@ -90,6 +90,7 @@ typedef struct _lo_strlist {
 typedef union {
     int32_t  i;
     float    f;
+    char     c;
     uint32_t nl;
 } lo_pcast32;
     
