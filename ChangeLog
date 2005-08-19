@@ -1,3 +1,8 @@
+2005-08-19  Steve Harris  <steve@plugin.org.uk>
+
+	* address.c, testlo.c: Added patch from Dave Robillard to fix parsing
+	  of IPV6 addresses in URLs.
+
 2005-08-11  Martin Habets  <mhabets@users.sourceforge.net>
 
 	* message.c: Fix LO_CHAR sending on big endian architectures.
@@ -6,6 +11,14 @@
 
 	* server.c: Add lo_server_del_method()
 	* server_thread.c: Add lo_server_thread_del_method()
+
+2005-07-26  Steve Harris  <steve@plugin.org.uk>
+
+	* bundle.c, server.c: Endianess fixed from Topher Cyll for bundle
+	  timestamps.
+
+	  # Bundle delivery timing is still not right, theres an arithmetic
+	  # errorsomewhere, but I cant see it.
 
 2005-06-05  Steve Harris  <steve@plugin.org.uk>
 

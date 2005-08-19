@@ -48,6 +48,6 @@ void lo_timetag_now(lo_timetag *t)
 
 	gettimeofday(&tv, NULL);
 	t->sec = tv.tv_sec + JAN_1970;
-	t->frac = tv.tv_usec * 4294.967296;
+	t->frac = tv.tv_usec * 4294.967295;
 #endif
 }

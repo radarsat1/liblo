@@ -182,12 +182,11 @@ char *lo_url_get_protocol(const char *url)
 	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
 		"assuming UDP.\n");
         ret = strdup("udp");
-    }
-    else if (sscanf(url, "osc.%[^:/]", protocol)) {
+    } else if (sscanf(url, "osc.%[^:/[]", protocol)) {
         ret = strdup(protocol);
+    } else {
+	ret = NULL;
     }
-    else
-        ret = NULL;
 
 #ifdef WIN32
     free(protocol);
@@ -224,6 +223,12 @@ char *lo_url_get_port(const char *url)
     }
     if (sscanf(url, "osc.%*[^:]://%*[^:]:%[0-9]", port)) {
         return port;
+    }
+    if (sscanf(url, "osc://[%*[^]]]:%[0-9]", port)) {
+	return port;
+    }
+    if (sscanf(url, "osc.%*[^:]://[%*[^]]]:%[0-9]", port)) {
+	return port;
     }
 
     /* doesnt look like an OSC URL with port number */

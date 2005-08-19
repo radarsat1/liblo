@@ -75,7 +75,7 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size)
     int32_t *bes;
     int i;
     char *pos;
-    lo_pcast64 be;
+    lo_pcast32 be;
 
     if (!b) {
 	return NULL;
@@ -93,11 +93,13 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size)
     pos = to;
     strcpy(pos, "#bundle");
     pos += 8;
-
-    be.tt = b->ts;
-    be.nl = lo_htoo64(be.nl);
-    memcpy(pos, &be, 8);
-    pos += 8;
+	
+    be.nl = lo_htoo32(b->ts.sec);
+    memcpy(pos, &be, 4);
+    pos += 4;
+    be.nl = lo_htoo32(b->ts.frac);
+    memcpy(pos, &be, 4);
+    pos += 4;
 
     for (i = 0; i < b->len; i++) {
 	lo_message_serialise(b->msgs[i], b->paths[i], pos + 4, &skip);

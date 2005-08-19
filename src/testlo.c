@@ -60,6 +60,11 @@ static int subtest_reply_count = 0;
 
 char testdata[5] = "ABCDE";
 
+static int jitter_count = 0;
+static float jitter_total = 0.0f;
+static float jitter_max = 0.0f;
+static float jitter_min = 1000.0f;
+
 void exitcheck(void);
 
 void error(int num, const char *m, const char *path);
@@ -201,6 +206,16 @@ int main()
 	printf("passed lo_url_get_protocol() test\n");
     }
     free(protocol);
+    
+    protocol = lo_url_get_protocol("osc.udp://[::ffff:localhost]:9999/a/path/is/here");
+    if (strcmp(protocol, "udp")) {
+	printf("failed lo_url_get_protocol() test1\n");
+	printf("'%s' != 'udp'\n", protocol);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol() test (IPv6)\n");
+    }
+    free(protocol);
 
     host = lo_url_get_hostname("osc.udp://foo.example.com:9999/a/path/is/here");
     if (strcmp(host, "foo.example.com")) {
@@ -231,6 +246,16 @@ int main()
 	printf("passed lo_url_get_port() test\n");
     }
     free(port);
+    
+    port = lo_url_get_port("osc.udp://[::ffff:127.0.0.1]:9999/a/path/is/here");
+    if (strcmp(port, "9999")) {
+	printf("failed lo_url_get_port() test1\n");
+	printf("'%s' != '9999'\n", port);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_port() test (IPv6)\n");
+    }
+    free(port);
     printf("\n");
 
     if (lo_blob_datasize(btest) != 5 || lo_blobsize(btest) != 12) {
@@ -255,7 +280,7 @@ int main()
 
     lo_server_thread_add_method(st, "/bundle", NULL,
 				bundle_handler, NULL);
-    lo_server_thread_add_method(st, "/jitter", "t",
+    lo_server_thread_add_method(st, "/jitter", "ti",
 				jitter_handler, NULL);
 
     lo_server_thread_add_method(st, "/pattern/foo", NULL,
@@ -386,24 +411,21 @@ int main()
 
     lo_send_timestamped(a, sched, "/bundle", "s", "lo_send_timestamped() test");
 
-#if 0
+#define JITTER_ITS 25
     /* jitter tests */
     {
-	lo_timetag stamps[1000];
+	lo_timetag stamps[JITTER_ITS];
 	lo_timetag now;
 	int i;
 
-	for (i=0; i<1000; i++) {
+	for (i=0; i<JITTER_ITS; i++) {
 	    lo_timetag_now(&now);
 	    stamps[i] = now;
 	    stamps[i].sec += 1;
-	    stamps[i].frac += 0x8FFFFFFF;
-	    lo_send_timestamped(a, stamps[i], "/jitter", "t", stamps[i]);
+	    stamps[i].frac = rand();
+	    lo_send_timestamped(a, stamps[i], "/jitter", "ti", stamps[i], i);
 	}
     }
-#endif
-
-    lo_address_free(a);
 
 #ifdef WIN32
     Sleep(2000);
@@ -411,13 +433,15 @@ int main()
     sleep(2);
 #endif
 
+    lo_address_free(a);
+
     TEST(lo_server_thread_events_pending(st));
 
     while (lo_server_thread_events_pending(st)) {
 	printf("pending events, wait...\n");
 #ifdef WIN32
-    fflush(stdout);
-    Sleep(1000);
+	fflush(stdout);
+	Sleep(1000);
 #else
 	sleep(1);
 #endif
@@ -425,6 +449,12 @@ int main()
     
     TEST(bundle_count == 6);
     printf("\n");
+
+    printf("bundle timing jitter results:\n"
+	   "max jitter = %fs\n"
+	   "avg jitter = %fs\n"
+           "min jitter = %fs\n\n",
+           jitter_max, jitter_total/(float)jitter_count, jitter_min);
 
     server_url = lo_server_get_url(s);
 
@@ -643,12 +673,20 @@ int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 }
 
 int jitter_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 lo_message data, void *user_data)
+                 lo_message data, void *user_data)
 {
     lo_timetag now;
+    float jitter;
 
     lo_timetag_now(&now);
-    printf("jitter: %f\n", lo_timetag_diff(now, argv[0]->t));
+    jitter = fabs(lo_timetag_diff(now, argv[0]->t));
+    jitter_count++;
+    //printf("jitter: %f\n", jitter);
+    printf("%d expected: %x:%x received %x:%x\n", argv[1]->i, argv[0]->t.sec,
+	   argv[0]->t.frac, now.sec, now.frac);
+    jitter_total += jitter;
+    if (jitter > jitter_max) jitter_max = jitter;
+    if (jitter < jitter_min) jitter_min = jitter;
 
     return 0;
 }

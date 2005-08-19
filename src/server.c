@@ -552,13 +552,15 @@ again:
     if (!strcmp(path, "#bundle")) {
 	char *pos = types;
 	uint32_t len;
-	lo_pcast64 ats;
 	lo_timetag ts, now;
 
 	lo_timetag_now(&now);
-	ats.nl = lo_otoh64(*((uint64_t *)pos));
-	ts = ats.tt;
-	pos += 8;
+
+	ts.sec = lo_otoh32(*((uint32_t *)pos));
+	pos += 4;
+	ts.frac = lo_otoh32(*((uint32_t *)pos));
+	pos += 4;
+
 	while (pos - (char *)data < size) {
 	    len = lo_otoh32(*((uint32_t *)pos));
 	    pos += 4;
@@ -896,7 +898,7 @@ static int dispatch_queued(lo_server s)
 
 	s->queued = tailhead;
 	head = tailhead;
-    } while (head && lo_timetag_diff(disp_time, head->ts) < FLT_EPSILON);
+    } while (head && lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON);
 
     return 0;
 }
