@@ -1,9 +1,11 @@
-This is a lightweight, easy to use implementation of the OSC protocol (see
-http://www.cnmat.berkeley.edu/OpenSoundControl/ for details).
+Liblo is a lightweight library that provides an easy to use implementation of
+the OSC protocol (see http://www.cnmat.berkeley.edu/OpenSoundControl/ for
+details).
 
-Examples of use can be found in src/testlo.c
+http://plugin.org.uk/liblo/
 
-Steve Harris  2004-02-29  steve@plugin.org.uk
+Liblo is portable to most UNIX systems (including OSX) and Windows. It is
+released under the GNU General Public Licence.
 
 NOTICE FOR MAC OS X:
 Mac OS X defaults to ipv6 but most of the currently available OSC applications
