@@ -1,3 +1,8 @@
+2005-09-01  Steve Harris  <steve@plugin.org.uk>
+
+	* address.c, server.c: Added patches from Jesse Chappell and Dave
+	  Robillard to close various sockets when there no longer used.
+
 2005-08-19  Steve Harris  <steve@plugin.org.uk>
 
 	* address.c, testlo.c: Added patch from Dave Robillard to fix parsing

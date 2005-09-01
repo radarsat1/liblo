@@ -162,7 +162,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     s->queued = NULL;
     s->socket = -1;
 
-	memset(&hints, 0, sizeof(hints));
+    memset(&hints, 0, sizeof(hints));
 
     if (proto == LO_UDP) {
 	hints.ai_socktype = SOCK_DGRAM;
@@ -341,6 +341,7 @@ void lo_server_free(lo_server s)
 	lo_method it;
 	lo_method next;
 
+	if (s->socket != -1) close(s->socket);
 	freeaddrinfo(s->ai);
 	free(s->hostname);
 	free(s->path);
@@ -945,7 +946,7 @@ lo_method lo_server_add_method(lo_server s, const char *path,
 void lo_server_del_method(lo_server s, const char *path,
 			  const char *typespec)
 {
-    lo_method it, prev;
+    lo_method it, prev, next;
     int pattern = 0;
 
     if (!s->first) return;
@@ -954,6 +955,9 @@ void lo_server_del_method(lo_server s, const char *path,
     it = s->first;
     prev = it;
     while (it) {
+	/* incase we free it */
+	next = it->next;
+
 	/* If paths match or handler is wildcard */
 	if ((it->path == path) ||
 	    (path && it->path && !strcmp(path, it->path)) ||
@@ -968,6 +972,7 @@ void lo_server_del_method(lo_server s, const char *path,
 		} else {
 		    prev->next = it->next;
 		}
+		next = it->next;
 		free((void *)it->path);
 		free((void *)it->typespec);
 		free(it);
@@ -975,7 +980,7 @@ void lo_server_del_method(lo_server s, const char *path,
 	    }
 	}
 	prev = it;
-	if (it) it = it->next;
+	if (it) it = next;
     }
 }
 
