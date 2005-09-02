@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -131,7 +132,6 @@ char *lo_address_get_url(lo_address a)
 void lo_address_free(lo_address a)
 {
     if (a) {
-	if (a->socket != -1) close(a->socket);
 	free(a->host);
 	free(a->port);
 	if (a->ai && a->ai != (void *)1) {

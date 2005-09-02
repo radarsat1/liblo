@@ -1,3 +1,8 @@
+2005-09-02  Steve Harris  <steve@plugin.org.uk>
+
+	* address.c, server.c: Added patch from Martin Habets that redoes
+	  parts of previous patches...
+
 2005-09-01  Steve Harris  <steve@plugin.org.uk>
 
 	* address.c, server.c: Added patches from Jesse Chappell and Dave

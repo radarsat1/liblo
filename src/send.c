@@ -427,7 +427,7 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     } else {
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
     }
-    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+    if (a->proto == LO_TCP) {
 	//XXX not sure this is the right behviour
 	close(a->socket);
     }
@@ -484,7 +484,7 @@ int lo_send_bundle(lo_address a, lo_bundle b)
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
     }
 
-    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+    if (a->proto == LO_TCP) {
 	close(a->socket);
     }
 

@@ -103,7 +103,7 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size)
 
     for (i = 0; i < b->len; i++) {
 	lo_message_serialise(b->msgs[i], b->paths[i], pos + 4, &skip);
-	bes = (uint32_t *)pos;
+	bes = (int32_t *)pos;
 	*bes = lo_htoo32(skip);
 	pos += skip + 4;
 

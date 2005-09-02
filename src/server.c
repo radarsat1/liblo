@@ -469,6 +469,7 @@ int lo_server_recv_noblock(lo_server s, int timeout)
 	return lo_server_recv(s);
     }
 #endif
+
     return 0;
 }
 
@@ -516,7 +517,7 @@ again:
 	    return dispatch_queued(s);
 	}
 #else
-    ps.fd = s->socket;
+	ps.fd = s->socket;
 	ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
 	ps.revents = 0;
 	poll(&ps, 1, (int)(sched_time * 1000.0));
