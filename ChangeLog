@@ -1,3 +1,7 @@
+2005-09-04  Steve Harris  <steve@plugin.org.uk>
+
+	* Released 0.22
+
 2005-09-02  Steve Harris  <steve@plugin.org.uk>
 
 	* address.c, server.c: Added patch from Martin Habets that redoes
@@ -32,7 +36,7 @@
 
 2005-06-05  Steve Harris  <steve@plugin.org.uk>
 
-	* server.c: Path from Lorenz Schori to optionally disable IPV6 support
+	* server.c: Patch from Lorenz Schori to optionally disable IPV6 support
 	  with --disable-ipv6
 
 2005-03-31  Steve Harris  <steve@plugin.org.uk>
