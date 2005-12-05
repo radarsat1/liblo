@@ -219,8 +219,13 @@ int lo_server_thread_get_port(lo_server_thread st);
  */
 char *lo_server_thread_get_url(lo_server_thread st);
 
+/**
+ * \brief Return the lo_server for a lo_server_thread
+ *
+ * This function is useful for passing a thread's lo_server 
+ * to lo_send_from().
+ */
 lo_server lo_server_thread_get_server(lo_server_thread st);
-
 
 /** \brief Return true if there are scheduled events (eg. from bundles) waiting
  * to be dispatched by the thread */
