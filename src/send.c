@@ -53,9 +53,10 @@ int initWSock();
 #endif
 
 static int resolve_address(lo_address a);
-
+static int send_data(lo_address a, char *data, const size_t data_len);
 static void add_varargs(lo_address t, lo_message m, va_list ap,
 			const char *types, const char *file, int line);
+
 
 /* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
  * function with appropraite values for file and line */
@@ -94,6 +95,7 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
 {
     va_list ap;
     int ret;
+
 
     lo_message msg = lo_message_new();
     lo_bundle b = lo_bundle_new(ts);
@@ -388,22 +390,18 @@ static int resolve_address(lo_address a)
     return 0;
 }
 
-int lo_send_message(lo_address a, const char *path, lo_message msg)
+static int send_data(lo_address a, char *data, const size_t data_len)
 {
-    const size_t data_len = lo_message_length(msg, path);
-    char *data;
     int ret;
 
 #ifdef WIN32
     if(!initWSock()) return -1;
 #endif
 
-    if (lo_strsize(path) + lo_strsize(msg->types) + msg->datalen >
-	LO_MAX_MSG_SIZE) {
+    if (data_len > LO_MAX_MSG_SIZE) {
 	a->errnum = 99;
 	a->errstr = "Attempted to send message in excess of maximum "
 		    "message size";
-
 	return -1;
     }
 
@@ -413,7 +411,6 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 	    return ret;
 	}
     }
-    data = lo_message_serialise(msg, path, NULL, NULL);
 
     if (a->proto == LO_TCP) {
 	int32_t size;
@@ -427,12 +424,11 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     } else {
 	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
     }
+
     if (a->proto == LO_TCP) {
-	//XXX not sure this is the right behviour
+    	//XXX not sure this is the right behviour
 	close(a->socket);
     }
-
-    free(data);
 
     if (ret == -1) {
 	a->errnum = geterror();
@@ -445,58 +441,32 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
     return ret;
 }
 
+
+int lo_send_message(lo_address a, const char *path, lo_message msg)
+{
+    const size_t data_len = lo_message_length(msg, path);
+    char *data = lo_message_serialise(msg, path, NULL, NULL);
+
+    // Send the message
+    int ret = send_data( a, data, data_len );
+
+    // Free the memory allocated by lo_message_serialise
+    if (data) free( data );
+
+    return ret;
+}
+
+
 int lo_send_bundle(lo_address a, lo_bundle b)
 {
     const size_t data_len = lo_bundle_length(b);
-    char *data;
-    int ret;
+    char *data = lo_bundle_serialise(b, NULL, NULL);
 
-#ifdef WIN32
-    if(!initWSock()) return -1;
-#endif
+    // Send the bundle
+    int ret = send_data( a, data, data_len );
 
-    if (data_len > LO_MAX_MSG_SIZE) {
-	a->errnum = 99;
-	a->errstr = "Attempted to send bundle in excess of maximum "
-		    "message size";
-
-	return -1;
-    }
-
-    if (!a->ai || a->proto == LO_TCP) {
-	ret = resolve_address(a);
-	if (ret) {
-	    return ret;
-	}
-    }
-    data = lo_bundle_serialise(b, NULL, NULL);
-
-    if (a->proto == LO_TCP) {
-	int32_t size;
-
-	size = htonl(data_len); 
-	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
-    }
-    if (a->proto == LO_UDP && lo_client_sockets.udp) {
-	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
-	       a->ai->ai_addr, a->ai->ai_addrlen);
-    } else {
-	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
-    }
-
-    if (a->proto == LO_TCP) {
-	close(a->socket);
-    }
-
-    free(data);
-
-    if (ret == -1) {
-	a->errnum = geterror();
-	a->errstr = NULL;
-    } else {
-	a->errnum = 0;
-	a->errstr = NULL;
-    }
+    // Free the memory allocated by lo_bundle_serialise
+    if (data) free( data );
 
     return ret;
 }
