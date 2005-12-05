@@ -462,7 +462,7 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
 	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
     }
     
-    if (from) {
+    if (a->proto == LO_UDP && from) {
 	ret = sendto(from->socket, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
     } else if (a->proto == LO_UDP && lo_client_sockets.udp) {
