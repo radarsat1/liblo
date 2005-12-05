@@ -268,7 +268,7 @@ int main()
 
     /* add method that will match the path /foo/bar, with two numbers, coerced
      * to float and int */
-    lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler, NULL);
+    lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler, lo_server_thread_get_server(st));
 
     lo_server_thread_add_method(st, "/reply", "s", reply_handler, NULL);
 
@@ -586,10 +586,12 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
 int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data)
 {
+    lo_server serv = (lo_server)user_data;
     lo_address src = lo_message_get_source(data);
     char *url = lo_address_get_url(src);
+    printf("Address of us: %s\n", lo_server_get_url(serv));
     printf("%s <- f:%f, i:%d\n", path, argv[0]->f, argv[1]->i);
-    if (lo_send(src, "/reply", "s", "a reply") == -1) {
+    if (lo_send_from(src, serv, LO_TT_IMMEDIATE, "/reply", "s", "a reply") == -1) {
 	printf("OSC reply error %d: %s\nSending to %s\n", lo_address_errno(src), lo_address_errstr(src), url);
 	exit(1);
     } else {
@@ -603,7 +605,9 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 int reply_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data)
 {
-    printf("Reply received\n");
+    lo_address src = lo_message_get_source(data);
+    char *url = lo_address_get_url(src);
+    printf("Reply received from %s\n", url);
     reply_count++;
 
     return 0;

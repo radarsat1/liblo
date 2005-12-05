@@ -43,6 +43,9 @@ extern "C" {
  */
 typedef long double lo_hires;
 
+
+
+
 /**
  * \brief send a lo_message object to target targ
  *
@@ -53,13 +56,41 @@ typedef long double lo_hires;
 int lo_send_message(lo_address targ, const char *path, lo_message msg);
 
 /**
+ * \brief send a lo_message object to target targ from address of serv
+ *
+ * This is slightly more efficient than lo_send if you want to send a lot of
+ * similar messages. The messages are constructed with the lo_message_new() and
+ * lo_message_add*() functions.
+ *
+ * \param targ The address to send the message to
+ * \param serv The server socket to send the message from
+ *              (can be NULL to use new socket)
+ * \param path The path to send the message to
+ * \param msg  The bundle itself
+ */
+int lo_send_message_from(lo_address targ, lo_server serv, 
+     const char *path, lo_message msg);
+
+/**
  * \brief send a lo_bundle object to address targ
  *
- * This is slightly more efficient than lo_send_bundled if you want to send a
- * lot of similar bundles. The bundles are constructed with the
+ * Bundles are constructed with the
  * lo_bundle_new() and lo_bundle_add_message() functions.
  */
 int lo_send_bundle(lo_address targ, lo_bundle b);
+
+/**
+ * \brief send a lo_bundle object to address targ from address of serv
+ *
+ * Bundles are constructed with the
+ * lo_bundle_new() and lo_bundle_add_message() functions.
+ *
+ * \param targ The address to send the bundle to
+ * \param serv The server socket to send the bundle from 
+ *              (can be NULL to use new socket)
+ * \param b    The bundle itself
+ */
+int lo_send_bundle_from(lo_address targ, lo_server serv, lo_bundle b);
 
 /**
  * \brief Create a new lo_message object
@@ -508,6 +539,11 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 /** \brief the real send_timestamped function (don't call directly) */
 int lo_send_timestamped_internal(lo_address t, const char *file, const int line,
      lo_timetag ts, const char *path, const char *types, ...);
+/** \brief the real lo_send_from function (don't call directly) */
+int lo_send_from_internal(lo_address targ, lo_server from, const char *file, 
+     const int line, const lo_timetag ts, 
+     const char *path, const char *types, ...);
+
 
 /** \brief Find the time difference between two timetags
  *

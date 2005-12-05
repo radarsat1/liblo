@@ -23,7 +23,8 @@
 extern "C" {
 #endif
 
-/* Maximum length of UDP messages in bytes */
+/* \brief Maximum length of UDP messages in bytes
+ */
 #define LO_MAX_MSG_SIZE 32768
 
 /* \brief A set of macros to represent different communications transports
@@ -43,6 +44,10 @@ extern "C" {
 
 #define lo_send_timestamped(targ, ts, path, types...) \
         lo_send_timestamped_internal(targ, __FILE__, __LINE__, ts, path, \
+		       	             types, LO_MARKER_A, LO_MARKER_B)
+
+#define lo_send_from(targ, from, ts, path, types...) \
+        lo_send_from_internal(targ, from, __FILE__, __LINE__, ts, path, \
 		       	             types, LO_MARKER_A, LO_MARKER_B)
 
 #ifdef __cplusplus

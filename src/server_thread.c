@@ -109,6 +109,11 @@ char *lo_server_thread_get_url(lo_server_thread st)
     return lo_server_get_url(st->s);
 }
 
+lo_server lo_server_thread_get_server(lo_server_thread st) 
+{
+    return st->s;
+}
+
 int lo_server_thread_events_pending(lo_server_thread st)
 {
     return lo_server_events_pending(st->s);

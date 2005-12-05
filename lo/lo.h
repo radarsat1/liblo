@@ -84,6 +84,30 @@ void lo_address_free(lo_address t);
 int lo_send(lo_address targ, const char *path, const char *type, ...);
 
 /**
+ * \brief Send a OSC formatted message to the address specified, 
+ * from the same socket as the specificied server.
+ *
+ * \param targ The target OSC address
+ * \param from The server to send message from   (can be NULL to use new socket)
+ * \param ts   The OSC timetag timestamp at which the message will be processed 
+ * (can be LO_TT_IMMEDIATE if you don't want to attach a timetag)
+ * \param path The OSC path the message will be delivered to
+ * \param type The types of the data items in the message, types are defined in
+ * lo_types_common.h
+ * \param ... The data values to be transmitted. The types of the arguments
+ * passed here must agree with the types specified in the type parameter.
+ *
+ * example:<br>
+ * serv = lo_server_new(NULL, err);<br>
+ * lo_server_add_method(serv, "/reply", "ss", reply_handler, NULL);
+ * lo_send_from(t, serv, LO_TT_IMMEDIATE, "/foo/bar", "ff", 0.1f, 23.0f);
+ *
+ * on success returns the number of bytes sent, returns -1 on failure.
+ */
+int lo_send_from(lo_address targ, lo_server from, lo_timetag ts, 
+	       		const char *path, const char *type, ...);
+
+/**
  * \brief Send a OSC formatted message to the address specified, scheduled to
  * be dispatch at some time in the future.
  *
@@ -98,7 +122,7 @@ int lo_send(lo_address targ, const char *path, const char *type, ...);
  * example:<br>
  * lo_timetag now;<br>
  * lo_timetag_now(&now);<br>
- * lo_send(t, now, "/foo/bar", "ff", 0.1f, 23.0f);
+ * lo_send_timestamped(t, now, "/foo/bar", "ff", 0.1f, 23.0f);
  *
  * on success returns the number of bytes sent, returns -1 on failure.
  */
@@ -194,6 +218,9 @@ int lo_server_thread_get_port(lo_server_thread st);
  * Return value must be free()'d to reclaim memory.
  */
 char *lo_server_thread_get_url(lo_server_thread st);
+
+lo_server lo_server_thread_get_server(lo_server_thread st);
+
 
 /** \brief Return true if there are scheduled events (eg. from bundles) waiting
  * to be dispatched by the thread */

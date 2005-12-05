@@ -53,9 +53,10 @@ int initWSock();
 #endif
 
 static int resolve_address(lo_address a);
-static int send_data(lo_address a, char *data, const size_t data_len);
+static int send_data(lo_address a, lo_server from, char *data, const size_t data_len);
 static void add_varargs(lo_address t, lo_message m, va_list ap,
 			const char *types, const char *file, int line);
+
 
 
 /* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
@@ -86,6 +87,7 @@ int lo_send_internal(lo_address t, const char *file, const int line,
     return ret;
 }
 
+
 /* Don't call lo_send_timestamped_internal directly, use lo_send_timestamped, a
  * macro wrapping this function with appropraite values for file and line */
 
@@ -95,7 +97,6 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
 {
     va_list ap;
     int ret;
-
 
     lo_message msg = lo_message_new();
     lo_bundle b = lo_bundle_new(ts);
@@ -118,6 +119,49 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
 
     return ret;
 }
+
+
+/* Don't call lo_send_from_internal directly, us macros wrapping this 
+ * function with appropraite values for file and line */
+
+int lo_send_from_internal(lo_address to, lo_server from, const char *file,
+                               	 const int line, lo_timetag ts,
+				 const char *path, const char *types, ...)
+{
+    lo_bundle b = NULL;
+    va_list ap;
+    int ret;
+    
+    lo_message msg = lo_message_new();
+    if (ts.sec || ts.frac) b = lo_bundle_new(ts);
+
+    // Clear any previous errors
+    to->errnum = 0;
+    to->errstr = NULL;
+
+    va_start(ap, types);
+    add_varargs(to, msg, ap, types, file, line);
+
+    if (to->errnum) {
+	if (b) lo_bundle_free(b);
+	lo_message_free(msg);
+	return to->errnum;
+    }
+
+    if (b) {
+	lo_bundle_add_message(b, path, msg);
+	ret = lo_send_bundle_from(to, from, b);
+    } else {
+	ret = lo_send_message_from(to, from, path, msg);
+    }
+    
+    // Free-up memory
+    lo_message_free(msg);
+    if (b) lo_bundle_free(b);
+
+    return ret;
+}
+
 
 #if 0
 
@@ -390,7 +434,7 @@ static int resolve_address(lo_address a)
     return 0;
 }
 
-static int send_data(lo_address a, char *data, const size_t data_len)
+static int send_data(lo_address a, lo_server from, char *data, const size_t data_len)
 {
     int ret;
 
@@ -412,13 +456,16 @@ static int send_data(lo_address a, char *data, const size_t data_len)
 	}
     }
 
+    // Send Length of the following data
     if (a->proto == LO_TCP) {
-	int32_t size;
-
-	size = htonl(data_len); 
+	int32_t size = htonl(data_len); 
 	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
     }
-    if (a->proto == LO_UDP && lo_client_sockets.udp) {
+    
+    if (from) {
+	ret = sendto(from->socket, data, data_len, MSG_NOSIGNAL,
+	       a->ai->ai_addr, a->ai->ai_addrlen);
+    } else if (a->proto == LO_UDP && lo_client_sockets.udp) {
 	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
     } else {
@@ -444,11 +491,16 @@ static int send_data(lo_address a, char *data, const size_t data_len)
 
 int lo_send_message(lo_address a, const char *path, lo_message msg)
 {
+    return lo_send_message_from( a, NULL, path, msg );
+}
+
+int lo_send_message_from(lo_address a, lo_server from, const char *path, lo_message msg)
+{
     const size_t data_len = lo_message_length(msg, path);
     char *data = lo_message_serialise(msg, path, NULL, NULL);
 
     // Send the message
-    int ret = send_data( a, data, data_len );
+    int ret = send_data( a, from, data, data_len );
 
     // Free the memory allocated by lo_message_serialise
     if (data) free( data );
@@ -459,11 +511,17 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 
 int lo_send_bundle(lo_address a, lo_bundle b)
 {
+    return lo_send_bundle_from( a, NULL, b );
+}
+
+
+int lo_send_bundle_from(lo_address a, lo_server from, lo_bundle b)
+{
     const size_t data_len = lo_bundle_length(b);
     char *data = lo_bundle_serialise(b, NULL, NULL);
 
     // Send the bundle
-    int ret = send_data( a, data, data_len );
+    int ret = send_data( a, from, data, data_len );
 
     // Free the memory allocated by lo_bundle_serialise
     if (data) free( data );
