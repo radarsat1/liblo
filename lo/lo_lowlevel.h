@@ -374,7 +374,7 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h);
  * \param port If using UDP then NULL may be passed to find an unused port.
  * Otherwise a decimal port number orservice name or may be passed.
  * If using UNIX domain sockets then a socket path should be passed here.
- * \param proto The protocol to use, should be one of LO_UDP, or LO_UNIX.
+ * \param proto The protocol to use, should be one of LO_UDP, LO_TCP or LO_UNIX.
  * \param err_h An error callback function that will be called if there is an
  * error in messge reception or server creation. Pass NULL if you do not want
  * error handling.
