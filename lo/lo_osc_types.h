@@ -81,7 +81,7 @@ typedef enum {
  * \brief Union used to read values from incoming messages.
  *
  * Types can generally be read using argv[n]->t where n is the argument number
- * and t is the type character, with the exception of strings and symbols whihc
+ * and t is the type character, with the exception of strings and symbols which
  * must be read with &argv[n]->t.
  */
 typedef union {
