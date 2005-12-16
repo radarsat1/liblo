@@ -417,7 +417,7 @@ int lo_server_recv(lo_server s);
  * \param typespec The typespec the method accepts. Incoming messages with
  * similar typespecs (e.g. ones with numerical types in the same position) will
  * be coerced to the typespec given here.
- * \param h The method handler callback function that will be called it a
+ * \param h The method handler callback function that will be called if a
  * matching message is received
  * \param user_data A value that will be passed to the callback function, h,
  * when its invoked matching from this method.
