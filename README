@@ -9,5 +9,5 @@ released under the GNU General Public Licence.
 
 NOTICE FOR MAC OS X:
 Mac OS X defaults to ipv6 but most of the currently available OSC applications
-like Pd and SuperCollider doesn't listen on ipv6 sockets. for now it's saver to
+like Pd and SuperCollider doesn't listen on ipv6 sockets. for now it's safer to
 turn off ipv6 support in liblo (using ./configure --disable-ipv6).
