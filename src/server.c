@@ -57,7 +57,7 @@ typedef struct {
     void *next;
 } queued_msg_list;
 
-struct lo_cs lo_client_sockets = {0, 0};
+struct lo_cs lo_client_sockets = {-1, -1};
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
@@ -678,12 +678,13 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	hostname[0] = '\0';
 	portname[0] = '\0';
     }
-
-    free(src->host);
-    free(src->port);
-
-    src->host = hostname;
-    src->port = portname;
+    
+    
+    // Store the source information in the lo_address
+    if (src->host) free(src->host);
+    if (src->host) free(src->port);
+    src->host = strdup(hostname);
+    src->port = strdup(portname);
     src->proto = s->protocol;
 
     for (it = s->first; it; it = it->next) {
@@ -822,12 +823,12 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 
     free(argv);
 
-    /* the address got assigned static stuff, hence not using address_free */
-    free(src);
 
     /* these are already part of data and will be freed later */
     msg->data = NULL;
     msg->types = NULL;
+    
+    lo_address_free(src);
     lo_message_free(msg);
 }
 

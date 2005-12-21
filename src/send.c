@@ -53,6 +53,7 @@ int initWSock();
 #endif
 
 static int resolve_address(lo_address a);
+static int create_socket(lo_address a);
 static int send_data(lo_address a, lo_server from, char *data, const size_t data_len);
 static void add_varargs(lo_address t, lo_message m, va_list ap,
 			const char *types, const char *file, int line);
@@ -352,10 +353,11 @@ static void add_varargs(lo_address t, lo_message msg, va_list ap,
     va_end(ap);
 }
 
+
 static int resolve_address(lo_address a)
 {
     int ret;
-
+    
     if (a->proto == LO_UDP || a->proto == LO_TCP) {
 	struct addrinfo *ai;
 	struct addrinfo hints;
@@ -364,41 +366,42 @@ static int resolve_address(lo_address a)
 #ifdef DISABLE_IPV6
 	hints.ai_family = PF_INET;
 #else
-    hints.ai_family = PF_UNSPEC;
+	hints.ai_family = PF_UNSPEC;
 #endif	
 	hints.ai_socktype = a->proto == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
 	
 	if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
 	    a->errnum = ret;
 	    a->errstr = gai_strerror(ret);
-	    freeaddrinfo(a->ai);
+	    freeaddrinfo(ai);
 	    a->ai = NULL;
-
 	    return -1;
 	}
+	
 	a->ai = ai;
+    }
 
-#if 0
-	if (a->proto == LO_UDP && lo_client_sockets.udp) {
-	    a->socket = lo_client_sockets.udp;
-	    
-// XXX this code doesnt work
-	} else if (a->proto == LO_TCP && lo_client_sockets.tcp) {
-	    a->socket = lo_client_sockets.tcp;
-	} else {
-#endif
-	a->socket = socket(ai->ai_family, hints.ai_socktype, 0);
+    return 0;
+}
 
-	if ((ret = connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
+static int create_socket(lo_address a)
+{
+    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+
+	a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
+	if (a->socket == -1) {
 	    a->errnum = geterror();
 	    a->errstr = NULL;
-	    //XXX freeaddrinfo(a->ai);
+	    return -1;
+	}
 
-	    return ret;
+	if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
+	    a->errnum = geterror();
+	    a->errstr = NULL;
+	    close(a->socket);
+	    a->socket = -1;
+	    return -1;
 	}
-#if 0
-	}
-#endif
     }
 #ifndef WIN32
     else if (a->proto == LO_UNIX) {
@@ -408,26 +411,23 @@ static int resolve_address(lo_address a)
 	if (a->socket == -1) {
 	    a->errnum = geterror();
 	    a->errstr = NULL;
-
 	    return -1;
 	}
 
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, a->port, 107);
 
-	if ((ret = connect(a->socket, (struct sockaddr *)&sa,
-			sizeof(sa))) < 0) {
+	if ((connect(a->socket, (struct sockaddr *)&sa, sizeof(sa))) < 0) {
 	    a->errnum = geterror();
 	    a->errstr = NULL;
-
+	    close(a->socket);
+	    a->socket = -1;
 	    return -1;
 	}
-	a->ai = (void *)1;
     } 
 #endif
     else {
-	/* unkonwn proto */
-
+	/* unknown proto */
 	return -2;
     }
 
@@ -436,7 +436,8 @@ static int resolve_address(lo_address a)
 
 static int send_data(lo_address a, lo_server from, char *data, const size_t data_len)
 {
-    int ret;
+    int ret=0;
+    int sock=-1;
 
 #ifdef WIN32
     if(!initWSock()) return -1;
@@ -448,33 +449,46 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
 		    "message size";
 	return -1;
     }
-
-    if (!a->ai || a->proto == LO_TCP) {
-	ret = resolve_address(a);
-	if (ret) {
-	    return ret;
-	}
+    
+    // Resolve the destination address, if not done already
+    if (!a->ai) {
+	ret = resolve_address( a );
+	if (ret) return ret;
     }
+
+    // Re-use existing socket?
+    if (from) {
+	sock = from->socket;
+    } else if (a->proto == LO_UDP && lo_client_sockets.udp!=-1) {
+	sock = lo_client_sockets.udp;
+    } else {
+	if (a->socket==-1) {
+	    ret = create_socket( a );
+	    if (ret) return ret;
+    	}
+	sock = a->socket;
+    }
+
+
 
     // Send Length of the following data
     if (a->proto == LO_TCP) {
 	int32_t size = htonl(data_len); 
-	ret = send(a->socket, &size, sizeof(size), MSG_NOSIGNAL); 
+	ret = send(sock, &size, sizeof(size), MSG_NOSIGNAL); 
     }
     
-    if (a->proto == LO_UDP && from) {
-	ret = sendto(from->socket, data, data_len, MSG_NOSIGNAL,
-	       a->ai->ai_addr, a->ai->ai_addrlen);
-    } else if (a->proto == LO_UDP && lo_client_sockets.udp) {
-	ret = sendto(lo_client_sockets.udp, data, data_len, MSG_NOSIGNAL,
+    // Send the data
+    if (a->proto == LO_UDP) {
+  	ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
     } else {
-	ret = send(a->socket, data, data_len, MSG_NOSIGNAL);
+	ret = send(sock, data, data_len, MSG_NOSIGNAL);
     }
 
     if (a->proto == LO_TCP) {
     	//XXX not sure this is the right behviour
 	close(a->socket);
+	a->socket=-1;
     }
 
     if (ret == -1) {

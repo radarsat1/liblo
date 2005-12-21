@@ -37,6 +37,7 @@ lo_address lo_address_new(const char *host, const char *port)
     lo_address a = calloc(1, sizeof(struct _lo_address));
 
     a->ai = NULL;
+	a->socket = -1;
     a->proto = LO_UDP;
     if (host) {
 	a->host = strdup(host);
@@ -88,6 +89,7 @@ lo_address lo_address_new_from_url(const char *url)
     free(protocol);
 
     a->ai = NULL;
+    a->socket = -1;
     a->host = lo_url_get_hostname(url);
     if (!a->host) {
 	a->host = strdup("localhost");
@@ -135,11 +137,9 @@ void lo_address_free(lo_address a)
 	if (a->socket != -1) {
 	    close(a->socket);
 	}
-	free(a->host);
-	free(a->port);
-	if (a->ai && a->ai != (void *)1) {
-	    freeaddrinfo(a->ai);
-	}
+	if (a->host) free(a->host);
+	if (a->port) free(a->port);
+	if (a->ai) freeaddrinfo(a->ai);
 	free(a);
     }
 }
