@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <strings.h>
 #include <unistd.h>
 
 #include "lo/lo.h"
