@@ -86,7 +86,7 @@ void lo_server_thread_start(lo_server_thread st)
 	// Create the server thread
 	result = pthread_create(&(st->thread), NULL, (void *)&thread_func, st);
 	if (result) {
-	    fprintf(stderr, "Failed to create thread: pthread_create() returned %d\n", result);
+	    fprintf(stderr, "Failed to create thread: pthread_create() returned %d\n", strerror(result));
 	}
 	
     }
@@ -94,13 +94,18 @@ void lo_server_thread_start(lo_server_thread st)
 
 void lo_server_thread_stop(lo_server_thread st)
 {
+    int result;
+
     if (st->active) {
 	// Signal thread to stop
 	st->active = 0;
 	
 	// pthread_join waits for thread to terminate 
 	// and then releases the thread's resources
-	pthread_join( st->thread, NULL );
+	result = pthread_join( st->thread, NULL );
+	if (result) {
+	    fprintf(stderr, "Failed to stop thread: pthread_join() returned %d\n", strerror(result));
+	}
     }
 }
 

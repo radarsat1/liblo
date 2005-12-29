@@ -1,3 +1,7 @@
+2005-12-29  Nicholas Humfrey  <njh@aelius.com>
+
+	* Fixed pthread resource leak, when stopping thread
+
 2005-12-21  Nicholas Humfrey  <njh@aelius.com>
 
 	* Fixed bug where sockets weren't closed when replying to messages
