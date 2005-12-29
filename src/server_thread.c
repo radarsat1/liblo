@@ -56,7 +56,6 @@ void lo_server_thread_free(lo_server_thread st)
     if (st) {
 	if (st->active) {
 	    lo_server_thread_stop(st);
-	    /* pthread_cancel(st->thread); */
 	}
 	lo_server_free(st->s);
     }
@@ -78,24 +77,30 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
 
 void lo_server_thread_start(lo_server_thread st)
 {
+    int result;
+	
     if (!st->active) {
 	st->active = 1;
 	st->done = 0;
-	pthread_create(&(st->thread), NULL, (void *)&thread_func, st);
+	
+	// Create the server thread
+	result = pthread_create(&(st->thread), NULL, (void *)&thread_func, st);
+	if (result) {
+	    fprintf(stderr, "Failed to create thread: pthread_create() returned %d\n", result);
+	}
+	
     }
 }
 
 void lo_server_thread_stop(lo_server_thread st)
 {
     if (st->active) {
+	// Signal thread to stop
 	st->active = 0;
-	while (!st->done) {
-#ifdef WIN32
-        Sleep(1);
-#else
-	    usleep(1000);
-#endif
-	}
+	
+	// pthread_join waits for thread to terminate 
+	// and then releases the thread's resources
+	pthread_join( st->thread, NULL );
     }
 }
 
@@ -127,6 +132,8 @@ static void thread_func(void *data)
 	lo_server_recv_noblock(st->s, 10);
     }
     st->done = 1;
+    
+    pthread_exit(NULL);
 }
 
 void lo_server_thread_pp(lo_server_thread st)
