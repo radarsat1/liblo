@@ -466,11 +466,14 @@ int lo_server_get_port(lo_server s);
  */
 char *lo_server_get_url(lo_server s);
 
-/** \brief Return true if there are scheduled events (eg. from bundles) waiting
- *  * to be dispatched by the server */
+/** 
+ * \brief Return true if there are scheduled events (eg. from bundles) 
+ * waiting to be dispatched by the server
+ */
 int lo_server_events_pending(lo_server s);
 
-/** \brief Return the time in seconds until the next scheduled event.
+/** 
+ * \brief Return the time in seconds until the next scheduled event.
  *
  * If the delay is greater than 100 seconds then it will return 100.0.
  */
