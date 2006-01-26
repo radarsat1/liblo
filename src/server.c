@@ -207,10 +207,10 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	return NULL;
     }
 
-#ifdef DISABLE_IPV6
-    hints.ai_family = PF_INET;
-#else
+#ifdef ENABLE_IPV6
     hints.ai_family = PF_UNSPEC;
+#else
+    hints.ai_family = PF_INET;
 #endif
     hints.ai_flags = AI_PASSIVE;
 

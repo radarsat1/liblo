@@ -1,3 +1,8 @@
+2006-01-26  Nicholas Humfrey  <njh@aelius.com>
+
+	* IPv6 is now disabled by default
+	* Released version 0.23
+
 2005-12-29  Nicholas Humfrey  <njh@aelius.com>
 
 	* Fixed pthread resource leak, when stopping thread

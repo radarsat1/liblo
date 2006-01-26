@@ -363,10 +363,10 @@ static int resolve_address(lo_address a)
 	struct addrinfo hints;
 
 	memset(&hints, 0, sizeof(hints));
-#ifdef DISABLE_IPV6
-	hints.ai_family = PF_INET;
-#else
+#ifdef ENABLE_IPV6
 	hints.ai_family = PF_UNSPEC;
+#else
+	hints.ai_family = PF_INET;
 #endif	
 	hints.ai_socktype = a->proto == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
 	
