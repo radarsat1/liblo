@@ -38,7 +38,7 @@ lo_address lo_address_new(const char *host, const char *port)
 
     a->ai = NULL;
 	a->socket = -1;
-    a->proto = LO_UDP;
+    a->protocol = LO_UDP;
     if (host) {
 	a->host = strdup(host);
     } else {
@@ -68,14 +68,14 @@ lo_address lo_address_new_from_url(const char *url)
     if (!protocol) {
 	return NULL;
     } else if (!strcmp(protocol, "udp")) {
-	a->proto = LO_UDP;
+	a->protocol = LO_UDP;
 	a->port = lo_url_get_port(url);
     } else if (!strcmp(protocol, "tcp")) {
-	a->proto = LO_TCP;
+	a->protocol = LO_TCP;
 	a->port = lo_url_get_port(url);
 #ifndef WIN32
     } else if (!strcmp(protocol, "unix")) {
-	a->proto = LO_UNIX;
+	a->protocol = LO_UNIX;
 	a->port = lo_url_get_path(url);
 #endif
     } else {
@@ -100,13 +100,46 @@ lo_address lo_address_new_from_url(const char *url)
 
 const char *lo_address_get_hostname(lo_address a)
 {
+    if (!a) {
+	return NULL;
+    }
+
     return a->host;
+}
+
+int lo_address_get_protocol(lo_address a)
+{
+    if (!a) {
+	return -1;
+    }
+
+    return a->protocol;
 }
 
 const char *lo_address_get_port(lo_address a)
 {
+    if (!a) {
+	return NULL;
+    }
+
     return a->port;
 }
+
+static const char* get_protocol_name(int proto)
+{
+    switch(proto) {
+	case LO_UDP:
+	    return "udp";
+	case LO_TCP:
+	    return "tcp";
+#ifndef WIN32 
+	case LO_UNIX:
+	    return "unix";
+#endif
+    }
+    return NULL;
+}
+
 
 char *lo_address_get_url(lo_address a)
 {
@@ -120,13 +153,15 @@ char *lo_address_get_url(lo_address a)
     } else {
 	fmt = "osc.%s://%s:%s/";
     }
-    ret = snprintf(NULL, 0, fmt, "udp", a->host, a->port);
+    ret = snprintf(NULL, 0, fmt, 
+	    get_protocol_name(a->protocol), a->host, a->port);
     if (ret <= 0) {
 	/* this libc is not C99 compliant, guess a size */
 	ret = 1023;
     }
     buf = malloc((ret + 2) * sizeof(char));
-    snprintf(buf, ret+1, fmt, "udp", a->host, a->port);
+    snprintf(buf, ret+1, fmt,
+	get_protocol_name(a->protocol), a->host, a->port);
 
     return buf;
 }
@@ -171,17 +206,12 @@ char *lo_url_get_protocol(const char *url)
 {
     char *protocol,*ret;
 
-
     if (!url) {
 	return NULL;
     }
 
-#ifdef WIN32
     protocol = malloc(strlen(url));
-#else
-    protocol = alloca(strlen(url));
-#endif
-
+    
     if (sscanf(url, "osc://%s", protocol)) {
 	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
 		"assuming UDP.\n");
@@ -192,9 +222,8 @@ char *lo_url_get_protocol(const char *url)
 	ret = NULL;
     }
 
-#ifdef WIN32
     free(protocol);
-#endif
+
     return ret;
 }
 

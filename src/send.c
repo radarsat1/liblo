@@ -358,7 +358,7 @@ static int resolve_address(lo_address a)
 {
     int ret;
     
-    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
 	struct addrinfo *ai;
 	struct addrinfo hints;
 
@@ -368,7 +368,7 @@ static int resolve_address(lo_address a)
 #else
 	hints.ai_family = PF_INET;
 #endif	
-	hints.ai_socktype = a->proto == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
+	hints.ai_socktype = a->protocol == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
 	
 	if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
 	    a->errnum = ret;
@@ -386,7 +386,7 @@ static int resolve_address(lo_address a)
 
 static int create_socket(lo_address a)
 {
-    if (a->proto == LO_UDP || a->proto == LO_TCP) {
+    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
 
 	a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
 	if (a->socket == -1) {
@@ -404,7 +404,7 @@ static int create_socket(lo_address a)
 	}
     }
 #ifndef WIN32
-    else if (a->proto == LO_UNIX) {
+    else if (a->protocol == LO_UNIX) {
 	struct sockaddr_un sa;
 
 	a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
@@ -427,7 +427,7 @@ static int create_socket(lo_address a)
     } 
 #endif
     else {
-	/* unknown proto */
+	/* unknown protocol */
 	return -2;
     }
 
@@ -459,7 +459,7 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
     // Re-use existing socket?
     if (from) {
 	sock = from->socket;
-    } else if (a->proto == LO_UDP && lo_client_sockets.udp!=-1) {
+    } else if (a->protocol == LO_UDP && lo_client_sockets.udp!=-1) {
 	sock = lo_client_sockets.udp;
     } else {
 	if (a->socket==-1) {
@@ -472,20 +472,20 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
 
 
     // Send Length of the following data
-    if (a->proto == LO_TCP) {
+    if (a->protocol == LO_TCP) {
 	int32_t size = htonl(data_len); 
 	ret = send(sock, &size, sizeof(size), MSG_NOSIGNAL); 
     }
     
     // Send the data
-    if (a->proto == LO_UDP) {
+    if (a->protocol == LO_UDP) {
   	ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
 	       a->ai->ai_addr, a->ai->ai_addrlen);
     } else {
 	ret = send(sock, data, data_len, MSG_NOSIGNAL);
     }
 
-    if (a->proto == LO_TCP) {
+    if (a->protocol == LO_TCP) {
     	//XXX not sure this is the right behviour
 	close(a->socket);
 	a->socket=-1;

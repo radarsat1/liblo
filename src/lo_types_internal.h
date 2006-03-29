@@ -20,7 +20,7 @@ typedef struct _lo_address {
 	char            *host;
 	int              socket;
 	char            *port;
-	int              proto;
+	int              protocol;
 	struct addrinfo *ai;
 	int              errnum;
 	const char      *errstr;

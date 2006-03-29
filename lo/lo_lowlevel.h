@@ -240,6 +240,13 @@ const char *lo_address_get_hostname(lo_address a);
 const char *lo_address_get_port(lo_address a);
 
 /**
+ * \brief  Return the protocol of a lo_address object
+ *
+ * Returned value will be one of LO_UDP, LO_TCP or LO_UNIX.
+ */
+int lo_address_get_protocol(lo_address a);
+
+/**
  * \brief  Return a URL representing an OSC address
  *
  * Returned value must be free'd.
@@ -458,6 +465,13 @@ int lo_server_get_socket_fd(lo_server s);
  * address the server.
  */
 int lo_server_get_port(lo_server s);
+
+/**
+ * \brief  Return the protocol that the server is using.
+ *
+ * Returned value will be one of LO_UDP, LO_TCP or LO_UNIX.
+ */
+int lo_server_get_protocol(lo_server s);
 
 /**
  * \brief Return an OSC URL that can be used to contact the server.

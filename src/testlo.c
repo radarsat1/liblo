@@ -111,12 +111,14 @@ int main()
     lo_bundle b;
     lo_message m1, m2;
     char *server_url, *path, *protocol, *host, *port;
+    const char *host2, *port2;
     lo_address a;
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
     union end_test32 et32;
     union end_test64 et64;
     lo_timetag tt = {0x1, 0x80000000}, sched;
     int count;
+    int proto;
     char cmd[256];
 
     sta = lo_server_thread_new("7591", error);
@@ -151,10 +153,6 @@ int main()
     TEST(a != NULL);
     lo_address_free(a);
 
-    server_url = lo_server_thread_get_url(st);
-    a = lo_address_new_from_url(server_url);
-    printf("Server URL: %s\n", server_url);
-    free(server_url);
 
     atexit(exitcheck);
 
@@ -193,7 +191,7 @@ int main()
 	printf("'%s' != '/a/path/is/here'\n", path);
 	exit(1);
     } else {
-	printf("passed lo_url_get_path() test\n");
+	printf("passed lo_url_get_path() test1\n");
     }
     free(path);
 
@@ -203,17 +201,27 @@ int main()
 	printf("'%s' != 'udp'\n", protocol);
 	exit(1);
     } else {
-	printf("passed lo_url_get_protocol() test\n");
+	printf("passed lo_url_get_protocol() test1\n");
+    }
+    free(protocol);
+
+    protocol = lo_url_get_protocol("osc.tcp://localhost:9999/a/path/is/here");
+    if (strcmp(protocol, "tcp")) {
+	printf("failed lo_url_get_protocol() test2\n");
+	printf("'%s' != 'udp'\n", protocol);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol() test2\n");
     }
     free(protocol);
     
     protocol = lo_url_get_protocol("osc.udp://[::ffff:localhost]:9999/a/path/is/here");
     if (strcmp(protocol, "udp")) {
-	printf("failed lo_url_get_protocol() test1\n");
+	printf("failed lo_url_get_protocol() test1 (IPv6)\n");
 	printf("'%s' != 'udp'\n", protocol);
 	exit(1);
     } else {
-	printf("passed lo_url_get_protocol() test (IPv6)\n");
+	printf("passed lo_url_get_protocol() test1 (IPv6)\n");
     }
     free(protocol);
 
@@ -229,11 +237,11 @@ int main()
 
     host = lo_url_get_hostname("osc.udp://[0000::::0001]:9999/a/path/is/here");
     if (strcmp(host, "0000::::0001")) {
-	printf("failed lo_url_get_hostname() test2\n");
+	printf("failed lo_url_get_hostname() test2 (IPv6)\n");
 	printf("'%s' != '0000::::0001'\n", host);
 	exit(1);
     } else {
-	printf("passed lo_url_get_hostname() test2\n");
+	printf("passed lo_url_get_hostname() test2 (IPv6)\n");
     }
     free(host);
 
@@ -243,21 +251,67 @@ int main()
 	printf("'%s' != '9999'\n", port);
 	exit(1);
     } else {
-	printf("passed lo_url_get_port() test\n");
+	printf("passed lo_url_get_port() test1\n");
     }
     free(port);
     
     port = lo_url_get_port("osc.udp://[::ffff:127.0.0.1]:9999/a/path/is/here");
     if (strcmp(port, "9999")) {
-	printf("failed lo_url_get_port() test1\n");
+	printf("failed lo_url_get_port() test1 (IPv6)\n");
 	printf("'%s' != '9999'\n", port);
 	exit(1);
     } else {
-	printf("passed lo_url_get_port() test (IPv6)\n");
+	printf("passed lo_url_get_port() test1 (IPv6)\n");
     }
     free(port);
     printf("\n");
+    
+    
+    
+    
+    
+    a = lo_address_new_from_url("osc.tcp://foo.example.com:9999/");
+    host2 = lo_address_get_hostname(a);
+    if (strcmp(host2, "foo.example.com")) {
+	printf("failed lo_address_get_hostname() test\n");
+	printf("'%s' != 'foo.example.com'\n", host2);
+	exit(1);
+    } else {
+	printf("passed lo_address_get_hostname() test\n");
+    }
 
+    port2 = lo_address_get_port(a);
+    if (strcmp(port2, "9999")) {
+	printf("failed lo_address_get_port() test\n");
+	printf("'%s' != '9999'\n", port2);
+	exit(1);
+    } else {
+	printf("passed lo_address_get_port() test\n");
+    }
+
+    proto = lo_address_get_protocol(a);
+    if (proto != LO_TCP) {
+	printf("failed lo_address_get_protocol() test\n");
+	printf("'%d' != '%d'\n", proto, LO_TCP);
+	exit(1);
+    } else {
+	printf("passed lo_address_get_protocol() test\n");
+    }
+
+    server_url = lo_address_get_url(a);
+    if (strcmp(server_url, "osc.tcp://foo.example.com:9999/")) {
+	printf("failed lo_address_get_url() test\n");
+	printf("'%s' != '%s'\n", server_url, "osc.tcp://foo.example.com:9999/");
+	exit(1);
+    } else {
+	printf("passed lo_address_get_url() test\n");
+    }
+    free(server_url);
+    lo_address_free( a );
+    printf("\n");
+    
+
+    /* Test blod sizes */
     if (lo_blob_datasize(btest) != 5 || lo_blobsize(btest) != 12) {
 	printf("blob is %d (%d) bytes long, should be 5 (12)\n",
                lo_blob_datasize(btest), lo_blobsize(btest));
@@ -265,9 +319,18 @@ int main()
 	printf(" <- blob\n");
 	exit(1);
     }
+    
+    
+    
+    /* Server method handler tests */
+    server_url = lo_server_thread_get_url(st);
+    a = lo_address_new_from_url(server_url);
+    printf("Server URL: %s\n", server_url);
+    free(server_url);
 
     /* add method that will match the path /foo/bar, with two numbers, coerced
      * to float and int */
+
     lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler, lo_server_thread_get_server(st));
 
     lo_server_thread_add_method(st, "/reply", "s", reply_handler, NULL);
@@ -489,6 +552,7 @@ int main()
 	unlink("/tmp/testlo.osc");
 	us = lo_server_new_with_proto("/tmp/testlo.osc", LO_UNIX, error);
 	ua = lo_address_new_from_url("osc.unix:///tmp/testlo.osc");
+	TEST(lo_server_get_protocol(us) == LO_UNIX);
 	TEST(lo_send(ua, "/unix", "f", 23.0) == 16);
 	TEST(lo_server_recv(us) == 16);
 	addr = lo_server_get_url(us);
@@ -511,10 +575,7 @@ int main()
 	    printf("err: %s\n", lo_address_errstr(ta));
 	    exit(1);
 	}
-	if (lo_address_errno(ta)) {
-	    printf("err: %s\n", lo_address_errstr(ta));
-	    exit(1);
-	}
+	TEST(lo_server_get_protocol(ts) == LO_TCP);
 	TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
 	TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
 	TEST(lo_server_recv(ts) == 16);

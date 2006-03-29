@@ -1,3 +1,9 @@
+2006-03-29  Nicholas Humfrey  <njh@aelius.com>
+
+	* Applied lo_address_get_url() patch from Sze'kelyi Szabolcs
+	* Added lo_server_get_protocol() and lo_address_get_protocol()
+	* Added tests for lo_address_get_* tests to test tool
+
 2006-01-26  Nicholas Humfrey  <njh@aelius.com>
 
 	* IPv6 is now disabled by default

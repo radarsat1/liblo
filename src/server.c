@@ -685,7 +685,7 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     if (src->host) free(src->port);
     src->host = strdup(hostname);
     src->port = strdup(portname);
-    src->proto = s->protocol;
+    src->protocol = s->protocol;
 
     for (it = s->first; it; it = it->next) {
 	/* If paths match or handler is wildcard */
@@ -1007,6 +1007,16 @@ int lo_server_get_port(lo_server s)
 
     return s->port;
 }
+
+int lo_server_get_protocol(lo_server s)
+{
+    if (!s) {
+	return -1;
+    }
+
+    return s->protocol;
+}
+
 
 char *lo_server_get_url(lo_server s)
 {
