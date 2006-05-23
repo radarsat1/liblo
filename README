@@ -1,8 +1,7 @@
 Liblo is a lightweight library that provides an easy to use implementation of
-the OSC protocol (see http://www.cnmat.berkeley.edu/OpenSoundControl/ for
-details).
+the OSC protocol (see http://www.opensoundcontrol.org/ for details).
 
-http://plugin.org.uk/liblo/
+http://liblo.sourceforge.net/
 
 Liblo is portable to most UNIX systems (including OSX) and Windows. It is
 released under the GNU General Public Licence.
