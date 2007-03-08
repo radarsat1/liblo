@@ -373,7 +373,6 @@ static int resolve_address(lo_address a)
 	if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
 	    a->errnum = ret;
 	    a->errstr = gai_strerror(ret);
-	    freeaddrinfo(ai);
 	    a->ai = NULL;
 	    return -1;
 	}
