@@ -1,6 +1,15 @@
 #ifndef LO_TYPES_H
 #define LO_TYPES_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+
 #ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>

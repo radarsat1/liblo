@@ -1,3 +1,9 @@
+2007-03-08  Nicholas Humfrey  <njh@aelius.com>
+
+	* Added lo_server_thread_new_with_proto(), as suggested by Dave Robillard
+	* Applied patch from Aron Stansvik to fix bug with FreeBSD/NetBSD systems
+	
+
 2006-03-29  Nicholas Humfrey  <njh@aelius.com>
 
 	* Applied lo_address_get_url() patch from Sze'kelyi Szabolcs
