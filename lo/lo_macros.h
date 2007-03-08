@@ -29,9 +29,10 @@ extern "C" {
 
 /* \brief A set of macros to represent different communications transports
  */
-#define LO_UDP  0x1
-#define LO_UNIX 0x2
-#define LO_TCP  0x4
+#define LO_DEFAULT 0x0
+#define LO_UDP     0x1
+#define LO_UNIX    0x2
+#define LO_TCP     0x4
 
 /* an internal value, ignored in transmission but check against LO_MARKER in the
  * argument list. Used to do primitive bounds checking */

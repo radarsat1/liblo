@@ -149,7 +149,7 @@ const char *lo_address_errstr(lo_address a);
  * transparently creating a systme thread to handle incoming messages.
  * Use this if you do not want to handle the threading yourself.
  *
- * \param port If NULL is passed then an unused UDP port will be chosen by the
+ * \param port If NULL is passed then an unused port will be chosen by the
  * system, its number may be retreived with lo_server_thread_get_port()
  * so it can be passed to clients. Otherwise a decimal port number, service
  * name or UNIX domain socket path may be passed.
@@ -157,6 +157,25 @@ const char *lo_address_errstr(lo_address a);
  * raised. The function prototype is defined in lo_types.h
  */
 lo_server_thread lo_server_thread_new(const char *port, lo_err_handler err_h);
+
+/**
+ * \brief Create a new server thread to handle incoming OSC
+ * messages, specifying protocol.
+ *
+ * Server threads take care of the message reception and dispatch by
+ * transparently creating a systme thread to handle incoming messages.
+ * Use this if you do not want to handle the threading yourself.
+ *
+ * \param port If NULL is passed then an unused port will be chosen by the
+ * system, its number may be retreived with lo_server_thread_get_port()
+ * so it can be passed to clients. Otherwise a decimal port number, service
+ * name or UNIX domain socket path may be passed.
+ * \param proto The protocol to use, should be one of LO_UDP, LO_TCP or LO_UNIX.
+ * \param err_h A function that will be called in the event of an error being
+ * raised. The function prototype is defined in lo_types.h
+ */
+lo_server_thread lo_server_thread_new_with_proto(const char *port, int proto,
+				   lo_err_handler err_h);
 
 /**
  * \brief Free memory taken by a server thread

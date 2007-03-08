@@ -123,15 +123,7 @@ int initWSock()
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
-#ifndef WIN32
-    if (port && *port == '/') {
-	return lo_server_new_with_proto(port, LO_UNIX, err_h);
-    } 
-    else 
-#endif
-    {
-	return lo_server_new_with_proto(port, LO_UDP, err_h);
-    }
+	return lo_server_new_with_proto(port, LO_DEFAULT, err_h);
 }
 
 lo_server lo_server_new_with_proto(const char *port, int proto,
@@ -145,6 +137,16 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     char pnum[16];
     const char *service;
     char hostname[LO_HOST_SIZE];
+
+	// Set real protocol, if Default is requested
+	if (proto==LO_DEFAULT) {
+#ifndef WIN32
+		if (port && *port == '/') proto = LO_UNIX;
+		else 
+#endif
+		proto = LO_UDP;
+	}
+
 
 #ifdef WIN32
     if(!initWSock()) return NULL;
