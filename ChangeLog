@@ -3,6 +3,7 @@
 	* Added lo_server_thread_new_with_proto(), as suggested by Dave Robillard
 	* Applied patch from Aron Stansvik to fix bug with FreeBSD/NetBSD systems
 	* Removed freeaddrinfo() from resolve_address() error case (thanks to Anthony Green)
+	* Only call connect() for TCP sessions (thanks to Roger B. Dannenberg)
 	
 
 2006-03-29  Nicholas Humfrey  <njh@aelius.com>

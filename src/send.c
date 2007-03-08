@@ -394,13 +394,17 @@ static int create_socket(lo_address a)
 	    return -1;
 	}
 
-	if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-	    a->errnum = geterror();
-	    a->errstr = NULL;
-	    close(a->socket);
-	    a->socket = -1;
-	    return -1;
+	if (a->protocol == LO_TCP) {
+		// Only call connect() for TCP sockets - we use sendto() for UDP
+		if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
+			a->errnum = geterror();
+			a->errstr = NULL;
+			close(a->socket);
+			a->socket = -1;
+			return -1;
+		}
 	}
+	
     }
 #ifndef WIN32
     else if (a->protocol == LO_UNIX) {
