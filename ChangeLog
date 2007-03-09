@@ -1,7 +1,7 @@
 2007-03-09  Nicholas Humfrey  <njh@aelius.com>
 
 	* Changed lo_blob_new() to take const void* (thanks to Lars Luthman)
-	
+	* Disable getnameinfo() method of getting hostname, when IPv6 is disabled
 	
 2007-03-08  Nicholas Humfrey  <njh@aelius.com>
 

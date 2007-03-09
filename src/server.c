@@ -289,9 +289,12 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
         lo_client_sockets.tcp = s->socket;
     }
 
-    /* Try it the IPV6 friendly way first */
+	/* Set hostname to empty string */
     hostname[0] = '\0';
-    for (it = ai; it; it = it->ai_next) {
+	
+#ifdef ENABLE_IPV6
+    /* Try it the IPV6 friendly way first */
+	for (it = ai; it; it = it->ai_next) {
 	if (getnameinfo(it->ai_addr, it->ai_addrlen, hostname,
 			sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0) {
 	    break;
@@ -303,6 +306,8 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     if (hostname[0] == ':') {
 	hostname[0] = '\0';
     }
+#endif
+
 
     /* Fallback to the oldschool (i.e. more reliable) way */
     if (!hostname[0]) {
