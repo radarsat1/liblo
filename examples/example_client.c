@@ -20,7 +20,7 @@
 
 #include "lo/lo.h"
 
-char testdata[5] = "ABCDE";
+const char testdata[5] = "ABCDE";
 
 int main(int argc, char *argv[])
 {
@@ -29,11 +29,14 @@ int main(int argc, char *argv[])
 
     /* an address to send messages to. sometimes it is better to let the server
      * pick a port number for you by passing NULL as the last argument */
+//    lo_address t = lo_address_new_from_url( "osc.unix://localhost/tmp/mysocket" );
     lo_address t = lo_address_new(NULL, "7770");
 
     if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'q') {
       /* send a message with no arguments to the path /quit */
-      lo_send(t, "/quit", NULL);
+      if (lo_send(t, "/quit", NULL) == -1) {
+ 	printf("OSC error %d: %s\n", lo_address_errno(t), lo_address_errstr(t));
+      }
     } else {
       /* send a message to /foo/bar with two float arguments, report any
        * errors */

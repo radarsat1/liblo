@@ -187,7 +187,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	}
 
 	sa.sun_family = AF_UNIX;
-	strncpy(sa.sun_path, port, 107);
+	strncpy(sa.sun_path, port, sizeof(sa.sun_path)-1);
 
 	if ((ret = bind(s->socket, (struct sockaddr *)&sa, sizeof(sa))) < 0) {
         int err = geterror();      
@@ -196,7 +196,7 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	    lo_server_free(s);
 	    return NULL;
 	}
-
+	
 	s->path = strdup(port);
 
 	return s;
@@ -348,10 +348,23 @@ void lo_server_free(lo_server s)
 	lo_method it;
 	lo_method next;
 
-	if (s->socket != -1) close(s->socket);
-	freeaddrinfo(s->ai);
-	free(s->hostname);
-	free(s->path);
+	if (s->socket != -1) {
+		close(s->socket);
+		s->socket = -1;
+	}
+	if (s->ai) {
+		freeaddrinfo(s->ai);
+		s->ai=NULL;
+	}
+	if (s->hostname) {
+		free(s->hostname);
+		s->hostname = NULL;
+	}
+	if (s->path) {
+		if (s->protocol == LO_UNIX) unlink( s->path );
+		free(s->path);
+		s->path = NULL;
+	}
 	for (it = s->first; it; it = next) {
 	    next = it->next;
 	    free((char *)it->path);

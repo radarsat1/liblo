@@ -58,6 +58,8 @@ int main()
 #endif
     }
 
+    lo_server_thread_free(st);
+
     return 0;
 }
 

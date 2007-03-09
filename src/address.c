@@ -280,6 +280,9 @@ char *lo_url_get_path(const char *url)
     if (sscanf(url, "osc.%*[^:]://%*[^:]:%*[0-9]%s", path) == 1) {
         return path;
     }
+    if (sscanf(url, "osc.unix://%*[^/]%s", path) == 1) {
+        return path;
+    }
     if (sscanf(url, "osc.%*[^:]://%s", path)) {
         return path;
     }

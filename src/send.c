@@ -418,7 +418,7 @@ static int create_socket(lo_address a)
 	}
 
 	sa.sun_family = AF_UNIX;
-	strncpy(sa.sun_path, a->port, 107);
+	strncpy(sa.sun_path, a->port, sizeof(sa.sun_path)-1);
 
 	if ((connect(a->socket, (struct sockaddr *)&sa, sizeof(sa))) < 0) {
 	    a->errnum = geterror();
