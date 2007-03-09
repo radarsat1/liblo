@@ -1,10 +1,15 @@
+2007-03-09  Nicholas Humfrey  <njh@aelius.com>
+
+	* Changed lo_blob_new() to take const void* (thanks to Lars Luthman)
+	
+	
 2007-03-08  Nicholas Humfrey  <njh@aelius.com>
 
 	* Added lo_server_thread_new_with_proto(), as suggested by Dave Robillard
 	* Applied patch from Aron Stansvik to fix bug with FreeBSD/NetBSD systems
 	* Removed freeaddrinfo() from resolve_address() error case (thanks to Anthony Green)
 	* Only call connect() for TCP sessions (thanks to Roger B. Dannenberg)
-	
+	* Released version 0.24
 
 2006-03-29  Nicholas Humfrey  <njh@aelius.com>
 

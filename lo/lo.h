@@ -257,7 +257,7 @@ int lo_server_thread_events_pending(lo_server_thread st);
  * \param data The data that will be used to initialise the blob, should be
  * size bytes long.
  */
-lo_blob lo_blob_new(int32_t size, void *data);
+lo_blob lo_blob_new(int32_t size, const void *data);
 
 /**
  * \brief Free the memory taken by a blob
