@@ -145,7 +145,7 @@ char *lo_address_get_url(lo_address a)
 {
     char *buf;
     int ret;
-    int needquote = (int)(strchr(a->host, ':'));
+    int needquote = strchr(a->host, ':') ? 1 : 0;
     char *fmt;
 
     if (needquote) {

@@ -410,7 +410,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 	break;
 
     case LO_INT64:
-	printf("%lld", val64.i);
+	printf("%lld", (long long int)val64.i);
 	break;
     
     case LO_TIMETAG:

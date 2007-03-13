@@ -177,7 +177,7 @@ int main()
 	et64.c[3] != 0x26 || et64.c[4] != 0x27 || et64.c[5] != 0x28 ||
 	et64.c[6] != 0x29 || et64.c[7] != 0x2A) {
 	fprintf(stderr, "failed 64bit endian conversion\n");
-	fprintf(stderr, "0x232425262728292A -> %llX\n", et64.i);
+	fprintf(stderr, "0x232425262728292A -> %llX\n", (long long unsigned int)et64.i);
 	exit(1);
     } else {
 	printf("passed 64bit endian conversion\n");
