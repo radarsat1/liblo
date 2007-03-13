@@ -217,7 +217,7 @@ int lo_pattern_match(const char *str, const char *p)
                         } else { // skip to next comma
                             str = place;
                             while (*p != ',' && *p != '}' && *p)
-                                *p++;
+                                p++;
                             if (*p == ',')
                                 p++;
                         }
