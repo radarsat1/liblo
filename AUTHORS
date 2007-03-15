@@ -1,9 +1,10 @@
-Steve Harris	<steve@plugin.org.uk>
+Steve Harris
 Nicholas J Humfrey
 Uwe Koloska
 Jesse Chappell
 Topher Cyll
 Sze'kelyi Szabolcs
+
 
 Guidelines for authors:
 
@@ -17,3 +18,4 @@ please try to follow the following guidelines:
   the're better than nothing :)
 * Update the ChangeLog whenever neccesary.
 * Add tests for any changes or discovered bugs to the regression test file.
+
