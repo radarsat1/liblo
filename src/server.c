@@ -51,9 +51,17 @@
 #define LO_HOST_SIZE 1024
 
 typedef struct {
-    lo_timetag ts;
-    size_t len;
     void *data;
+    size_t data_size;
+    char *path;
+    char *types;
+    int argc;
+    lo_arg **argv;
+} dispatch_message;
+
+typedef struct {
+    lo_timetag ts;
+    dispatch_message *dmsg;
     void *next;
 } queued_msg_list;
 
@@ -61,11 +69,18 @@ struct lo_cs lo_client_sockets = {-1, -1};
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
-static void dispatch_method(lo_server s, const char *path, char *types,
-			    void *data);
+static int lo_server_dispatch_data(lo_server s, void *data, size_t size);
+static void dispatch_method(lo_server s, dispatch_message *dmsg);
 static int dispatch_queued(lo_server s);
-static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len);
+static void queue_data(lo_server s, lo_timetag ts, dispatch_message *dmsg);
 
+static ssize_t lo_validate_string(const char *data, ssize_t size);
+static ssize_t lo_validate_blob(lo_blob b, ssize_t size);
+static ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size);
+static ssize_t lo_validate_bundle(void *data, ssize_t size);
+
+dispatch_message *parse_message(void *data, size_t size);
+void dispatch_message_free(dispatch_message *dmsg);
 
 #ifdef WIN32
 // Copied from the Win32 SDK 
@@ -497,8 +512,6 @@ int lo_server_recv(lo_server s)
 {
     void *data;
     size_t size;
-    char *path;
-    char *types;
     double sched_time = lo_server_next_event_delay(s);
 #ifdef WIN32
     fd_set ps;
@@ -566,50 +579,69 @@ again:
     }
 
     if (!data) {
-	return 0;
+        return 0;
     }
-    path = data;
-
-    types = data + lo_strsize(path);
-    if (!strcmp(path, "#bundle")) {
-	char *pos = types;
-	uint32_t len;
-	lo_timetag ts, now;
-
-	lo_timetag_now(&now);
-
-	ts.sec = lo_otoh32(*((uint32_t *)pos));
-	pos += 4;
-	ts.frac = lo_otoh32(*((uint32_t *)pos));
-	pos += 4;
-
-	while (pos - (char *)data < size) {
-	    len = lo_otoh32(*((uint32_t *)pos));
-	    pos += 4;
-	    /* test for immedaite dispatch */
-	    if ((ts.sec == 0 && ts.frac == 1) ||
-				lo_timetag_diff(ts, now) <= 0.0) {
-		types = pos + lo_strsize(pos);
-		dispatch_method(s, pos, types + 1, types + lo_strsize(types));
-	    } else {
-		queue_data(s, ts, pos, len);
-	    }
-	    pos += len;
-	}
-
-	free(data);
-
-	return size;
-    } else if (*types != ',') {
-	lo_throw(s, LO_ENOTYPE, "Missing typetag", path);
-
-	return -1;
+    if (lo_server_dispatch_data(s, data, size) < 0) {
+        free(data);
+        return -1;
     }
-
-    dispatch_method(s, path, types+1, data);
-
     free(data);
+    return size;
+}
 
+int lo_server_dispatch_data(lo_server s, void *data, size_t size)
+{
+    if (!data) {
+        return -1;
+    }
+    ssize_t len = lo_validate_string(data, size);
+    if (len < 0) {
+        return -1;
+    }
+
+    if (!strcmp(data, "#bundle")) {
+        if (lo_validate_bundle(data, size) < 0) {
+            return -1;
+        }
+        char *pos = (char *)data + len;
+        int remain = size - len;
+        uint32_t elem_len;
+        lo_timetag ts, now;
+
+        lo_timetag_now(&now);
+        ts.sec = lo_otoh32(*((uint32_t *)pos));
+        pos += 4;
+        ts.frac = lo_otoh32(*((uint32_t *)pos));
+        pos += 4;
+        remain -= 8;
+
+        while (remain >= 4) {
+            elem_len = lo_otoh32(*((uint32_t *)pos));
+            pos += 4;
+            remain -= 4;
+            dispatch_message *dmsg = parse_message(pos, elem_len);
+            if (dmsg)
+            {
+                // test for immedaite dispatch
+                if ((ts.sec == 0 && ts.frac == 1) ||
+                                    lo_timetag_diff(ts, now) <= 0.0) {
+                    dispatch_method(s, dmsg);
+                    dispatch_message_free(dmsg);
+                } else {
+                    queue_data(s, ts, dmsg);
+                }
+            }
+            pos += elem_len;
+            remain -= elem_len;
+        }
+    } else {
+        dispatch_message *dmsg = parse_message(data, size);
+        if (!dmsg) {
+            return 0;
+        }
+        dispatch_method(s, dmsg);
+        dispatch_message_free(dmsg);
+    }
     return size;
 }
 
@@ -632,15 +664,16 @@ double lo_server_next_event_delay(lo_server s)
     return 100.0;
 }
 
-static void dispatch_method(lo_server s, const char *path, char *types,
-			    void *data)
+static void dispatch_method(lo_server s, dispatch_message *dmsg)
 {
-    int argc = strlen(types);
-    lo_arg **argv = NULL;
+    char *path = dmsg->path;
+    char *types = dmsg->types;
+    int argc = dmsg->argc;
+    lo_arg **argv = dmsg->argv;
     lo_method it;
     int ret = 1;
     int err;
-    int endian_fixed = 0;
+
     int pattern = strpbrk(path, " #*,?[]{}") != NULL;
     lo_message msg = lo_message_new();
     lo_address src = lo_address_new(NULL, NULL);
@@ -649,10 +682,10 @@ static void dispatch_method(lo_server s, const char *path, char *types,
     const char *pptr;
 
     free(msg->types);
-    msg->types = types;
-    msg->typelen = strlen(types);
+    msg->types = dmsg->types - 1;
+    msg->typelen = strlen(msg->types);
     msg->typesize = 0;
-    msg->data = data;
+    msg->data = dmsg->data;
     msg->datalen = 0;
     msg->datasize = 0;
     msg->source = src;
@@ -713,22 +746,6 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	    (pattern && lo_pattern_match(it->path, path))) {
 	    /* If types match or handler is wildcard */
 	    if (!it->typespec || !strcmp(types, it->typespec)) {
-
-		if (!argv && *types) {
-		    int i;
-		    char *ptr = types - 1 + lo_strsize(types - 1);
-
-		    argv = calloc(argc + 1, sizeof(lo_arg *));
-		    if (!endian_fixed) {
-			for (i=0; i<argc; i++) {
-			    argv[i] = (lo_arg *)ptr;
-			    lo_arg_host_endian(types[i], ptr);
-			    ptr += lo_arg_size(types[i], ptr);
-			}
-			endian_fixed = 1;
-		    }
-		}
-
 		/* Send wildcard path to generic handler, expanded path
 		  to others.
 		*/
@@ -754,15 +771,11 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 		ptr = types - 1 + lo_strsize(types - 1);
 		for (i=0; i<argc; i++) {
 		    argv[i] = (lo_arg *)data_co_ptr;
-		    if (!endian_fixed) {
-			lo_arg_host_endian(types[i], ptr);
-		    }
 		    lo_coerce(it->typespec[i], (lo_arg *)data_co_ptr,
 			      types[i], (lo_arg *)ptr);
 		    data_co_ptr += lo_arg_size(it->typespec[i], data_co_ptr);
 		    ptr += lo_arg_size(types[i], ptr);
 		}
-		endian_fixed = 1;
 
 		/* Send wildcard path to generic handler, expanded path
 		  to others.
@@ -841,15 +854,13 @@ static void dispatch_method(lo_server s, const char *path, char *types,
 	}
     }
 
-    free(argv);
-
-
     /* these are already part of data and will be freed later */
     msg->data = NULL;
     msg->types = NULL;
-    
+
     lo_address_free(src);
     lo_message_free(msg);
+
 }
 
 int lo_server_events_pending(lo_server s)
@@ -857,7 +868,7 @@ int lo_server_events_pending(lo_server s)
     return s->queued != 0;
 }
 
-static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len)
+static void queue_data(lo_server s, lo_timetag ts, dispatch_message *dmsg)
 {
     /* insert blob into future dispatch queue */
     queued_msg_list *it = s->queued;
@@ -865,9 +876,7 @@ static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len)
     queued_msg_list *ins = calloc(1, sizeof(queued_msg_list));
 
     ins->ts = ts;
-    ins->len = len;
-    ins->data = malloc(len);
-    memcpy(ins->data, data, len);
+    ins->dmsg = dmsg;
 
     while (it) {
 	if (lo_timetag_diff(it->ts, ts) > 0.0) {
@@ -896,7 +905,7 @@ static void queue_data(lo_server s, lo_timetag ts, void *data, size_t len)
 
 static int dispatch_queued(lo_server s)
 {
-    char *path, *types, *data;
+    //char *path, *types, *data;
     queued_msg_list *head = s->queued;
     queued_msg_list *tailhead;
     lo_timetag disp_time;
@@ -911,12 +920,9 @@ static int dispatch_queued(lo_server s)
 
     do {
 	tailhead = head->next;
-	path = ((queued_msg_list *)s->queued)->data;
-	types = path + lo_strsize(path) + 1;
-	data = types + lo_strsize(types);
-	dispatch_method(s, path, types, data);
-
-	free(((queued_msg_list *)s->queued)->data);
+        dispatch_message *dmsg = ((queued_msg_list *)s->queued)->dmsg;
+	dispatch_method(s, dmsg);
+        dispatch_message_free(dmsg);
 	free((queued_msg_list *)s->queued);
 
 	s->queued = tailhead;
@@ -1117,6 +1123,223 @@ void lo_throw(lo_server s, int errnum, const char *message, const char *path)
     if (s->err_h) {
 	(*s->err_h)(errnum, message, path);
     }
+}
+
+
+
+static ssize_t lo_validate_string(const char *data, ssize_t size)
+{
+    ssize_t i = 0, len = 0;
+
+    if (size < 0) {
+        return -1;      // invalid size
+    }
+    for (i = 0; i < size; ++i) {
+        if (data[i] == '\0') {
+            len = 4 * (i / 4 + 1);
+            break;
+        }
+    }
+    if (len == 0) {
+        return -2;      // string not terminated
+    }
+    if (len > size) {
+        return -3;      // would overflow buffer
+    }
+    for (; i < len; ++i) {
+        if (data[i] != '\0') {
+            return -4;  // non-zero char found in pad area
+        }
+    }
+    return len;
+}
+
+static ssize_t lo_validate_blob(lo_blob b, ssize_t size)
+{
+    ssize_t i, blob_end, len;
+    if (size < 0) {
+        return -1;      // invalid size
+    }
+    uint32_t blob_contentsize = lo_blob_datasize(b);
+    if (blob_contentsize > LO_MAX_MSG_SIZE) {
+        return -3;
+    }
+    blob_end = sizeof(uint32_t) + blob_contentsize; // end of data
+    len = lo_blobsize(b); // padded size
+    if (len > size) {
+        return -3;      // would overflow buffer
+    }
+    char *data = (char *)b;
+    for (i = blob_end; i < len; ++i) {
+        if (data[i] != '\0') {
+            return -4;  // non-zero char found in pad area
+        }
+    }
+    return len;
+}
+
+static ssize_t lo_validate_bundle(void *data, ssize_t size)
+{
+    ssize_t len = 0, remain = size;
+    char *pos = data;
+    uint32_t elem_len;
+
+    len = lo_validate_string(data, size);
+    if (len < 0) {
+        return -1;
+    }
+    if (0 != strcmp(data, "#bundle")) {
+        return -1;
+    }
+    pos += len;
+    remain -= len;
+
+    // time tag
+    if (remain < 8) {
+        return -1;
+    }
+    pos += 8;
+    remain -= 8;
+
+    while (remain >= 4) {
+        elem_len = lo_otoh32(*((uint32_t *)pos));
+        pos += 4;
+        remain -= 4;
+        if (elem_len > remain) {
+            return -1;
+        }
+        pos += elem_len;
+        remain -= elem_len;
+    }
+    if (0 != remain) {
+        return -1;
+    }
+    return size;
+}
+
+static ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size)
+{
+    if (size < 0) {
+        return -1;
+    }
+    switch (type) {
+    case LO_TRUE:
+    case LO_FALSE:
+    case LO_NIL:
+    case LO_INFINITUM:
+        return 0;
+
+    case LO_INT32:
+    case LO_FLOAT:
+    case LO_MIDI:
+    case LO_CHAR:
+        return size >= 4 ? 4 : -3;
+
+    case LO_INT64:
+    case LO_TIMETAG:
+    case LO_DOUBLE:
+        return size >= 8 ? 8 : -3;
+
+    case LO_STRING:
+    case LO_SYMBOL:
+        return lo_validate_string((char *)data, size);
+
+    case LO_BLOB:
+        return lo_validate_blob((lo_blob)data, size);
+
+    default:
+        return -5;
+    }
+    return -5;
+}
+
+static void dispatch_message_free(dispatch_message *dmsg)
+{
+    if (dmsg) {
+        free(dmsg->data);
+        free(dmsg->argv);
+    }
+    free(dmsg);
+}
+
+static dispatch_message *parse_message(void *data, size_t size)
+{
+    dispatch_message *dmsg = NULL;
+    char *types = NULL, *path = NULL, *copy = NULL, *ptr = NULL;
+    lo_arg **argv = NULL;
+    int i = 0, argc = 0, remain = size;
+
+    if (NULL == data || remain <= 0) { return NULL; }
+    copy = malloc(size);
+    memcpy(copy, data, size);
+    path = copy;
+
+    int len = lo_validate_string(path, remain);
+    if (len < 0) {
+        // invalid path string
+        goto fail;
+    }
+
+    remain -= len;
+    if (remain <= 0) {
+        // no type tag string
+        goto fail;
+    }
+    types = path + len;
+    len = lo_validate_string(types, remain);
+    if (len < 0) {
+        // invalid type tag string
+        goto fail;
+    }
+    if (types[0] != ',') {
+        // type tag string missing initial comma
+        goto fail;
+    }
+    ptr = types + len;
+    ++types;
+    argc = strlen(types);
+    remain -= len;
+
+    argv = argc ? calloc(argc, sizeof(lo_arg *)) : NULL;
+
+    for (i = 0; remain >= 0 && i < argc; ++i) {
+        if (types[i] == 'b') {
+            // convert blob size to host endian for lo_validate_arg
+            if (remain < 4) { goto fail; }
+            lo_arg_host_endian('b', ptr);
+        }
+        len = lo_validate_arg((lo_type)types[i], ptr, remain);
+        if (len < 0) {
+            // invalid argument
+            goto fail;
+        }
+        if (types[i] != 'b') {
+            lo_arg_host_endian((lo_type)types[i], ptr);
+        }
+        argv[i] = len ? (lo_arg*)ptr : NULL;
+        remain -= len;
+        ptr += len;
+    }
+    if (0 != remain || i != argc) {
+        // size/argument mismatch
+        goto fail;
+    }
+
+    dmsg = malloc(sizeof(dispatch_message));
+    if (dmsg) {
+        dmsg->data = copy;
+        dmsg->data_size = size;
+        dmsg->path = path;
+        dmsg->types = types;
+        dmsg->argc = argc;
+        dmsg->argv = argv;
+    }
+    return dmsg;
+
+fail:
+    free(argv);
+    free(copy);
+    return NULL;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

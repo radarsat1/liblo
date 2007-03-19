@@ -66,7 +66,7 @@ static float jitter_max = 0.0f;
 static float jitter_min = 1000.0f;
 
 void exitcheck(void);
-
+void parsecheck(void);
 void error(int num, const char *m, const char *path);
 void rep_error(int num, const char *m, const char *path);
 
@@ -120,6 +120,8 @@ int main()
     int count;
     int proto;
     char cmd[256];
+
+    parsecheck();
 
     sta = lo_server_thread_new("7591", error);
     stb = lo_server_thread_new("7591", rep_error);
@@ -602,6 +604,7 @@ int main()
     lo_server_thread_free(st);
     free(server_url);
 
+
     return 0;
 }
 
@@ -792,6 +795,146 @@ int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
     done = 1;
 
     return 0;
+}
+
+typedef struct {
+    void *data;
+    size_t data_size;
+    char *path;
+    char *types;
+    uint argc;
+    lo_arg **argv;
+} dispatch_message;
+
+dispatch_message *parse_message(void *data, size_t size);
+void dispatch_message_free(dispatch_message *dmsg);
+
+void replace_char(char *str, size_t size, const char find, const char replace)
+{
+    char *p = str;
+    while(size--)
+    {
+        if (find == *p) { *p = replace; }
+        ++p;
+    }
+}
+
+void parsecheck(void)
+{
+    char data[256];
+    dispatch_message *dmsg = NULL;
+
+    const char *str =  "somestring!";
+    const char *blob = "blob!!!";
+
+    // a few success tests
+
+    snprintf(data, 256, "%s%s", "/t__", ",___"); // no arguments
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 8);
+    TEST(NULL != dmsg);
+    TEST(0 == dmsg->argc);
+    TEST(NULL == dmsg->argv);
+    dispatch_message_free(dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",i__"); // int arg
+    replace_char(data, 8, '_', '\0');
+    *(uint32_t *)(data + 8) = lo_htoo32((uint32_t)-667);
+    dmsg = parse_message(data, 12);
+    TEST(NULL != dmsg);
+    TEST(1 == dmsg->argc);
+    TEST(-667 == dmsg->argv[0]->i);
+    dispatch_message_free(dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",TF_"); // args with no size
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 8);
+    TEST(NULL != dmsg);
+    TEST(2 == dmsg->argc);
+    TEST('T' == dmsg->types[0] && NULL == dmsg->argv[0]);
+    TEST('F' == dmsg->types[1] && NULL == dmsg->argv[1]);
+    dispatch_message_free(dmsg);
+
+    snprintf(data, 256, "%s", "/t__" ",Tib" "FIs_");
+    replace_char(data, 12, '_', '\0');
+    *(uint32_t *)(data + 12) = lo_htoo32((uint32_t)-667); // i
+    *(uint32_t *)(data + 16) = lo_htoo32(strlen(blob)); // b
+    memcpy(data + 20, blob, 1 + strlen(blob));
+    memcpy(data + 20 + 1 + strlen(blob), str, 1 + strlen(str)); // s
+    dmsg = parse_message(data, 20 + 1 + strlen(blob) + 1 + strlen(str));
+    TEST(NULL != dmsg);
+    TEST(6 == dmsg->argc);
+    TEST('T' == dmsg->types[0] && NULL == dmsg->argv[0]);
+    TEST('i' == dmsg->types[1] && -667 == dmsg->argv[1]->i);
+    TEST('b' == dmsg->types[2] && strlen(blob) ==
+        lo_blob_datasize((lo_blob)&dmsg->argv[2]->s) &&
+        !strcmp(blob, lo_blob_dataptr((lo_blob)&dmsg->argv[2]->s)));
+    TEST('F' == dmsg->types[3] && NULL == dmsg->argv[3]);
+    TEST('I' == dmsg->types[4] && NULL == dmsg->argv[4]);
+    TEST('s' == dmsg->types[5] && !strcmp(str, &dmsg->argv[5]->s));
+    dispatch_message_free(dmsg);
+
+    // failure tests with invalid message data
+
+    dmsg = parse_message(NULL, 12); // NULL data
+    TEST(NULL == dmsg);
+
+    dmsg = parse_message(data, 0); // 0 size
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s", "/foo"); // unterminated path string
+    dmsg = parse_message(data, 4);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s", "/f_o"); // non-0 in pad area
+    dmsg = parse_message(data, 4);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s", "/t__"); // types missing
+    replace_char(data, 4, '_', '\0');
+    dmsg = parse_message(data, 4);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", "____"); // types empty
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 8);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",f_"); // short message
+    replace_char(data, 7, '_', '\0');
+    dmsg = parse_message(data, 7);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", "ifi_"); // types missing comma
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 8);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",ifi"); // types unterminated
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 8);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",ii_"); // not enough arg data
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 12);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",ii_"); // not enough arg data again
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 15);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",f__"); // too much arg data
+    replace_char(data, 8, '_', '\0');
+    dmsg = parse_message(data, 16);
+    TEST(NULL == dmsg);
+
+    snprintf(data, 256, "%s%s", "/t__", ",bs_"); // blob longer than msg data
+    replace_char(data, 8, '_', '\0');
+    *(uint32_t *)(data + 8) = lo_htoo32((uint32_t)99999);
+    dmsg = parse_message(data, 256);
+    TEST(NULL == dmsg);
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

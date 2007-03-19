@@ -1,8 +1,11 @@
+2007-03-19  Nicholas Humfrey  <njh@aelius.com>
+
+	* Applied patch from Chris Hixon to check for buffer overflows
+
 2007-03-16  Nicholas Humfrey  <njh@aelius.com>
 
 	* Fixed several compiler warnings
 	* Changed address for package bug reports
-	* Released version 0.24
 
 2007-03-09  Nicholas Humfrey  <njh@aelius.com>
 
