@@ -1,3 +1,9 @@
+2007-03-16  Nicholas Humfrey  <njh@aelius.com>
+
+	* Fixed several compiler warnings
+	* Changed address for package bug reports
+	* Released version 0.24
+
 2007-03-09  Nicholas Humfrey  <njh@aelius.com>
 
 	* Changed lo_blob_new() to take const void* (thanks to Lars Luthman)
