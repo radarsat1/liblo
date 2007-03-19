@@ -121,7 +121,7 @@ int main()
     int proto;
     char cmd[256];
 
-    parsecheck();
+    //parsecheck();
 
     sta = lo_server_thread_new("7591", error);
     stb = lo_server_thread_new("7591", rep_error);
@@ -797,18 +797,8 @@ int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
     return 0;
 }
 
-typedef struct {
-    void *data;
-    size_t data_size;
-    char *path;
-    char *types;
-    uint argc;
-    lo_arg **argv;
-} dispatch_message;
 
-dispatch_message *parse_message(void *data, size_t size);
-void dispatch_message_free(dispatch_message *dmsg);
-
+/*
 void replace_char(char *str, size_t size, const char find, const char replace)
 {
     char *p = str;
@@ -818,6 +808,7 @@ void replace_char(char *str, size_t size, const char find, const char replace)
         ++p;
     }
 }
+
 
 void parsecheck(void)
 {
@@ -936,5 +927,7 @@ void parsecheck(void)
     dmsg = parse_message(data, 256);
     TEST(NULL == dmsg);
 }
+
+*/
 
 /* vi:set ts=8 sts=4 sw=4: */

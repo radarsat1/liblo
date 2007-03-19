@@ -57,30 +57,23 @@ typedef struct {
     char *types;
     int argc;
     lo_arg **argv;
-} dispatch_message;
+} dispatch_message_t;
 
 typedef struct {
     lo_timetag ts;
-    dispatch_message *dmsg;
+    dispatch_message_t *dmsg;
     void *next;
-} queued_msg_list;
+} queued_msg_list_t;
 
 struct lo_cs lo_client_sockets = {-1, -1};
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
 static int lo_server_dispatch_data(lo_server s, void *data, size_t size);
-static void dispatch_method(lo_server s, dispatch_message *dmsg);
+static void dispatch_method(lo_server s, dispatch_message_t *dmsg);
 static int dispatch_queued(lo_server s);
-static void queue_data(lo_server s, lo_timetag ts, dispatch_message *dmsg);
+static void queue_data(lo_server s, lo_timetag ts, dispatch_message_t *dmsg);
 
-static ssize_t lo_validate_string(const char *data, ssize_t size);
-static ssize_t lo_validate_blob(lo_blob b, ssize_t size);
-static ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size);
-static ssize_t lo_validate_bundle(void *data, ssize_t size);
-
-dispatch_message *parse_message(void *data, size_t size);
-void dispatch_message_free(dispatch_message *dmsg);
 
 #ifdef WIN32
 // Copied from the Win32 SDK 
@@ -135,6 +128,227 @@ int initWSock()
     return stateWSock;
 }
 #endif
+
+
+
+static ssize_t lo_validate_string(const char *data, ssize_t size)
+{
+    ssize_t i = 0, len = 0;
+
+    if (size < 0) {
+        return -1;      // invalid size
+    }
+    for (i = 0; i < size; ++i) {
+        if (data[i] == '\0') {
+            len = 4 * (i / 4 + 1);
+            break;
+        }
+    }
+    if (len == 0) {
+        return -2;      // string not terminated
+    }
+    if (len > size) {
+        return -3;      // would overflow buffer
+    }
+    for (; i < len; ++i) {
+        if (data[i] != '\0') {
+            return -4;  // non-zero char found in pad area
+        }
+    }
+    return len;
+}
+
+static ssize_t lo_validate_blob(lo_blob b, ssize_t size)
+{
+    ssize_t i, blob_end, len;
+    if (size < 0) {
+        return -1;      // invalid size
+    }
+    uint32_t blob_contentsize = lo_blob_datasize(b);
+    if (blob_contentsize > LO_MAX_MSG_SIZE) {
+        return -3;
+    }
+    blob_end = sizeof(uint32_t) + blob_contentsize; // end of data
+    len = lo_blobsize(b); // padded size
+    if (len > size) {
+        return -3;      // would overflow buffer
+    }
+    char *data = (char *)b;
+    for (i = blob_end; i < len; ++i) {
+        if (data[i] != '\0') {
+            return -4;  // non-zero char found in pad area
+        }
+    }
+    return len;
+}
+
+static ssize_t lo_validate_bundle(void *data, ssize_t size)
+{
+    ssize_t len = 0, remain = size;
+    char *pos = data;
+    uint32_t elem_len;
+
+    len = lo_validate_string(data, size);
+    if (len < 0) {
+        return -1;
+    }
+    if (0 != strcmp(data, "#bundle")) {
+        return -1;
+    }
+    pos += len;
+    remain -= len;
+
+    // time tag
+    if (remain < 8) {
+        return -1;
+    }
+    pos += 8;
+    remain -= 8;
+
+    while (remain >= 4) {
+        elem_len = lo_otoh32(*((uint32_t *)pos));
+        pos += 4;
+        remain -= 4;
+        if (elem_len > remain) {
+            return -1;
+        }
+        pos += elem_len;
+        remain -= elem_len;
+    }
+    if (0 != remain) {
+        return -1;
+    }
+    return size;
+}
+
+static ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size)
+{
+    if (size < 0) {
+        return -1;
+    }
+    switch (type) {
+    case LO_TRUE:
+    case LO_FALSE:
+    case LO_NIL:
+    case LO_INFINITUM:
+        return 0;
+
+    case LO_INT32:
+    case LO_FLOAT:
+    case LO_MIDI:
+    case LO_CHAR:
+        return size >= 4 ? 4 : -3;
+
+    case LO_INT64:
+    case LO_TIMETAG:
+    case LO_DOUBLE:
+        return size >= 8 ? 8 : -3;
+
+    case LO_STRING:
+    case LO_SYMBOL:
+        return lo_validate_string((char *)data, size);
+
+    case LO_BLOB:
+        return lo_validate_blob((lo_blob)data, size);
+
+    default:
+        return -5;
+    }
+    return -5;
+}
+
+static dispatch_message_t *parse_message(void *data, size_t size)
+{
+    dispatch_message_t *dmsg = NULL;
+    char *types = NULL, *path = NULL, *copy = NULL, *ptr = NULL;
+    lo_arg **argv = NULL;
+    int i = 0, argc = 0, remain = size;
+
+    if (NULL == data || remain <= 0) { return NULL; }
+    copy = malloc(size);
+    memcpy(copy, data, size);
+    path = copy;
+
+    int len = lo_validate_string(path, remain);
+    if (len < 0) {
+        // invalid path string
+        goto fail;
+    }
+
+    remain -= len;
+    if (remain <= 0) {
+        // no type tag string
+        goto fail;
+    }
+    types = path + len;
+    len = lo_validate_string(types, remain);
+    if (len < 0) {
+        // invalid type tag string
+        goto fail;
+    }
+    if (types[0] != ',') {
+        // type tag string missing initial comma
+        goto fail;
+    }
+    ptr = types + len;
+    ++types;
+    argc = strlen(types);
+    remain -= len;
+
+    argv = argc ? calloc(argc, sizeof(lo_arg *)) : NULL;
+
+    for (i = 0; remain >= 0 && i < argc; ++i) {
+        if (types[i] == 'b') {
+            // convert blob size to host endian for lo_validate_arg
+            if (remain < 4) { goto fail; }
+            lo_arg_host_endian('b', ptr);
+        }
+        len = lo_validate_arg((lo_type)types[i], ptr, remain);
+        if (len < 0) {
+            // invalid argument
+            goto fail;
+        }
+        if (types[i] != 'b') {
+            lo_arg_host_endian((lo_type)types[i], ptr);
+        }
+        argv[i] = len ? (lo_arg*)ptr : NULL;
+        remain -= len;
+        ptr += len;
+    }
+    if (0 != remain || i != argc) {
+        // size/argument mismatch
+        goto fail;
+    }
+
+    dmsg = malloc(sizeof(dispatch_message_t));
+    if (dmsg) {
+        dmsg->data = copy;
+        dmsg->data_size = size;
+        dmsg->path = path;
+        dmsg->types = types;
+        dmsg->argc = argc;
+        dmsg->argv = argv;
+    }
+    return dmsg;
+
+fail:
+    free(argv);
+    free(copy);
+    return NULL;
+}
+
+static void dispatch_message_free(dispatch_message_t *dmsg)
+{
+    if (dmsg) {
+        free(dmsg->data);
+        free(dmsg->argv);
+		free(dmsg);
+    }
+}
+
+
+
+
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
@@ -591,22 +805,20 @@ again:
 
 int lo_server_dispatch_data(lo_server s, void *data, size_t size)
 {
-    if (!data) {
-        return -1;
-    }
-    ssize_t len = lo_validate_string(data, size);
-    if (len < 0) {
-        return -1;
-    }
+	ssize_t len;
+
+    if (!data) return -1;
+	len = lo_validate_string(data, size);
+    if (len < 0) return -1;
 
     if (!strcmp(data, "#bundle")) {
+        char *pos = (char *)data + len;
+        int remain = size - len;
+        lo_timetag ts, now;
+        
         if (lo_validate_bundle(data, size) < 0) {
             return -1;
         }
-        char *pos = (char *)data + len;
-        int remain = size - len;
-        uint32_t elem_len;
-        lo_timetag ts, now;
 
         lo_timetag_now(&now);
         ts.sec = lo_otoh32(*((uint32_t *)pos));
@@ -616,10 +828,15 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
         remain -= 8;
 
         while (remain >= 4) {
+            dispatch_message_t *dmsg;
+            uint32_t elem_len;
+        
             elem_len = lo_otoh32(*((uint32_t *)pos));
             pos += 4;
             remain -= 4;
-            dispatch_message *dmsg = parse_message(pos, elem_len);
+            
+            // Parse the message in the bundle
+            dmsg = parse_message(pos, elem_len);
             if (dmsg)
             {
                 // test for immedaite dispatch
@@ -635,10 +852,8 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
             remain -= elem_len;
         }
     } else {
-        dispatch_message *dmsg = parse_message(data, size);
-        if (!dmsg) {
-            return 0;
-        }
+        dispatch_message_t *dmsg = parse_message(data, size);
+        if (!dmsg) return 0;
         dispatch_method(s, dmsg);
         dispatch_message_free(dmsg);
     }
@@ -653,7 +868,7 @@ double lo_server_next_event_delay(lo_server s)
 	double delay;
 
 	lo_timetag_now(&now);
-	delay = lo_timetag_diff(((queued_msg_list *)s->queued)->ts, now);
+	delay = lo_timetag_diff(((queued_msg_list_t *)s->queued)->ts, now);
 
 	delay = delay > 100.0 ? 100.0 : delay;
 	delay = delay < 0.0 ? 0.0 : delay;
@@ -664,7 +879,7 @@ double lo_server_next_event_delay(lo_server s)
     return 100.0;
 }
 
-static void dispatch_method(lo_server s, dispatch_message *dmsg)
+static void dispatch_method(lo_server s, dispatch_message_t *dmsg)
 {
     char *path = dmsg->path;
     char *types = dmsg->types;
@@ -868,12 +1083,12 @@ int lo_server_events_pending(lo_server s)
     return s->queued != 0;
 }
 
-static void queue_data(lo_server s, lo_timetag ts, dispatch_message *dmsg)
+static void queue_data(lo_server s, lo_timetag ts, dispatch_message_t *dmsg)
 {
     /* insert blob into future dispatch queue */
-    queued_msg_list *it = s->queued;
-    queued_msg_list *prev = NULL;
-    queued_msg_list *ins = calloc(1, sizeof(queued_msg_list));
+    queued_msg_list_t *it = s->queued;
+    queued_msg_list_t *prev = NULL;
+    queued_msg_list_t *ins = calloc(1, sizeof(queued_msg_list_t));
 
     ins->ts = ts;
     ins->dmsg = dmsg;
@@ -906,8 +1121,8 @@ static void queue_data(lo_server s, lo_timetag ts, dispatch_message *dmsg)
 static int dispatch_queued(lo_server s)
 {
     //char *path, *types, *data;
-    queued_msg_list *head = s->queued;
-    queued_msg_list *tailhead;
+    queued_msg_list_t *head = s->queued;
+    queued_msg_list_t *tailhead;
     lo_timetag disp_time;
 
     if (!head) {
@@ -920,10 +1135,10 @@ static int dispatch_queued(lo_server s)
 
     do {
 	tailhead = head->next;
-        dispatch_message *dmsg = ((queued_msg_list *)s->queued)->dmsg;
+        dispatch_message_t *dmsg = ((queued_msg_list_t *)s->queued)->dmsg;
 	dispatch_method(s, dmsg);
         dispatch_message_free(dmsg);
-	free((queued_msg_list *)s->queued);
+	free((queued_msg_list_t *)s->queued);
 
 	s->queued = tailhead;
 	head = tailhead;
@@ -1125,221 +1340,5 @@ void lo_throw(lo_server s, int errnum, const char *message, const char *path)
     }
 }
 
-
-
-static ssize_t lo_validate_string(const char *data, ssize_t size)
-{
-    ssize_t i = 0, len = 0;
-
-    if (size < 0) {
-        return -1;      // invalid size
-    }
-    for (i = 0; i < size; ++i) {
-        if (data[i] == '\0') {
-            len = 4 * (i / 4 + 1);
-            break;
-        }
-    }
-    if (len == 0) {
-        return -2;      // string not terminated
-    }
-    if (len > size) {
-        return -3;      // would overflow buffer
-    }
-    for (; i < len; ++i) {
-        if (data[i] != '\0') {
-            return -4;  // non-zero char found in pad area
-        }
-    }
-    return len;
-}
-
-static ssize_t lo_validate_blob(lo_blob b, ssize_t size)
-{
-    ssize_t i, blob_end, len;
-    if (size < 0) {
-        return -1;      // invalid size
-    }
-    uint32_t blob_contentsize = lo_blob_datasize(b);
-    if (blob_contentsize > LO_MAX_MSG_SIZE) {
-        return -3;
-    }
-    blob_end = sizeof(uint32_t) + blob_contentsize; // end of data
-    len = lo_blobsize(b); // padded size
-    if (len > size) {
-        return -3;      // would overflow buffer
-    }
-    char *data = (char *)b;
-    for (i = blob_end; i < len; ++i) {
-        if (data[i] != '\0') {
-            return -4;  // non-zero char found in pad area
-        }
-    }
-    return len;
-}
-
-static ssize_t lo_validate_bundle(void *data, ssize_t size)
-{
-    ssize_t len = 0, remain = size;
-    char *pos = data;
-    uint32_t elem_len;
-
-    len = lo_validate_string(data, size);
-    if (len < 0) {
-        return -1;
-    }
-    if (0 != strcmp(data, "#bundle")) {
-        return -1;
-    }
-    pos += len;
-    remain -= len;
-
-    // time tag
-    if (remain < 8) {
-        return -1;
-    }
-    pos += 8;
-    remain -= 8;
-
-    while (remain >= 4) {
-        elem_len = lo_otoh32(*((uint32_t *)pos));
-        pos += 4;
-        remain -= 4;
-        if (elem_len > remain) {
-            return -1;
-        }
-        pos += elem_len;
-        remain -= elem_len;
-    }
-    if (0 != remain) {
-        return -1;
-    }
-    return size;
-}
-
-static ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size)
-{
-    if (size < 0) {
-        return -1;
-    }
-    switch (type) {
-    case LO_TRUE:
-    case LO_FALSE:
-    case LO_NIL:
-    case LO_INFINITUM:
-        return 0;
-
-    case LO_INT32:
-    case LO_FLOAT:
-    case LO_MIDI:
-    case LO_CHAR:
-        return size >= 4 ? 4 : -3;
-
-    case LO_INT64:
-    case LO_TIMETAG:
-    case LO_DOUBLE:
-        return size >= 8 ? 8 : -3;
-
-    case LO_STRING:
-    case LO_SYMBOL:
-        return lo_validate_string((char *)data, size);
-
-    case LO_BLOB:
-        return lo_validate_blob((lo_blob)data, size);
-
-    default:
-        return -5;
-    }
-    return -5;
-}
-
-static void dispatch_message_free(dispatch_message *dmsg)
-{
-    if (dmsg) {
-        free(dmsg->data);
-        free(dmsg->argv);
-    }
-    free(dmsg);
-}
-
-static dispatch_message *parse_message(void *data, size_t size)
-{
-    dispatch_message *dmsg = NULL;
-    char *types = NULL, *path = NULL, *copy = NULL, *ptr = NULL;
-    lo_arg **argv = NULL;
-    int i = 0, argc = 0, remain = size;
-
-    if (NULL == data || remain <= 0) { return NULL; }
-    copy = malloc(size);
-    memcpy(copy, data, size);
-    path = copy;
-
-    int len = lo_validate_string(path, remain);
-    if (len < 0) {
-        // invalid path string
-        goto fail;
-    }
-
-    remain -= len;
-    if (remain <= 0) {
-        // no type tag string
-        goto fail;
-    }
-    types = path + len;
-    len = lo_validate_string(types, remain);
-    if (len < 0) {
-        // invalid type tag string
-        goto fail;
-    }
-    if (types[0] != ',') {
-        // type tag string missing initial comma
-        goto fail;
-    }
-    ptr = types + len;
-    ++types;
-    argc = strlen(types);
-    remain -= len;
-
-    argv = argc ? calloc(argc, sizeof(lo_arg *)) : NULL;
-
-    for (i = 0; remain >= 0 && i < argc; ++i) {
-        if (types[i] == 'b') {
-            // convert blob size to host endian for lo_validate_arg
-            if (remain < 4) { goto fail; }
-            lo_arg_host_endian('b', ptr);
-        }
-        len = lo_validate_arg((lo_type)types[i], ptr, remain);
-        if (len < 0) {
-            // invalid argument
-            goto fail;
-        }
-        if (types[i] != 'b') {
-            lo_arg_host_endian((lo_type)types[i], ptr);
-        }
-        argv[i] = len ? (lo_arg*)ptr : NULL;
-        remain -= len;
-        ptr += len;
-    }
-    if (0 != remain || i != argc) {
-        // size/argument mismatch
-        goto fail;
-    }
-
-    dmsg = malloc(sizeof(dispatch_message));
-    if (dmsg) {
-        dmsg->data = copy;
-        dmsg->data_size = size;
-        dmsg->path = path;
-        dmsg->types = types;
-        dmsg->argc = argc;
-        dmsg->argv = argv;
-    }
-    return dmsg;
-
-fail:
-    free(argv);
-    free(copy);
-    return NULL;
-}
 
 /* vi:set ts=8 sts=4 sw=4: */
