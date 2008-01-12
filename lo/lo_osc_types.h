@@ -30,7 +30,7 @@
 typedef struct {
 	/** The number of seconds since Jan 1st 1900 in the UTC timezone. */
 	uint32_t sec;
-	/** The fractions of a second offset from obove, expressed as 1/2^32nds
+	/** The fractions of a second offset from above, expressed as 1/2^32nds
          * of a second */
 	uint32_t frac;
 } lo_timetag;
