@@ -1,3 +1,7 @@
+2008-01-12  Nicholas Humfrey  <njh@aelius.com>
+
+    * Added tools from Kentaro Fukuchi
+
 2007-03-19  Nicholas Humfrey  <njh@aelius.com>
 
 	* Applied patch from Chris Hixon to check for buffer overflows

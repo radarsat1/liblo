@@ -1,3 +1,5 @@
+SUBDIRS = . tools
+
 MAINTAINERCLEANFILES = Makefile.in
 
 noinst_HEADERS = lo_types_internal.h

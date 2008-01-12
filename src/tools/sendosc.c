@@ -1,0 +1,243 @@
+/*
+ * sendosc - Send OpenSound Control message.
+ *
+ * Copyright (C) 2007 Kentaro Fukuchi <fukuchi@megaui.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ */
+ 
+/* 
+ * TODO:
+ * - support binary blob.
+ * - support TimeTag.
+ * - receive replies.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <lo/lo.h>
+
+void usage(void)
+{
+	printf("Usage: sendosc hostname port address types values...\n"
+		   "Send OpenSound Control message using UDP.\n\n"
+		   "Description\n"
+		   "hostname: specifies the remote host's name.\n"
+		   "port    : specifies the port number to connect to the remote host.\n"
+		   "address : the OSC address where the message to be sent.\n"
+		   "types   : specifies the types of the following values.\n");
+	printf("          %c - 32bit integer\n", LO_INT32);
+	printf("          %c - 64bit integer\n", LO_INT64);
+	printf("          %c - 32bit floating point number\n", LO_FLOAT);
+	printf("          %c - 64bit (double) floating point number\n", LO_DOUBLE);
+	printf("          %c - string\n", LO_STRING);
+	printf("          %c - symbol\n", LO_SYMBOL);
+	printf("          %c - char\n", LO_CHAR);
+	printf("          %c - 4 byte midi packet (8 digits hexadecimal)\n", LO_MIDI);
+	printf("          %c - TRUE (no value required)\n", LO_TRUE);
+	printf("          %c - FALSE (no value required)\n", LO_FALSE);
+	printf("          %c - NIL (no value required)\n", LO_NIL);
+	printf("          %c - INFINITUM (no value required)\n", LO_INFINITUM);
+	printf("values  : space separated values.\n\n"
+		   "Example\n"
+		   "$ sendosc localhost 7777 /sample/address %c%c%c%c 1 3.14 hello\n",
+		   LO_INT32, LO_TRUE, LO_FLOAT, LO_STRING);
+}
+
+lo_message create_message(char **argv)
+{
+	/* Note:
+	 * argv[1] <- hostname
+	 * argv[2] <- port
+	 * argv[3] <- OSC address
+	 * argv[4] <- types
+	 * argv[5..] <- values
+	 */
+	int i, argi;
+	lo_message message;
+	const char *types, *arg;
+	int values;
+
+	message = lo_message_new();
+	if(argv[4] == NULL) {
+		/* empty message is allowed. */
+		values = 0;
+	} else {
+		types = argv[4];
+		values = strlen(types);
+	}
+
+	argi = 5;
+	for(i=0; i<values; i++) {
+		arg = argv[argi];
+		if(arg == NULL) {
+			fprintf(stderr, "Value #%d is not given.\n", i + 1);
+			goto EXIT;
+		}
+		switch(types[i]) {
+			case LO_INT32:
+			{
+				char *endp;
+				int32_t v;
+
+				v = strtol(arg, &endp, 10);
+				if(errno != 0 || *endp != '\0') {
+					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
+					goto EXIT;
+				}
+				lo_message_add_int32(message, v);
+				argi++;
+				break;
+			}
+			case LO_INT64:
+			{
+				char *endp;
+				int64_t v;
+
+				v = strtoll(arg, &endp, 10);
+				if(errno != 0 || *endp != '\0') {
+					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
+					goto EXIT;
+				}
+				lo_message_add_int64(message, v);
+				argi++;
+				break;
+			}
+			case LO_FLOAT:
+			{
+				char *endp;
+				float v;
+
+				v = (float)strtod(arg, &endp);
+				if(errno != 0 || *endp != '\0') {
+					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
+					goto EXIT;
+				}
+				lo_message_add_float(message, v);
+				argi++;
+				break;
+			}
+			case LO_DOUBLE:
+			{
+				char *endp;
+				double v;
+
+				v = strtod(arg, &endp);
+				if(errno != 0 || *endp != '\0') {
+					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
+					goto EXIT;
+				}
+				lo_message_add_double(message, v);
+				argi++;
+				break;
+			}
+			case LO_STRING:
+				lo_message_add_string(message, arg);
+				break;
+			case LO_SYMBOL:
+				lo_message_add_symbol(message, arg);
+				break;
+			case LO_CHAR:
+				lo_message_add_char(message, arg[0]);
+				argi++;
+				break;
+			case LO_MIDI:
+			{
+				unsigned int midi;
+				uint8_t packet[4];
+				int ret;
+
+				ret = sscanf(arg, "%08x", &midi);
+				if(ret != 1) {
+					fprintf(stderr, "An invalid hexadecimal value was given: '%s'\n", arg);
+					goto EXIT;
+				}
+				packet[0] = (midi>>24) & 0xff;
+				packet[1] = (midi>>16) & 0xff;
+				packet[2] = (midi>> 8) & 0xff;
+				packet[3] = midi & 0xff;
+				lo_message_add_midi(message, packet);
+				argi++;
+				break;
+			}
+			case LO_TRUE:
+				lo_message_add_true(message);
+				break;
+			case LO_FALSE:
+				lo_message_add_false(message);
+				break;
+			case LO_NIL:
+				lo_message_add_nil(message);
+				break;
+			case LO_INFINITUM:
+				lo_message_add_infinitum(message);
+				break;
+			default:
+				fprintf(stderr, "Type '%c' is not supported or invalid.\n", types[i]);
+				goto EXIT;
+				break;
+		}
+	}
+
+	return message;
+EXIT:
+	lo_message_free(message);
+	return NULL;
+}
+
+int main(int argc, char **argv)
+{
+	lo_address target;
+	lo_message message;
+	int ret;
+
+	if(argc < 4) {
+		usage();
+		exit(1);
+	}
+
+	if(argv[1] == NULL) {
+		fprintf(stderr, "No hostname is given.\n");
+		exit(1);
+	}
+	if(argv[2] == NULL) {
+		fprintf(stderr, "No port number is given.\n");
+		exit(1);
+	}
+
+	target = lo_address_new(argv[1], argv[2]);
+	if(target == NULL) {
+		fprintf(stderr, "Failed to open %s:%s\n", argv[1], argv[2]);
+		exit(1);
+	}
+
+	if(argv[3] == NULL) {
+		fprintf(stderr, "No path is given.\n");
+		exit(1);
+	}
+
+	message = create_message(argv);
+	if(message == NULL) {
+		fprintf(stderr, "Failed to create OSC message.\n");
+		exit(1);
+	}
+
+	ret = lo_send_message(target, argv[3], message);
+	if(ret == -1) {
+		fprintf(stderr, "An error occured: %s\n", lo_address_errstr(target));
+		exit(1);
+	}
+
+	return 0;
+}

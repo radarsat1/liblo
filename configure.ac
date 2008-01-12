@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([liblo], [0.24], [liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo], [0.25], [liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
@@ -57,6 +57,7 @@ AC_SUBST(LO_BIGENDIAN)
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
+	src/tools/Makefile
 	examples/Makefile
 	lo/Makefile
 	lo/lo_endian.h
