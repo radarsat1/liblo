@@ -144,9 +144,11 @@ lo_message create_message(char **argv)
 			}
 			case LO_STRING:
 				lo_message_add_string(message, arg);
+                argi++;
 				break;
 			case LO_SYMBOL:
 				lo_message_add_symbol(message, arg);
+                argi++;
 				break;
 			case LO_CHAR:
 				lo_message_add_char(message, arg[0]);
