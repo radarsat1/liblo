@@ -215,16 +215,17 @@ static void lo_message_add_typechar(lo_message m, char t)
 
 static void *lo_message_add_data(lo_message m, size_t s)
 {
-    int old_dlen = m->datalen;
+    uint32_t old_dlen = m->datalen;
 
     m->datalen += s;
-    while (m->datalen > m->datasize) {
-	m->datasize *= 2;
-	if (!m->datasize) {
+	
+	if (!m->datasize)
 	    m->datasize = LO_DEF_DATA_SIZE;
-	}
+
+    while (m->datalen > m->datasize)
+		m->datasize *= 2;
+
 	m->data = realloc(m->data, m->datasize);
-    }
 
     return m->data + old_dlen;
 }

@@ -1,5 +1,6 @@
 2008-01-20  Stephen Sinclair  <radarsat1@gmail.com>
 
+	* Avoid unnecessary repetitive reallocation on lo_message_add_*(). (Dave Robillard)
 	* Fixed errors related to 64-bit in packing blob and MIDI messages. (Dave Robillard)
 
 2008-01-13  Stephen Sinclair  <radarsat1@gmail.com>
