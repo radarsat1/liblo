@@ -1,5 +1,6 @@
 2008-01-20  Stephen Sinclair  <radarsat1@gmail.com>
 
+	* Added lo_message_add_varargs() to play well with C functions taking a variable number of arguments. (Dave Robillard)
 	* Avoid unnecessary repetitive reallocation on lo_message_add_*(). (Dave Robillard)
 	* Fixed errors related to 64-bit in packing blob and MIDI messages. (Dave Robillard)
 

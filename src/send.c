@@ -55,13 +55,15 @@ int initWSock();
 static int resolve_address(lo_address a);
 static int create_socket(lo_address a);
 static int send_data(lo_address a, lo_server from, char *data, const size_t data_len);
-static void add_varargs(lo_address t, lo_message m, va_list ap,
-			const char *types, const char *file, int line);
+
+// message.c
+int lo_message_add_varargs_internal(lo_message m, const char *types, va_list ap,
+                                    const char *file, int line);
 
 
 
 /* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
- * function with appropraite values for file and line */
+ * function with appropriate values for file and line */
 
 int lo_send_internal(lo_address t, const char *file, const int line,
      const char *path, const char *types, ...)
@@ -75,11 +77,14 @@ int lo_send_internal(lo_address t, const char *file, const int line,
     t->errstr = NULL;
 
     va_start(ap, types);
-    add_varargs(t, msg, ap, types, file, line);
+    ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
-    if (t->errnum) {
+    if (ret) {
 	lo_message_free(msg);
-	return t->errnum;
+	t->errnum = ret;
+	if (ret == -1) t->errstr = "unknown type";
+	else t->errstr = "bad format/args";
+	return ret;
     }
 
     ret = lo_send_message(t, path, msg);
@@ -90,7 +95,7 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 
 
 /* Don't call lo_send_timestamped_internal directly, use lo_send_timestamped, a
- * macro wrapping this function with appropraite values for file and line */
+ * macro wrapping this function with appropriate values for file and line */
 
 int lo_send_timestamped_internal(lo_address t, const char *file,
                                	 const int line, lo_timetag ts,
@@ -106,7 +111,7 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
     t->errstr = NULL;
 
     va_start(ap, types);
-    add_varargs(t, msg, ap, types, file, line);
+    ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
     if (t->errnum) {
 	lo_message_free(msg);
@@ -122,8 +127,8 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
 }
 
 
-/* Don't call lo_send_from_internal directly, us macros wrapping this 
- * function with appropraite values for file and line */
+/* Don't call lo_send_from_internal directly, use macros wrapping this 
+ * function with appropriate values for file and line */
 
 int lo_send_from_internal(lo_address to, lo_server from, const char *file,
                                	 const int line, lo_timetag ts,
@@ -141,7 +146,7 @@ int lo_send_from_internal(lo_address to, lo_server from, const char *file,
     to->errstr = NULL;
 
     va_start(ap, types);
-    add_varargs(to, msg, ap, types, file, line);
+    ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
     if (to->errnum) {
 	if (b) lo_bundle_free(b);
@@ -166,7 +171,7 @@ int lo_send_from_internal(lo_address to, lo_server from, const char *file,
 
 #if 0
 
-This (incmplete) function converts from printf-style formats to OSC typetags,
+This (incomplete) function converts from printf-style formats to OSC typetags,
 but I think its dangerous and mislieading so its not available at the moment.
 
 static char *format_to_types(const char *format);
@@ -232,126 +237,6 @@ static char *format_to_types(const char *format)
 }
 
 #endif
-
-static void add_varargs(lo_address t, lo_message msg, va_list ap,
-			const char *types, const char *file, int line)
-{
-    int count = 0;
-    int i;
-    int64_t i64;
-    float f;
-    char *s;
-    lo_blob b;
-    uint8_t *m;
-    lo_timetag tt;
-    double d;
-
-    while (types && *types) {
-	count++;
-	switch (*types++) {
-
-	case LO_INT32:
-	    i = va_arg(ap, int32_t);
-	    lo_message_add_int32(msg, i);
-	    break;
-
-	case LO_FLOAT:
-	    f = (float)va_arg(ap, double);
-	    lo_message_add_float(msg, f);
-	    break;
-
-	case LO_STRING:
-	    s = va_arg(ap, char *);
-	    if (s == (char *)LO_MARKER_A) {
-		fprintf(stderr, "liblo error: lo_send called with invalid "
-			"string pointer for arg %d, probably arg mismatch\n"
-		        "at %s:%d, exiting.\n", count, file, line);
-		exit(1);
-	    }
-	    lo_message_add_string(msg, s);
-	    break;
-
-	case LO_BLOB:
-	    b = va_arg(ap, lo_blob);
-	    lo_message_add_blob(msg, b);
-	    break;
-
-	case LO_INT64:
-	    i64 = va_arg(ap, int64_t);
-	    lo_message_add_int64(msg, i64);
-	    break;
-
-	case LO_TIMETAG:
-	    tt = va_arg(ap, lo_timetag);
-	    lo_message_add_timetag(msg, tt);
-	    break;
-
-	case LO_DOUBLE:
-	    d = va_arg(ap, double);
-	    lo_message_add_double(msg, d);
-	    break;
-
-	case LO_SYMBOL:
-	    s = va_arg(ap, char *);
-	    if (s == (char *)LO_MARKER_A) {
-		fprintf(stderr, "liblo error: lo_send called with invalid "
-			"symbol pointer for arg %d, probably arg mismatch\n"
-		        "at %s:%d, exiting.\n", count, file, line);
-		exit(1);
-	    }
-	    lo_message_add_symbol(msg, s);
-	    break;
-
-	case LO_CHAR:
-	    i = va_arg(ap, int);
-	    lo_message_add_char(msg, i);
-	    break;
-
-	case LO_MIDI:
-	    m = va_arg(ap, uint8_t *);
-	    lo_message_add_midi(msg, m);
-	    break;
-
-	case LO_TRUE:
-	    lo_message_add_true(msg);
-	    break;
-
-	case LO_FALSE:
-	    lo_message_add_false(msg);
-	    break;
-
-	case LO_NIL:
-	    lo_message_add_nil(msg);
-	    break;
-
-	case LO_INFINITUM:
-	    lo_message_add_infinitum(msg);
-	    break;
-
-	default:
-	    t->errnum = -1;
-	    t->errstr = "unknown type";
-	    fprintf(stderr, "liblo warning: unknown type '%c' at %s:%d\n",
-		    *(types-1), file, line);
-	    break;
-	}
-    }
-    i = va_arg(ap, uint32_t);
-    if (i != LO_MARKER_A) {
-	t->errnum = -1;
-	t->errstr = "bad format/args";
-	fprintf(stderr, "liblo error: lo_send called with mismatching types "
-	        "and data at\n%s:%d, exiting.\n", file, line);
-    }
-    i = va_arg(ap, uint32_t);
-    if (i != LO_MARKER_B) {
-	t->errnum = -1;
-	t->errstr = "bad format/args";
-	fprintf(stderr, "liblo error: lo_send called with mismatching types "
-	        "and data at\n%s:%d, exiting.\n", file, line);
-    }
-    va_end(ap);
-}
 
 
 static int resolve_address(lo_address a)

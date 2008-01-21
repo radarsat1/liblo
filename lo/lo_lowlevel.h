@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 
+#include <stdarg.h>
 #include <stdint.h>
 
 #include "lo/lo_types.h"
@@ -102,6 +103,49 @@ lo_message lo_message_new();
  * lo_message_add*() calls.
  */
 void lo_message_free(lo_message m);
+
+/**
+ * \brief Append a number of arguments to a message.
+ *
+ * The data will be added in OSC byteorder (bigendian).
+ *
+ * \param m The message to be extended.
+ * \param types The types of the data items in the message, types are defined in
+ * lo_types_common.h
+ * \param ... The data values to be transmitted. The types of the arguments
+ * passed here must agree with the types specified in the type parameter.
+ *
+ * \return Less than 0 on failure, 0 on success.
+ */
+int lo_message_add(lo_message m, const char *types, ...);
+
+/** \brief the real message_add function (don't call directly) */
+int lo_message_add_internal(lo_message m,  const char *file, const int line,
+                            const char *types, ...);
+
+/**
+ * \brief Append a varargs list to a message.
+ *
+ * The data will be added in OSC byteorder (bigendian).
+ * IMPORTANT: args list must be terminated with LO_ARGS_END, or this call will
+ * fail.  This is used to do simple error checking on the sizes of parameters
+ * passed.
+ *
+ * \param m The message to be extended.
+ * \param types The types of the data items in the message, types are defined in
+ * lo_types_common.h
+ * \param ap The va_list created by a C function declared with an
+ * ellipsis (...) argument, and pre-initialised with
+ * "va_start(ap)". The types of the arguments passed here must agree
+ * with the types specified in the type parameter.
+ *
+ * \return Less than 0 on failure, 0 on success.
+ */
+int lo_message_add_varargs(lo_message m, const char *types, va_list ap);
+
+/** \brief the real message_add_varargs function (don't call directly) */
+int lo_message_add_varargs_internal(lo_message m, const char *types, va_list ap,
+                                    const char *file, const int line);
 
 /**
  * \brief Append a data item and typechar of the specified type to a message.

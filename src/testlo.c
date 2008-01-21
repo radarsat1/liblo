@@ -103,6 +103,8 @@ int subtest_reply_handler(const char *path, const char *types, lo_arg **argv,
 int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
+int test_varargs(lo_address a, const char *path, const char *types, ...);
+
 int main()
 {
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
@@ -395,6 +397,19 @@ int main()
     lo_send(a, "/a/b/c/d", "sfsff", "one", 0.12345678f, "three",
 	    -0.00000023001f, 1.0);
     lo_send(a, "/a/b/c/d", "b", btest);
+
+    TEST(test_varargs(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123,
+                      "123", btest, midi_data, 0x0123456789abcdefULL, tt,
+                      0.9999, "sym", 'X', 'Y', LO_ARGS_END) == 0);
+    // too many args
+    TEST(test_varargs(a, "/lotsofformats", "f", 0.12345678f, 123,
+                      "123", btest, midi_data, 0x0123456789abcdefULL, tt,
+                      0.9999, "sym", 'X', 'Y', LO_ARGS_END) != 0);
+    // too many types
+    TEST(test_varargs(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123,
+                      "123", btest, midi_data, 0x0123456789abcdefULL, tt, 0.5,
+                      LO_ARGS_END) != 0);
+
     lo_blob_free(btest);
 
     lo_send(a, "/pattern/*", "s", "a");
@@ -797,6 +812,19 @@ int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
     return 0;
 }
 
+int test_varargs(lo_address a, const char *path, const char *types, ...)
+{
+    va_list ap;
+    lo_message m = lo_message_new();
+    int error;
+    va_start(ap, types);
+    if ((error=lo_message_add_varargs(m, types, ap))==0)
+        lo_send_message(a, path, m);
+    else
+        printf("lo_message_add_varargs returned %d\n", error);
+    lo_message_free(m);
+    return error<0;
+}
 
 /*
 void replace_char(char *str, size_t size, const char find, const char replace)

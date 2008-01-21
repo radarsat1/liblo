@@ -38,6 +38,14 @@ extern "C" {
  * argument list. Used to do primitive bounds checking */
 #define LO_MARKER_A 0xdeadbeef
 #define LO_MARKER_B 0xf00baa23
+#define LO_ARGS_END LO_MARKER_A, LO_MARKER_B
+
+#define lo_message_add(path, types...) \
+        lo_message_add_internal(__FILE__, __LINE__, path, types, \
+			 LO_MARKER_A, LO_MARKER_B)
+
+#define lo_message_add_varargs(msg, types, list) \
+        lo_message_add_varargs_internal(msg, types, list, __FILE__, __LINE__)
 
 #define lo_send(targ, path, types...) \
         lo_send_internal(targ, __FILE__, __LINE__, path, types, \
