@@ -33,7 +33,7 @@ lo_blob lo_blob_new(int32_t size, const void *data)
     b->size = size;
 
     if (data) {
-	memcpy(&(b->data), data, size);
+	memcpy((char*)b + sizeof(uint32_t), data, size);
     }
 
     return b;
@@ -51,12 +51,12 @@ uint32_t lo_blob_datasize(lo_blob b)
 
 void *lo_blob_dataptr(lo_blob b)
 {
-    return &(b->data);
+    return (char*)b + sizeof(uint32_t);
 }
 
 uint32_t lo_blobsize(lo_blob b)
 {
-    const int len = sizeof(uint32_t) + b->size;
+    const uint32_t len = sizeof(uint32_t) + b->size;
 
     return 4 * (len / 4 + 1);
 }

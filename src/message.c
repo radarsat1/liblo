@@ -109,8 +109,8 @@ void lo_message_add_string(lo_message m, const char *a)
 
 void lo_message_add_blob(lo_message m, lo_blob a)
 {
-    const int size = lo_blobsize(a);
-    const int32_t dsize = lo_htoo32(lo_blob_datasize(a));
+    const uint32_t size = lo_blobsize(a);
+    const uint32_t dsize = lo_htoo32(lo_blob_datasize(a));
     char *nptr = lo_message_add_data(m, size);
 
     lo_message_add_typechar(m, LO_BLOB);
@@ -172,7 +172,7 @@ void lo_message_add_char(lo_message m, char a)
 
 void lo_message_add_midi(lo_message m, uint8_t a[4])
 {
-    char *nptr = lo_message_add_data(m, sizeof(a));
+    char *nptr = lo_message_add_data(m, 4);
 
     lo_message_add_typechar(m, LO_MIDI);
 

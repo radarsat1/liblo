@@ -1,6 +1,14 @@
+2008-01-20  Stephen Sinclair  <radarsat1@gmail.com>
+
+	* Fixed errors related to 64-bit in packing blob and MIDI messages. (Dave Robillard)
+
+2008-01-13  Stephen Sinclair  <radarsat1@gmail.com>
+
+        * Fixed index increment in sendosc.c for string and symbol types
+
 2008-01-12  Nicholas Humfrey  <njh@aelius.com>
 
-    * Added tools from Kentaro Fukuchi
+	* Added tools from Kentaro Fukuchi
 
 2007-03-19  Nicholas Humfrey  <njh@aelius.com>
 
@@ -15,7 +23,7 @@
 
 	* Changed lo_blob_new() to take const void* (thanks to Lars Luthman)
 	* Disable getnameinfo() method of getting hostname, when IPv6 is disabled
-	* Unlink Unix server socket when it is close (thanks to Dominic SacrŽ)
+	* Unlink Unix server socket when it is close (thanks to Dominic SacrÂŽ)
 	* Checks size of unix socket path properly
 	* Now accepts unix socket format osc.unix://localhost/tmp/mysocket.sock
 	* Released version 0.24pre1
