@@ -222,7 +222,7 @@ int lo_message_add_internal(lo_message msg, const char *file, const int line,
     int ret = 0;
 
     va_start(ap, types);
-    ret = lo_message_add_varargs_internal(msg, ap, types, file, line);
+    ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
 	return ret;
 }
