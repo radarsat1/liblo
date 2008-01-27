@@ -410,6 +410,14 @@ int main()
                       "123", btest, midi_data, 0x0123456789abcdefULL, tt, 0.5,
                       LO_ARGS_END) != 0);
 
+    // test lo_message_add
+    m1 = lo_message_new();
+    TEST(lo_message_add(m1, "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
+                        btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999, "sym",
+                        'X', 'Y') == 0);
+    lo_send_message(a, "/lotsofformats", m1);
+    lo_message_free(m1);
+ 
     lo_blob_free(btest);
 
     lo_send(a, "/pattern/*", "s", "a");
