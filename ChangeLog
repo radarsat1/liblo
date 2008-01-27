@@ -1,3 +1,7 @@
+2008-01-27  Stephen Sinclair <radarsat1@gmail.com>
+	* Fix for lo_message_add(), wrong argument order for lo_message_add_varargs_internal(). (Dave Robillard)
+	* Added test case for lo_message_add().
+
 2008-01-20  Stephen Sinclair  <radarsat1@gmail.com>
 
 	* Added lo_message_add_varargs() to play well with C functions taking a variable number of arguments. (Dave Robillard)
