@@ -1,12 +1,11 @@
+AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = sendosc dumposc
+SUBDIRS = .
 
-sendosc_CFLAGS = -Wall -I$(top_srcdir)
-sendosc_SOURCES = sendosc.c
-sendosc_LDADD = ../liblo.la
-sendosc_DEPENDENCIES = ../liblo.la
-
-dumposc_CFLAGS = -Wall -I$(top_srcdir)
-dumposc_SOURCES = dumposc.c
-dumposc_LDADD = ../liblo.la
-dumposc_DEPENDENCIES = ../liblo.la
+bin_PROGRAMS = oscsend oscdump
+oscsend_SOURCES = oscsend.c
+oscsend_CFLAGS = $(LIBLO_CFLAGS)
+oscsend_LDADD = ../liblo.la
+oscdump_SOURCES = oscdump.c
+oscdump_CFLAGS = $(LIBLO_CFLAGS)
+oscdump_LDADD = ../liblo.la

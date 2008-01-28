@@ -1,21 +1,22 @@
 /*
- * sendosc - Send OpenSound Control message.
+ * oscsend - Send OpenSound Control message.
  *
- * Copyright (C) 2007 Kentaro Fukuchi <fukuchi@megaui.net>
+ * Copyright (C) 2008 Kentaro Fukuchi <fukuchi@megaui.net>
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- */
- 
-/* 
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
  * TODO:
  * - support binary blob.
  * - support TimeTag.
@@ -26,17 +27,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <config.h>
 #include <lo/lo.h>
 
 void usage(void)
 {
-	printf("Usage: sendosc hostname port address types values...\n"
-		   "Send OpenSound Control message using UDP.\n\n"
+	printf("oscsend version %s\n"
+		   "Copyright (C) 2008 Kentaro Fukuchi\n\n"
+		   "Usage: oscsend hostname port address types values...\n"
+		   "Send OpenSound Control message via UDP.\n\n"
 		   "Description\n"
 		   "hostname: specifies the remote host's name.\n"
 		   "port    : specifies the port number to connect to the remote host.\n"
 		   "address : the OSC address where the message to be sent.\n"
-		   "types   : specifies the types of the following values.\n");
+		   "types   : specifies the types of the following values.\n",
+		   VERSION);
 	printf("          %c - 32bit integer\n", LO_INT32);
 	printf("          %c - 64bit integer\n", LO_INT64);
 	printf("          %c - 32bit floating point number\n", LO_FLOAT);
@@ -51,7 +56,7 @@ void usage(void)
 	printf("          %c - INFINITUM (no value required)\n", LO_INFINITUM);
 	printf("values  : space separated values.\n\n"
 		   "Example\n"
-		   "$ sendosc localhost 7777 /sample/address %c%c%c%c 1 3.14 hello\n",
+		   "$ oscsend localhost 7777 /sample/address %c%c%c%c 1 3.14 hello\n",
 		   LO_INT32, LO_TRUE, LO_FLOAT, LO_STRING);
 }
 
@@ -144,11 +149,11 @@ lo_message create_message(char **argv)
 			}
 			case LO_STRING:
 				lo_message_add_string(message, arg);
-                argi++;
+				argi++;
 				break;
 			case LO_SYMBOL:
 				lo_message_add_symbol(message, arg);
-                argi++;
+				argi++;
 				break;
 			case LO_CHAR:
 				lo_message_add_char(message, arg[0]);
