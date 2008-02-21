@@ -133,6 +133,36 @@ void lo_bundle_free(lo_bundle b)
     free(b);
 }
 
+static int _lo_internal_compare_ptrs( const void* a, const void* b )
+{
+    if (*(void**)a <  *(void**)b) return -1;
+    if (*(void**)a == *(void**)b) return 0;
+    return 1;
+}
+
+void lo_bundle_free_messages(lo_bundle b)
+{
+    int i;
+    lo_message tmp = 0;
+
+    if (!b)
+        return;
+
+    /* avoid freeing the same message twice */
+    if (b->len > 2)
+        qsort(b->msgs, b->len, sizeof(lo_message*), _lo_internal_compare_ptrs);
+
+    for(i = 0; i < b->len; i++) {
+        if (b->msgs[i] != tmp) {
+            tmp = b->msgs[i];
+            lo_message_free(b->msgs[i]);
+        }
+    }
+    free(b->msgs);
+    free(b->paths);
+    free(b);
+}
+
 void lo_bundle_pp(lo_bundle b)
 {
     int i;

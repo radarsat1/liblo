@@ -343,8 +343,17 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size);
 
 /**
  * \brief  Frees the memory taken by a bundle object.
+ *
+ * \param b The bundle to be freed.
 */
 void lo_bundle_free(lo_bundle b);
+
+/**
+ * \brief  Frees the memory taken by a bundle object and messages in the bundle.
+ *
+ * \param b The bundle, which may contain messages, to be freed.
+*/
+void lo_bundle_free_messages(lo_bundle b);
 
 /**
  * \brief return true if the type specified has a numerical value, such as

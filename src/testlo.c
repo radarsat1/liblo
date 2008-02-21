@@ -448,8 +448,9 @@ int main()
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
-    lo_message_free(m1);
-    lo_bundle_free(b);
+
+    /* This should be safe for multiple copies of the same message. */
+    lo_bundle_free_messages(b);
 
     b = lo_bundle_new((lo_timetag){1,2});
     m1 = lo_message_new();
@@ -460,6 +461,7 @@ int main()
     lo_message_add_string(m2, "24");
     lo_message_add_int32(m2, 24);
     lo_bundle_add_message(b, "/bundle", m2);
+    lo_bundle_add_message(b, "/bundle", m1);
 
 /* 
     lo_send_bundle(a, b);
@@ -468,11 +470,10 @@ int main()
 	exit(1);
     }
 */
-    TEST(lo_send_bundle(a, b) == 64);
+    TEST(lo_send_bundle(a, b) == 88);
 
-    lo_message_free(m1);
-    lo_message_free(m2);
-    lo_bundle_free(b);
+    /* Test freeing out-of-order copies of messages in a bundle. */
+    lo_bundle_free_messages(b);
 
     b = lo_bundle_new((lo_timetag){10,0xFFFFFFFE});
     m1 = lo_message_new();
@@ -535,7 +536,7 @@ int main()
 #endif
     }
     
-    TEST(bundle_count == 6);
+    TEST(bundle_count == 7);
     printf("\n");
 
     printf("bundle timing jitter results:\n"
