@@ -1,3 +1,6 @@
+2008-02-25  Stephen Sinclair <radarsat1@gmail.com>
+	* Fix bug where curly brackets didn't match the last item in the comma-separated list.
+
 2008-02-20  Stephen Sinclair <radarsat1@gmail.com>
 	* Added lo_bundle_free_messages() to free a bundle and the messages it points to. (Kentaro Fukuchi)
 

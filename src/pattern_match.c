@@ -97,7 +97,7 @@ int lo_pattern_match(const char *str, const char *p)
         switch (c = *p++) {
 
             case '*':
-                while (*p == '*')
+                while (*p == '*' && *p != '/')
                     p++;
 
                 if (!*p)
@@ -191,7 +191,7 @@ int lo_pattern_match(const char *str, const char *p)
 
                     c = *p++;
 
-                    while (*p) {
+                    while (c) {
                         if (c == ',') {
                             if(lo_pattern_match(str, remainder)) {
                                 return true;
@@ -206,20 +206,22 @@ int lo_pattern_match(const char *str, const char *p)
                         }
                         else if (c == '}') {
                             // continue normal pattern matching
-                            if(!*p++)
-                                return false;
+                            if (!*p && !*str) return true;
+                            str--; // str is incremented again below
                             break;
                         } else if (c == *str) {
                             str++;
                             if (!*str && *remainder) 
                                 return false;
-                            // p++;
                         } else { // skip to next comma
                             str = place;
                             while (*p != ',' && *p != '}' && *p)
                                 p++;
                             if (*p == ',')
                                 p++;
+                            else if (*p == '}') {
+                                return false;
+                            }
                         }
                         c = *p++;
                     }
