@@ -289,6 +289,12 @@ static int create_socket(lo_address a)
 			return -1;
 		}
 	}
+	// if UDP and destination address is broadcast allow broadcast on the
+	// socket
+	else if (a->host && (strcmp(a->host, "255.255.255.255") == 0)) {
+		int opt = 1;
+		setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(int));
+	}
 	
     }
 #ifndef WIN32
