@@ -291,9 +291,18 @@ static int create_socket(lo_address a)
 	}
 	// if UDP and destination address is broadcast allow broadcast on the
 	// socket
-	else if (a->host && (strcmp(a->host, "255.255.255.255") == 0)) {
-		int opt = 1;
-		setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(int));
+	else if (a->protocol == LO_UDP && a->ai->ai_family == AF_INET)
+    {
+        // If UDP, and destination address is broadcast,
+        // then allow broadcast on the socket.
+        struct sockaddr_in* si = (struct sockaddr_in*)a->ai->ai_addr;
+        unsigned char* ip = (unsigned char*)&(si->sin_addr);
+
+        if (ip[0]==255 && ip[1]==255 && ip[2]==255 && ip[3]==255)
+        {
+            int opt = 1;
+            setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(int));
+        }
 	}
 	
     }

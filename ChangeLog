@@ -1,5 +1,6 @@
 2008-04-21  Stephen Sinclair <radarsat1@gmail.com>
 	* Added Daniel Lacroix's patch for level 2 broadcast support.
+	* Use resolved IP address to detect broadcast address.
 
 2008-02-25  Stephen Sinclair <radarsat1@gmail.com>
 	* Fix bug where curly brackets didn't match the last item in the comma-separated list.
