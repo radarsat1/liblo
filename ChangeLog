@@ -1,4 +1,5 @@
 2008-04-28  Stephen Sinclair <radarsat1@gmail.com>
+	* Add test case for sending a crafted packet that would crash a lo_server without validation.
 	* Make validation-related functions internal to liblo.
 	* Add server input validation along with a function to deserialise an OSC message. (Chris Hixon)
 	* Fix bad socket number in lo_client_sockets when a server is freed.

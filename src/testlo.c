@@ -58,6 +58,7 @@ static int pattern_count = 0;
 static int reply_count = 0;
 static int subtest_count = 0;
 static int subtest_reply_count = 0;
+static int error_okay = 0;
 
 char testdata[5] = "ABCDE";
 
@@ -68,6 +69,7 @@ static float jitter_min = 1000.0f;
 
 void exitcheck(void);
 void test_deserialise(void);
+void test_validation(lo_address a);
 void error(int num, const char *m, const char *path);
 void rep_error(int num, const char *m, const char *path);
 
@@ -385,6 +387,8 @@ int main()
 	exit(1);
     }
 
+    test_validation(a);
+
     lo_send(a, "/", "i", 242);
     lo_send(a, "/pattern/", "i", 243);
 
@@ -645,8 +649,11 @@ void exitcheck(void)
 
 void error(int num, const char *msg, const char *path)
 {
-    printf("liblo server error %d in %s: %s\n", num, path, msg);
-    exit(1);
+    printf("liblo server error %d in %s: %s", num, path, msg);
+    if (!error_okay)
+        exit(1);
+    else
+        printf(" (expected)\n");
 }
 
 void rep_error(int num, const char *msg, const char *path)
@@ -1020,5 +1027,33 @@ void test_deserialise()
     TEST(NULL == msg && LO_EINVALIDARG == result);
 }
 
+void test_validation(lo_address a)
+{
+    /* packet crafted to crash a lo_server when no input validation is performed */
+    char mem[] = {"/\0\0\0,bs\0,\x00\x0F\x42\x3F"}; // OSC:  "/" ",bs" 999999
+    int eok = error_okay;
+    int sock = a->socket;
+
+    printf("validation\n");
+
+    if (sock == -1)
+        sock = lo_client_sockets.udp;
+    if (sock == -1) {
+        fprintf(stderr, "Couldn't get socket in test_validation(), %s:%d\n", __FILE__, __LINE__);
+        exit(1);
+    }
+
+    error_okay = 1;
+    if (sendto(sock, &mem, sizeof(mem), MSG_NOSIGNAL,
+               a->ai->ai_addr, a->ai->ai_addrlen)==-1) {
+        fprintf(stderr, "Error sending packet in test_validation(), %s:%d\n", __FILE__, __LINE__);
+    }
+#ifndef WIN32
+    usleep(10000);
+#else
+    Sleep(10);
+#endif
+    error_okay = eok;
+}
 
 /* vi:set ts=8 sts=4 sw=4: */
