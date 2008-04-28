@@ -1,3 +1,6 @@
+2008-04-28  Stephen Sinclair <radarsat1@gmail.com>
+	* Fix bad socket number in lo_client_sockets when a server is freed.
+
 2008-04-21  Stephen Sinclair <radarsat1@gmail.com>
 	* Added Daniel Lacroix's patch for level 2 broadcast support.
 	* Use resolved IP address to detect broadcast address.

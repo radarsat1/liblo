@@ -578,6 +578,10 @@ void lo_server_free(lo_server s)
 	lo_method next;
 
 	if (s->socket != -1) {
+        if (s->protocol == LO_UDP && s->socket == lo_client_sockets.udp)
+            lo_client_sockets.udp = -1;
+        else if (s->protocol == LO_TCP && s->socket == lo_client_sockets.tcp)
+            lo_client_sockets.tcp = -1;
 		close(s->socket);
 		s->socket = -1;
 	}
