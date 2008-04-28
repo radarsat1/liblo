@@ -27,6 +27,7 @@
 #endif
 
 #include "lo_types_internal.h"
+#include "lo_internal.h"
 #include "lo/lo.h"
 
 #define LO_DEF_TYPE_SIZE 8

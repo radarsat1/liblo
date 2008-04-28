@@ -45,6 +45,7 @@
 #endif
 
 #include "lo_types_internal.h"
+#include "lo_internal.h"
 #include "lo/lo.h"
 #include "lo/lo_throw.h"
 

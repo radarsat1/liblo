@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "lo_types_internal.h"
+#include "lo_internal.h"
 #include "lo/lo.h"
 #include "config.h"
 
