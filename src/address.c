@@ -51,6 +51,8 @@ lo_address lo_address_new(const char *host, const char *port)
 	a->port = NULL;
     }
 
+    a->ttl = -1;
+
     return a;
 }
 
@@ -289,6 +291,17 @@ char *lo_url_get_path(const char *url)
 
     /* doesnt look like an OSC URL with port number and path*/
     return NULL;
+}
+
+void lo_address_set_ttl(lo_address t, int ttl)
+{
+    if (t->protocol == LO_UDP)
+        t->ttl = ttl;
+}
+
+int lo_address_get_ttl(lo_address t)
+{
+    return t->ttl;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

@@ -70,6 +70,7 @@ static float jitter_min = 1000.0f;
 void exitcheck(void);
 void test_deserialise(void);
 void test_validation(lo_address a);
+void test_multicast(lo_server_thread st);
 void error(int num, const char *m, const char *path);
 void rep_error(int num, const char *m, const char *path);
 
@@ -361,7 +362,7 @@ int main()
 				pattern_handler, "baz");
 
     lo_server_thread_add_method(st, "/subtest", "i",
-				subtest_handler, NULL);
+				subtest_handler, st);
 
     lo_server_thread_add_method(st, "/subtest-reply", "i",
 				subtest_reply_handler, NULL);
@@ -388,6 +389,7 @@ int main()
     }
 
     test_validation(a);
+    test_multicast(st);
 
     lo_send(a, "/", "i", 242);
     lo_send(a, "/pattern/", "i", 243);
@@ -441,7 +443,7 @@ int main()
 #else
     sleep(2);
 #endif
-    TEST(reply_count == 2);
+    TEST(reply_count == 3);
     TEST(pattern_count == 5);
     TEST(subtest_count == 2);
     TEST(subtest_reply_count == 22);
@@ -807,7 +809,8 @@ int subtest_handler(const char *path, const char *types, lo_arg **argv,
 
     subtest_count++;
     printf("got subtest message %d\n", subtest_count);
-    lo_send(a, "/subtest", "i", subtest_count);
+    lo_send_from(a, lo_server_thread_get_server(user_data),
+                 LO_TT_IMMEDIATE, "/subtest", "i", subtest_count);
 
     return 0;
 }
@@ -1054,6 +1057,25 @@ void test_validation(lo_address a)
     Sleep(10);
 #endif
     error_okay = eok;
+}
+
+void test_multicast(lo_server_thread st)
+{
+    /* test multicast server and sender */
+    /* message is sent from st otherwise reply doesn't work */
+    lo_server ms = lo_server_new_multicast("224.0.1.1", "15432", error);
+    lo_address ma = lo_address_new("224.0.1.1", "15432");
+    lo_address_set_ttl(ma, 1);
+    lo_server_add_method(ms, "/foo/bar", "fi", foo_handler, ms);
+    lo_server_add_method(ms, "/reply", "s", reply_handler, NULL);
+    if (lo_send_from(ma, lo_server_thread_get_server(st), LO_TT_IMMEDIATE,
+                     "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
+        printf("multicast send error %d: %s\n", lo_address_errno(ma), lo_address_errstr(ma));
+        exit(1);
+    }
+    TEST(lo_server_recv(ms)==24);
+    lo_server_free(ms);
+    lo_address_free(ma);
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

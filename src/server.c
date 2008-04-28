@@ -68,6 +68,9 @@ static void dispatch_method(lo_server s, const char *path,
 static int dispatch_queued(lo_server s);
 static void queue_data(lo_server s, lo_timetag ts, const char *path,
     lo_message msg);
+static lo_server lo_server_new_with_proto_internal(const char *group,
+                                                   const char *port, int proto,
+                                                   lo_err_handler err_h);
 
 #ifdef WIN32
 // Copied from the Win32 SDK 
@@ -128,8 +131,21 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h)
 	return lo_server_new_with_proto(port, LO_DEFAULT, err_h);
 }
 
+lo_server lo_server_new_multicast(const char *group, const char *port,
+                                  lo_err_handler err_h)
+{
+    return lo_server_new_with_proto_internal(group, port, LO_UDP, err_h);
+}
+
 lo_server lo_server_new_with_proto(const char *port, int proto,
 				   lo_err_handler err_h)
+{
+    return lo_server_new_with_proto_internal(NULL, port, proto, err_h);
+}
+
+lo_server lo_server_new_with_proto_internal(const char *group,
+                                            const char *port, int proto,
+                                            lo_err_handler err_h)
 {
     lo_server s;
     struct addrinfo *ai = NULL, *it, *used;
@@ -258,6 +274,24 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
 	    lo_server_free(s);
 	    return NULL;
 	}
+    
+    /* Join multicast group if specified. */
+    /* This must be done before bind().   */
+    if (group != NULL) {
+        struct ip_mreq mreq;
+        unsigned int yes = 1;
+        memset(&mreq, 0, sizeof(mreq));
+        if (inet_aton(group, &mreq.imr_multiaddr)==0) {
+            int err = geterror();
+            lo_throw(s, err, strerror(err), "inet_aton()");
+            lo_server_free(s);
+            return NULL;
+        }
+        mreq.imr_interface.s_addr=htonl(INADDR_ANY);
+
+        setsockopt(s->socket,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
+        setsockopt(s->socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes));
+    }
 
 	if ((ret = bind(s->socket, used->ai_addr, used->ai_addrlen)) < 0) {
         int err = geterror();

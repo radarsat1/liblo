@@ -40,6 +40,23 @@ lo_server_thread lo_server_thread_new(const char *port, lo_err_handler err_h)
     return lo_server_thread_new_with_proto(port, LO_DEFAULT, err_h);
 }
 
+lo_server_thread lo_server_thread_new_multicast(const char *group, const char *port,
+                                                lo_err_handler err_h)
+{
+    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
+    st->s = lo_server_new_multicast(group, port, err_h);
+    st->active = 0;
+    st->done = 0;
+
+    if (!st->s) {
+	free(st);
+
+	return NULL;
+    }
+
+    return st;
+}
+
 lo_server_thread lo_server_thread_new_with_proto(const char *port, int proto,
 				   lo_err_handler err_h)
 {

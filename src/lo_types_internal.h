@@ -33,6 +33,7 @@ typedef struct _lo_address {
 	struct addrinfo *ai;
 	int              errnum;
 	const char      *errstr;
+	int              ttl;
 } *lo_address;
 
 typedef struct _lo_blob {

@@ -67,6 +67,26 @@ lo_address lo_address_new_from_url(const char *url);
 void lo_address_free(lo_address t);
 
 /**
+ * \brief Set the Time-to-Live value for a given target address.
+ * 
+ * This is required for sending multicast UDP messages.  A value of 1
+ * (the usual case) keeps the message within the subnet, while 255
+ * means a global, unrestricted scope.
+ * 
+ * \param t An OSC address.
+ * \param ttl An integer specifying the scope of a multicast UDP message.
+ */ 
+void lo_address_set_ttl(lo_address t, int ttl);
+
+/**
+ * \brief Get the Time-to-Live value for a given target address.
+ * 
+ * \param t An OSC address.
+ * \return An integer specifying the scope of a multicast UDP message.
+ */ 
+int lo_address_get_ttl(lo_address t);
+
+/**
  * \brief Send a OSC formatted message to the address specified.
  *
  * \param targ The target OSC address
@@ -157,6 +177,25 @@ const char *lo_address_errstr(lo_address a);
  * raised. The function prototype is defined in lo_types.h
  */
 lo_server_thread lo_server_thread_new(const char *port, lo_err_handler err_h);
+
+/**
+ * \brief Create a new server thread to handle incoming OSC
+ * messages, and join a UDP multicast group.
+ * Server threads take care of the message reception and dispatch by
+ * transparently creating a system thread to handle incoming messages.
+ * Use this if you do not want to handle the threading yourself.
+ *
+ * \param group The multicast group to join.  See documentation on IP
+ * multicast for the acceptable address range; e.g., http://tldp.org/HOWTO/Multicast-HOWTO-2.html
+ * \param port If NULL is passed then an unused port will be chosen by the
+ * system, its number may be retrieved with lo_server_thread_get_port()
+ * so it can be passed to clients. Otherwise a decimal port number, service
+ * name or UNIX domain socket path may be passed.
+ * \param err_h A function that will be called in the event of an error being
+ * raised. The function prototype is defined in lo_types.h
+ */
+lo_server_thread lo_server_thread_new_multicast(const char *group, const char *port,
+                                                lo_err_handler err_h);
 
 /**
  * \brief Create a new server thread to handle incoming OSC

@@ -382,8 +382,12 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
     
     // Send the data
     if (a->protocol == LO_UDP) {
-  	ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
-	       a->ai->ai_addr, a->ai->ai_addrlen);
+        if (a->ttl >= 0) {
+            unsigned char ttl = (unsigned char)a->ttl;
+            setsockopt(sock,IPPROTO_IP,IP_MULTICAST_TTL,&ttl,sizeof(ttl));
+        }
+        ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
+                     a->ai->ai_addr, a->ai->ai_addrlen);
     } else {
 	ret = send(sock, data, data_len, MSG_NOSIGNAL);
     }

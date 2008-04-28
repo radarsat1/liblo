@@ -334,6 +334,26 @@ int lo_address_get_protocol(lo_address a);
 char *lo_address_get_url(lo_address a);
 
 /**
+ * \brief Set the Time-to-Live value for a given target address.
+ * 
+ * This is required for sending multicast UDP messages.  A value of 1
+ * (the usual case) keeps the message within the subnet, while 255
+ * means a global, unrestricted scope.
+ * 
+ * \param t An OSC address.
+ * \param ttl An integer specifying the scope of a multicast UDP message.
+ */ 
+void lo_address_set_ttl(lo_address t, int ttl);
+
+/**
+ * \brief Get the Time-to-Live value for a given target address.
+ * 
+ * \param t An OSC address.
+ * \return An integer specifying the scope of a multicast UDP message.
+ */ 
+int lo_address_get_ttl(lo_address t);
+
+/**
  * \brief  Create a new bundle object.
  *
  * OSC Bundles ecapsulate one or more OSC messages and may include a timestamp
@@ -463,6 +483,21 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h);
  */
 lo_server lo_server_new_with_proto(const char *port, int proto,
                                    lo_err_handler err_h);
+
+/**
+ * \brief Create a new server instance, and join a UDP multicast group.
+ * 
+ * \param group The multicast group to join.  See documentation on IP
+ * multicast for the acceptable address range; e.g., http://tldp.org/HOWTO/Multicast-HOWTO-2.html
+ * \param port If using UDP then NULL may be passed to find an unused port.
+ * Otherwise a decimal port number or service name or may be passed.
+ * If using UNIX domain sockets then a socket path should be passed here.
+ * \param err_h An error callback function that will be called if there is an
+ * error in messge reception or server creation. Pass NULL if you do not want
+ * error handling.
+ */
+lo_server lo_server_new_multicast(const char *group, const char *port,
+                                  lo_err_handler err_h);
 
 /**
  * \brief Free up memory used by the lo_server object
