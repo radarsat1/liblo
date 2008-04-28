@@ -66,7 +66,7 @@ static float jitter_max = 0.0f;
 static float jitter_min = 1000.0f;
 
 void exitcheck(void);
-void parsecheck(void);
+void test_deserialise(void);
 void error(int num, const char *m, const char *path);
 void rep_error(int num, const char *m, const char *path);
 
@@ -123,7 +123,7 @@ int main()
     int proto;
     char cmd[256];
 
-    //parsecheck();
+    test_deserialise();
 
     sta = lo_server_thread_new("7591", error);
     stb = lo_server_thread_new("7591", rep_error);
@@ -835,7 +835,6 @@ int test_varargs(lo_address a, const char *path, const char *types, ...)
     return error<0;
 }
 
-/*
 void replace_char(char *str, size_t size, const char find, const char replace)
 {
     char *p = str;
@@ -846,125 +845,179 @@ void replace_char(char *str, size_t size, const char find, const char replace)
     }
 }
 
-
-void parsecheck(void)
+void test_deserialise()
 {
+    const char *types = NULL;
+    lo_arg **argv = NULL;
+
+    lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
+    uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
+    lo_timetag tt = {0x1, 0x80000000};
+    lo_blob b = NULL;
+
+    // build a message
+    lo_message msg = lo_message_new();
+    TEST(0 == lo_message_get_argc(msg));
+    lo_message_add_float(msg, 0.12345678f);             // 0  f
+    lo_message_add_int32(msg, 123);                     // 1  i
+    lo_message_add_string(msg, "123");                  // 2  s
+    lo_message_add_blob(msg, btest);                    // 3  b
+    lo_message_add_midi(msg, midi_data);                // 4  m
+    lo_message_add_int64(msg, 0x0123456789abcdefULL);   // 5  h
+    lo_message_add_timetag(msg, tt);                    // 6  t
+    lo_message_add_double(msg, 0.9999);                 // 7  d
+    lo_message_add_symbol(msg, "sym");                  // 8  S
+    lo_message_add_char(msg, 'X');                      // 9  c
+    lo_message_add_char(msg, 'Y');                      // 10 c
+    lo_message_add_true(msg);                           // 11 T
+    lo_message_add_false(msg);                          // 12 F
+    lo_message_add_nil(msg);                            // 13 N
+    lo_message_add_infinitum(msg);                      // 14 I
+
+    // test types, args
+    TEST(15 == lo_message_get_argc(msg));
+    types = lo_message_get_types(msg);
+    TEST(NULL != types);
+    argv = lo_message_get_argv(msg);
+    TEST(NULL != argv);
+    TEST('f' == types[0] && fabs(argv[0]->f - 0.12345678f) < FLT_EPSILON);
+    TEST('i' == types[1] && 123 == argv[1]->i);
+    TEST('s' == types[2] && !strcmp(&argv[2]->s, "123"));
+    TEST('b' == types[3]);
+    b = (lo_blob)argv[3];
+    TEST(lo_blob_datasize(b) == sizeof(testdata));
+    TEST(12 == lo_blobsize(b));
+    TEST(!memcmp(lo_blob_dataptr(b), &testdata, sizeof(testdata)));
+    TEST('m' == types[4]  && !memcmp(&argv[4]->m, midi_data, 4));
+    TEST('h' == types[5]  && 0x0123456789abcdefULL == argv[5]->h);
+    TEST('t' == types[6]  && 1 == argv[6]->t.sec && 0x80000000 == argv[6]->t.frac);
+    TEST('d' == types[7]  && fabs(argv[7]->d - 0.9999) < FLT_EPSILON);
+    TEST('S' == types[8]  && !strcmp(&argv[8]->s, "sym"));
+    TEST('c' == types[9]  && 'X' == argv[9]->c);
+    TEST('c' == types[10] && 'Y' == argv[10]->c);
+    TEST('T' == types[11] && NULL == argv[11]);
+    TEST('F' == types[12] && NULL == argv[12]);
+    TEST('N' == types[13] && NULL == argv[13]);
+    TEST('I' == types[14] && NULL == argv[14]);
+
+    // serialise it
+    size_t len = lo_message_length(msg, "/foo");
+    printf("serialise message_length=%d\n", len);
+    char *buf = calloc(len, sizeof(char));
+    size_t size = 0;
+    char *tmp = lo_message_serialise(msg, "/foo", buf, &size);
+    TEST(tmp == buf && size == len && 92 == len);
+    lo_message_free(msg);
+
+    // deserialise it
+    printf("deserialise\n");
+    const char *path = lo_get_path(buf, len);
+    TEST(NULL != path && !strcmp(path, "/foo"));
+    msg = lo_message_deserialise(buf, size, NULL);
+    TEST(NULL != msg);
+
+    // repeat same test as above
+    TEST(15 == lo_message_get_argc(msg));
+    types = lo_message_get_types(msg);
+    TEST(NULL != types);
+    argv = lo_message_get_argv(msg);
+    TEST(NULL != argv);
+    TEST('f' == types[0] && fabs(argv[0]->f - 0.12345678f) < FLT_EPSILON);
+    TEST('i' == types[1] && 123 == argv[1]->i);
+    TEST('s' == types[2] && !strcmp(&argv[2]->s, "123"));
+    TEST('b' == types[3]);
+    b = (lo_blob)argv[3];
+    TEST(lo_blob_datasize(b) == sizeof(testdata));
+    TEST(12 == lo_blobsize(b));
+    TEST(!memcmp(lo_blob_dataptr(b), &testdata, sizeof(testdata)));
+    TEST('m' == types[4]  && !memcmp(&argv[4]->m, midi_data, 4));
+    TEST('h' == types[5]  && 0x0123456789abcdefULL == argv[5]->h);
+    TEST('t' == types[6]  && 1 == argv[6]->t.sec && 0x80000000 == argv[6]->t.frac);
+    TEST('d' == types[7]  && fabs(argv[7]->d - 0.9999) < FLT_EPSILON);
+    TEST('S' == types[8]  && !strcmp(&argv[8]->s, "sym"));
+    TEST('c' == types[9]  && 'X' == argv[9]->c);
+    TEST('c' == types[10] && 'Y' == argv[10]->c);
+    TEST('T' == types[11] && NULL == argv[11]);
+    TEST('F' == types[12] && NULL == argv[12]);
+    TEST('N' == types[13] && NULL == argv[13]);
+    TEST('I' == types[14] && NULL == argv[14]);
+
+    // serialise it again, compare
+    len = lo_message_length(msg, "/foo");
+    printf("serialise message_length=%d\n", len);
+    char *buf2 = calloc(len, sizeof(char));
+    size = 0;
+    tmp = lo_message_serialise(msg, "/foo", buf2, &size);
+    TEST(tmp == buf2 && size == len && 92 == len);
+    TEST(!memcmp(buf, buf2, len));
+    lo_message_free(msg);
+
+    lo_blob_free(btest);
+    free(buf);
+    free(buf2);
+
+    // deserialise failure tests with invalid message data
+
     char data[256];
-    dispatch_message *dmsg = NULL;
+    int result = 0;
 
-    const char *str =  "somestring!";
-    const char *blob = "blob!!!";
-
-    // a few success tests
-
-    snprintf(data, 256, "%s%s", "/t__", ",___"); // no arguments
-    replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 8);
-    TEST(NULL != dmsg);
-    TEST(0 == dmsg->argc);
-    TEST(NULL == dmsg->argv);
-    dispatch_message_free(dmsg);
-
-    snprintf(data, 256, "%s%s", "/t__", ",i__"); // int arg
-    replace_char(data, 8, '_', '\0');
-    *(uint32_t *)(data + 8) = lo_htoo32((uint32_t)-667);
-    dmsg = parse_message(data, 12);
-    TEST(NULL != dmsg);
-    TEST(1 == dmsg->argc);
-    TEST(-667 == dmsg->argv[0]->i);
-    dispatch_message_free(dmsg);
-
-    snprintf(data, 256, "%s%s", "/t__", ",TF_"); // args with no size
-    replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 8);
-    TEST(NULL != dmsg);
-    TEST(2 == dmsg->argc);
-    TEST('T' == dmsg->types[0] && NULL == dmsg->argv[0]);
-    TEST('F' == dmsg->types[1] && NULL == dmsg->argv[1]);
-    dispatch_message_free(dmsg);
-
-    snprintf(data, 256, "%s", "/t__" ",Tib" "FIs_");
-    replace_char(data, 12, '_', '\0');
-    *(uint32_t *)(data + 12) = lo_htoo32((uint32_t)-667); // i
-    *(uint32_t *)(data + 16) = lo_htoo32(strlen(blob)); // b
-    memcpy(data + 20, blob, 1 + strlen(blob));
-    memcpy(data + 20 + 1 + strlen(blob), str, 1 + strlen(str)); // s
-    dmsg = parse_message(data, 20 + 1 + strlen(blob) + 1 + strlen(str));
-    TEST(NULL != dmsg);
-    TEST(6 == dmsg->argc);
-    TEST('T' == dmsg->types[0] && NULL == dmsg->argv[0]);
-    TEST('i' == dmsg->types[1] && -667 == dmsg->argv[1]->i);
-    TEST('b' == dmsg->types[2] && strlen(blob) ==
-        lo_blob_datasize((lo_blob)&dmsg->argv[2]->s) &&
-        !strcmp(blob, lo_blob_dataptr((lo_blob)&dmsg->argv[2]->s)));
-    TEST('F' == dmsg->types[3] && NULL == dmsg->argv[3]);
-    TEST('I' == dmsg->types[4] && NULL == dmsg->argv[4]);
-    TEST('s' == dmsg->types[5] && !strcmp(str, &dmsg->argv[5]->s));
-    dispatch_message_free(dmsg);
-
-    // failure tests with invalid message data
-
-    dmsg = parse_message(NULL, 12); // NULL data
-    TEST(NULL == dmsg);
-
-    dmsg = parse_message(data, 0); // 0 size
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 0, &result); // 0 size
+    TEST(NULL == msg && LO_ESIZE == result);
 
     snprintf(data, 256, "%s", "/foo"); // unterminated path string
-    dmsg = parse_message(data, 4);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 4, &result);
+    TEST(NULL == msg && LO_EINVALIDPATH == result);
 
     snprintf(data, 256, "%s", "/f_o"); // non-0 in pad area
-    dmsg = parse_message(data, 4);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 4, &result);
+    TEST(NULL == msg && LO_EINVALIDPATH == result);
 
     snprintf(data, 256, "%s", "/t__"); // types missing
     replace_char(data, 4, '_', '\0');
-    dmsg = parse_message(data, 4);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 4, &result);
+    TEST(NULL == msg && LO_ENOTYPE == result);
 
     snprintf(data, 256, "%s%s", "/t__", "____"); // types empty
     replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 8);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 8, &result);
+    TEST(NULL == msg && LO_EBADTYPE == result);
 
     snprintf(data, 256, "%s%s", "/t__", ",f_"); // short message
     replace_char(data, 7, '_', '\0');
-    dmsg = parse_message(data, 7);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 7, &result);
+    TEST(NULL == msg && LO_EINVALIDTYPE == result);
 
     snprintf(data, 256, "%s%s", "/t__", "ifi_"); // types missing comma
     replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 8);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 8, &result);
+    TEST(NULL == msg && LO_EBADTYPE == result);
 
     snprintf(data, 256, "%s%s", "/t__", ",ifi"); // types unterminated
     replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 8);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 8, &result);
+    TEST(NULL == msg && LO_EINVALIDTYPE == result);
 
     snprintf(data, 256, "%s%s", "/t__", ",ii_"); // not enough arg data
     replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 12);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 12, &result);
+    TEST(NULL == msg && LO_EINVALIDARG == result);
 
     snprintf(data, 256, "%s%s", "/t__", ",ii_"); // not enough arg data again
     replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 15);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 15, &result);
+    TEST(NULL == msg && LO_EINVALIDARG == result);
 
     snprintf(data, 256, "%s%s", "/t__", ",f__"); // too much arg data
     replace_char(data, 8, '_', '\0');
-    dmsg = parse_message(data, 16);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 16, &result);
+    TEST(NULL == msg && LO_ESIZE == result);
 
-    snprintf(data, 256, "%s%s", "/t__", ",bs_"); // blob longer than msg data
+    snprintf(data, 256, "%s%s", "/t__", ",bs_"); // blob longer than msg length
     replace_char(data, 8, '_', '\0');
     *(uint32_t *)(data + 8) = lo_htoo32((uint32_t)99999);
-    dmsg = parse_message(data, 256);
-    TEST(NULL == dmsg);
+    msg = lo_message_deserialise(data, 256, &result);
+    TEST(NULL == msg && LO_EINVALIDARG == result);
 }
 
-*/
 
 /* vi:set ts=8 sts=4 sw=4: */

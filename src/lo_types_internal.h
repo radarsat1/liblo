@@ -48,6 +48,7 @@ typedef struct _lo_message {
 	size_t     datalen;
 	size_t     datasize;
 	lo_address source;
+        lo_arg   **argv;
 } *lo_message;
 
 typedef int (*lo_method_handler)(const char *path, const char *types,

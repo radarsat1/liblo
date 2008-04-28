@@ -27,6 +27,16 @@ extern "C" {
 #define LO_NOPORT       9904
 #define LO_TOOBIG       9905
 #define LO_INT_ERR      9906
+#define LO_EALLOC       9907
+#define LO_EINVALIDPATH 9908
+#define LO_EINVALIDTYPE 9909
+#define LO_EBADTYPE     9910
+#define LO_ESIZE        9911
+#define LO_EINVALIDARG  9912
+#define LO_ETERM        9913
+#define LO_EPAD         9914
+#define LO_EINVALIDBUND 9915
+#define LO_EINVALIDTIME 9916
 
 #ifdef __cplusplus
 }

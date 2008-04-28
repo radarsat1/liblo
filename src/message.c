@@ -66,6 +66,7 @@ lo_message lo_message_new()
     m->datalen = 0;
     m->datasize = 0;
     m->source = NULL;
+    m->argv = NULL;
 
     return m;
 }
@@ -75,6 +76,7 @@ void lo_message_free(lo_message m)
     if (m) {
 	free(m->types);
 	free(m->data);
+        free(m->argv);
     }
     free(m);
 }
@@ -234,7 +236,7 @@ void lo_message_add_int32(lo_message m, int32_t a)
     b.i = a;
 
     lo_message_add_typechar(m, LO_INT32);
-    *nptr = lo_htoo32(b.nl);
+    *nptr = b.nl;
 }
     
 void lo_message_add_float(lo_message m, float a)
@@ -244,7 +246,7 @@ void lo_message_add_float(lo_message m, float a)
     b.f = a;
 
     lo_message_add_typechar(m, LO_FLOAT);
-    *nptr = lo_htoo32(b.nl);
+    *nptr = b.nl;
 }
 
 void lo_message_add_string(lo_message m, const char *a)
@@ -259,7 +261,7 @@ void lo_message_add_string(lo_message m, const char *a)
 void lo_message_add_blob(lo_message m, lo_blob a)
 {
     const uint32_t size = lo_blobsize(a);
-    const uint32_t dsize = lo_htoo32(lo_blob_datasize(a));
+    const uint32_t dsize = lo_blob_datasize(a);
     char *nptr = lo_message_add_data(m, size);
 
     lo_message_add_typechar(m, LO_BLOB);
@@ -276,7 +278,7 @@ void lo_message_add_int64(lo_message m, int64_t a)
     b.i = a;
 
     lo_message_add_typechar(m, LO_INT64);
-    *nptr = lo_htoo64(b.nl);
+    *nptr = b.nl;
 }
 
 void lo_message_add_timetag(lo_message m, lo_timetag a)
@@ -286,7 +288,7 @@ void lo_message_add_timetag(lo_message m, lo_timetag a)
     b.tt = a;
 
     lo_message_add_typechar(m, LO_TIMETAG);
-    *nptr = lo_htoo64(b.nl);
+    *nptr = b.nl;
 }
 
 void lo_message_add_double(lo_message m, double a)
@@ -296,7 +298,7 @@ void lo_message_add_double(lo_message m, double a)
     b.f = a;
 
     lo_message_add_typechar(m, LO_DOUBLE);
-    *nptr = lo_htoo64(b.nl);
+    *nptr = b.nl;
 }
 
 void lo_message_add_symbol(lo_message m, const char *a)
@@ -316,7 +318,7 @@ void lo_message_add_char(lo_message m, char a)
     b.c = a;
 
     lo_message_add_typechar(m, LO_CHAR);
-    *nptr = lo_htoo32(b.nl);
+    *nptr = b.nl;
 }
 
 void lo_message_add_midi(lo_message m, uint8_t a[4])
@@ -360,6 +362,10 @@ static void lo_message_add_typechar(lo_message m, char t)
     m->types[m->typelen] = t;
     m->typelen++;
     m->types[m->typelen] = '\0';
+    if (m->argv) {
+        free(m->argv);
+        m->argv = NULL;
+    }
 }
 
 static void *lo_message_add_data(lo_message m, size_t s)
@@ -375,6 +381,11 @@ static void *lo_message_add_data(lo_message m, size_t s)
 		m->datasize *= 2;
 
 	m->data = realloc(m->data, m->datasize);
+
+    if (m->argv) {
+        free(m->argv);
+        m->argv = NULL;
+    }
 
     return m->data + old_dlen;
 }
@@ -419,8 +430,144 @@ size_t lo_arg_size(lo_type type, void *data)
     return 0;
 }
 
-/* convert endianness of arg pointed to by data from network to host */
+char *lo_get_path(void *data, ssize_t size)
+{
+    ssize_t result = lo_validate_string(data, size);
+    return (result >= 4) ? (char *)data : NULL;
+}
 
+ssize_t lo_validate_string(void *data, ssize_t size)
+{
+    ssize_t i = 0, len = 0;
+    char *pos = data;
+
+    if (size < 0) {
+        return -LO_ESIZE;      // invalid size
+    }
+    for (i = 0; i < size; ++i) {
+        if (pos[i] == '\0') {
+            len = 4 * (i / 4 + 1);
+            break;
+        }
+    }
+    if (0 == len) {
+        return -LO_ETERM;      // string not terminated
+    }
+    if (len > size) {
+        return -LO_ESIZE;      // would overflow buffer
+    }
+    for (; i < len; ++i) {
+        if (pos[i] != '\0') {
+            return -LO_EPAD;  // non-zero char found in pad area
+        }
+    }
+    return len;
+}
+
+
+ssize_t lo_validate_blob(void *data, ssize_t size)
+{
+    ssize_t i, end, len;
+    char *pos = (char *)data;
+
+    if (size < 0) {
+        return -LO_ESIZE;      // invalid size
+    }
+    uint32_t dsize = lo_otoh32(*(uint32_t*)data);
+    if (dsize > LO_MAX_MSG_SIZE) { // avoid int overflow in next step
+        return -LO_ESIZE;
+    }
+    end = sizeof(uint32_t) + dsize; // end of data
+    len = 4 * (end / 4 + 1); // full padded size
+    if (len > size) {
+        return -LO_ESIZE;      // would overflow buffer
+    }
+    for (i = end; i < len; ++i) {
+        if (pos[i] != '\0') {
+            return -LO_EPAD;  // non-zero char found in pad area
+        }
+    }
+    return len;
+}
+
+
+ssize_t lo_validate_bundle(void *data, ssize_t size)
+{
+    ssize_t len = 0, remain = size;
+    char *pos = data;
+    uint32_t elem_len;
+
+    len = lo_validate_string(data, size);
+    if (len < 0) {
+        return -LO_ESIZE; // invalid size
+    }
+    if (0 != strcmp(data, "#bundle")) {
+        return -LO_EINVALIDBUND; // not a bundle
+    }
+    pos += len;
+    remain -= len;
+
+    // time tag
+    if (remain < 8) {
+        return -LO_ESIZE;
+    }
+    pos += 8;
+    remain -= 8;
+
+    while (remain >= 4) {
+        elem_len = lo_otoh32(*((uint32_t *)pos));
+        pos += 4;
+        remain -= 4;
+        if (elem_len > remain) {
+            return -LO_ESIZE;
+        }
+        pos += elem_len;
+        remain -= elem_len;
+    }
+    if (0 != remain) {
+        return -LO_ESIZE;
+    }
+    return size;
+}
+
+
+ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size)
+{
+    if (size < 0) {
+        return -1;
+    }
+    switch (type) {
+    case LO_TRUE:
+    case LO_FALSE:
+    case LO_NIL:
+    case LO_INFINITUM:
+        return 0;
+
+    case LO_INT32:
+    case LO_FLOAT:
+    case LO_MIDI:
+    case LO_CHAR:
+        return size >= 4 ? 4 : -LO_ESIZE;
+
+    case LO_INT64:
+    case LO_TIMETAG:
+    case LO_DOUBLE:
+        return size >= 8 ? 8 : -LO_ESIZE;
+
+    case LO_STRING:
+    case LO_SYMBOL:
+        return lo_validate_string((char *)data, size);
+
+    case LO_BLOB:
+        return lo_validate_blob((lo_blob)data, size);
+
+    default:
+        return -LO_EINVALIDTYPE;
+    }
+    return -LO_INT_ERR;
+}
+
+/* convert endianness of arg pointed to by data from network to host */
 void lo_arg_host_endian(lo_type type, void *data)
 {
     switch (type) {
@@ -454,6 +601,40 @@ void lo_arg_host_endian(lo_type type, void *data)
     }
 }
 
+/* convert endianness of arg pointed to by data from host to network */
+void lo_arg_network_endian(lo_type type, void *data)
+{
+    switch (type) {
+    case LO_INT32:
+    case LO_FLOAT:
+    case LO_BLOB:
+    case LO_CHAR:
+        *(int32_t *)data = lo_htoo32(*(int32_t *)data);
+        break;
+
+    case LO_INT64:
+    case LO_TIMETAG:
+    case LO_DOUBLE:
+        *(int64_t *)data = lo_htoo64(*(int64_t *)data);
+        break;
+
+    case LO_STRING:
+    case LO_SYMBOL:
+    case LO_MIDI:
+    case LO_TRUE:
+    case LO_FALSE:
+    case LO_NIL:
+    case LO_INFINITUM:
+        /* these are fine */
+        break;
+
+    default:
+        fprintf(stderr, "liblo warning: unhandled OSC type '%c' at %s:%d\n",
+                type, __FILE__, __LINE__);
+        break;
+    }
+}
+
 lo_address lo_message_get_source(lo_message m)
 {
     return m->source;
@@ -462,6 +643,34 @@ lo_address lo_message_get_source(lo_message m)
 size_t lo_message_length(lo_message m, const char *path)
 {
     return lo_strsize(path) + lo_strsize(m->types) + m->datalen;
+}
+
+int lo_message_get_argc(lo_message m)
+{
+    return m->typelen - 1;
+}
+
+lo_arg **lo_message_get_argv(lo_message m)
+{
+    if (NULL != m->argv) { return m->argv; }
+
+    int i = 0, argc = m->typelen - 1;
+    char *types = m->types + 1;
+    char *ptr = m->data;
+
+    lo_arg **argv = calloc(argc, sizeof(lo_arg *));
+    for (i = 0; i < argc; ++i) {
+        size_t len = lo_arg_size(types[i], ptr);
+        argv[i] = len ? (lo_arg*)ptr : NULL;
+        ptr += len;
+    }
+    m->argv = argv;
+    return argv;
+}
+
+char *lo_message_get_types(lo_message m)
+{
+    return m->types + 1;
 }
 
 void *lo_message_serialise(lo_message m, const char *path, void *to,
@@ -478,9 +687,109 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     }
     strcpy(to, path);
     strcpy(to + lo_strsize(path), m->types);
-    memcpy(to + lo_strsize(path) + lo_strsize(m->types), m->data, m->datalen);
 
+    char *types = m->types + 1;
+    char *ptr = to + lo_strsize(path) + lo_strsize(m->types);
+    memcpy(ptr, m->data, m->datalen);
+
+    int i = 0, argc = m->typelen - 1;
+    for (i = 0; i < argc; ++i) {
+        size_t len = lo_arg_size(types[i], ptr);
+        lo_arg_network_endian(types[i], ptr);
+        ptr += len;
+    }
     return to;
+}
+
+
+lo_message lo_message_deserialise(void *data, size_t size, int *result)
+{
+    lo_message msg = NULL;
+    char *types = NULL, *ptr = NULL;
+    int i = 0, argc = 0, remain = size, res = 0;
+
+    if (remain <= 0) { res = LO_ESIZE; goto fail; }
+
+    msg = malloc(sizeof(struct _lo_message));
+    if (!msg) { res = LO_EALLOC; goto fail; }
+
+    msg->types = NULL;
+    msg->typelen = 0;
+    msg->typesize = 0;
+    msg->data = NULL;
+    msg->datalen = 0;
+    msg->datasize = 0;
+    msg->source = NULL;
+    msg->argv = NULL;
+
+    // path
+    int len = lo_validate_string(data, remain);
+    if (len < 0) {
+        res = LO_EINVALIDPATH; // invalid path string
+        goto fail;
+    }
+    remain -= len;
+
+    // types
+    if (remain <= 0) {
+        res = LO_ENOTYPE; // no type tag string
+        goto fail;
+    }
+    types = data + len;
+    len = lo_validate_string(types, remain);
+    if (len < 0) {
+        res = LO_EINVALIDTYPE; // invalid type tag string
+        goto fail;
+    }
+    if (types[0] != ',') {
+        res = LO_EBADTYPE; // type tag string missing initial comma
+        goto fail;
+    }
+    remain -= len;
+
+    msg->typelen = strlen(types);
+    msg->typesize = len;
+    msg->types = malloc(msg->typesize);
+    if (NULL == msg->types) { res = LO_EALLOC; goto fail; }
+    memcpy(msg->types, types, msg->typesize);
+
+    // args
+    msg->data = malloc(remain);
+    if (NULL == msg->data) { res = LO_EALLOC; goto fail; }
+    memcpy(msg->data, types + len, remain);
+    msg->datalen = msg->datasize = remain;
+    ptr = msg->data;
+
+    ++types;
+    argc = msg->typelen - 1;
+    if (argc) {
+        msg->argv = calloc(argc, sizeof(lo_arg *));
+        if (NULL == msg->argv) { res = LO_EALLOC; goto fail; }
+    }
+
+    for (i = 0; remain >= 0 && i < argc; ++i) {
+        len = lo_validate_arg((lo_type)types[i], ptr, remain);
+        if (len < 0) {
+            res = LO_EINVALIDARG; // invalid argument
+            goto fail;
+        }
+        lo_arg_host_endian((lo_type)types[i], ptr);
+        msg->argv[i] = len ? (lo_arg*)ptr : NULL;
+        remain -= len;
+        ptr += len;
+    }
+    if (0 != remain || i != argc) {
+        res = LO_ESIZE; // size/argument mismatch
+        goto fail;
+    }
+
+    if (result) { *result = res; }
+    return msg;
+
+fail:
+    if (msg) { lo_message_free(msg); }
+    if (result) { *result = res; }
+    return NULL;
 }
 
 void lo_message_pp(lo_message m)
@@ -681,5 +990,7 @@ lo_hires lo_hires_val(lo_type type, lo_arg *p)
 
     return 0.0l;
 }
+
+
 
 /* vi:set ts=8 sts=4 sw=4: */

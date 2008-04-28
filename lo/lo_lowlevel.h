@@ -243,6 +243,27 @@ void lo_message_add_infinitum(lo_message m);
 lo_address lo_message_get_source(lo_message m);
 
 /**
+ * \brief  Return the message type tag string.
+ *
+ * The result is valid until further data is added with lo_message_add*().
+ */
+char *lo_message_get_types(lo_message m);
+
+/**
+ * \brief  Return the message argument count.
+ *
+ * The result is valid until further data is added with lo_message_add*().
+ */
+int lo_message_get_argc(lo_message m);
+
+/**
+ * \brief  Return the message arguments. Do not free the returned data.
+ *
+ * The result is valid until further data is added with lo_message_add*().
+ */
+lo_arg **lo_message_get_argv(lo_message m);
+
+/**
  * \brief  Return the length of a message in bytes.
  *
  * \param m The message to be sized
@@ -251,10 +272,10 @@ lo_address lo_message_get_source(lo_message m);
 size_t lo_message_length(lo_message m, const char *path);
 
 /**
- * \brief  Serialise the message object to an area of memory and return a
- * pointer to the serialised form.
+ * \brief  Serialise the lo_message object to an area of memory and return a
+ * pointer to the serialised form.  Opposite of lo_message_deserialise().
  *
- * \param m The mesaage to be serialised
+ * \param m The message to be serialised
  * \param path The path the message will be sent to
  * \param to The address to serialise to, memory will be allocated if to is
  * NULL.
@@ -266,6 +287,21 @@ size_t lo_message_length(lo_message m, const char *path);
  */
 void *lo_message_serialise(lo_message m, const char *path, void *to,
 			   size_t *size);
+
+/**
+ * \brief  Deserialise a raw OSC message and return a new lo_message object.
+ * Opposite of lo_message_serialise().
+ *
+ * \param data Pointer to the raw OSC message data in network transmission form
+ * (network byte order where appropriate).
+ * \param size The size of data in bytes
+ * \param result If this pointer is non-NULL, the result or error code will
+ * be written here.
+ *
+ * Returns a new lo_message, or NULL if deserialisation fails.
+ * Use lo_message_free() to free the resulting object.
+ */
+lo_message lo_message_deserialise(void *data, size_t size, int *result);
 
 /**
  * \brief  Return the hostname of a lo_address object
@@ -401,13 +437,86 @@ lo_hires lo_hires_val(lo_type type, lo_arg *p);
 size_t lo_arg_size(lo_type type, void *data);
 
 /**
- * \brief Convert the speficed argument to host endianness where neccesary.
+ * \brief Given a raw OSC message, return the message path.
+ *
+ * \param data      A pointer to the raw OSC message data.
+ * \param size      The size of data in bytes (total buffer bytes).
+ *
+ * Returns the message path or NULL if an error occurs.
+ * Do not free() the returned pointer.
+ */
+char *lo_get_path(void *data, ssize_t size);
+
+/**
+ * \brief Validate raw OSC string data. Where applicable, data should be
+ * in network byte order.
+ *
+ * This function is used internally to parse and validate raw OSC data.
+ *
+ * Returns length of string or < 0 if data is invalid.
+ *
+ * \param data      A pointer to the data.
+ * \param size      The size of data in bytes (total bytes remaining).
+ */
+ssize_t lo_validate_string(void *data, ssize_t size);
+
+/**
+ * \brief Validate raw OSC blob data. Where applicable, data should be
+ * in network byte order.
+ *
+ * This function is used internally to parse and validate raw OSC data.
+ *
+ * Returns length of blob or < 0 if data is invalid.
+ *
+ * \param data      A pointer to the data.
+ * \param size      The size of data in bytes (total bytes remaining).
+ */
+ssize_t lo_validate_blob(void *data, ssize_t size);
+
+/**
+ * \brief Validate raw OSC bundle data. Where applicable, data should be
+ * in network byte order.
+ *
+ * This function is used internally to parse and validate raw OSC data.
+ *
+ * Returns length of bundle or < 0 if data is invalid.
+ *
+ * \param data      A pointer to the data.
+ * \param size      The size of data in bytes (total bytes remaining).
+ */
+ssize_t lo_validate_bundle(void *data, ssize_t size);
+
+/**
+ * \brief Validate raw OSC argument data. Where applicable, data should be
+ * in network byte order.
+ *
+ * This function is used internally to parse and validate raw OSC data.
+ *
+ * Returns length of argument data or < 0 if data is invalid.
+ *
+ * \param type      The OSC type of the data item (eg. LO_FLOAT).
+ * \param data      A pointer to the data.
+ * \param size      The size of data in bytes (total bytes remaining).
+ */
+ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size);
+
+/**
+ * \brief Convert the specified argument to host byte order where necessary.
  *
  * \param type The OSC type of the data item (eg. LO_FLOAT).
- * \param data A pointer to the data item to be converted. It is change
+ * \param data A pointer to the data item to be converted. It is changed
  * in-place.
  */
 void lo_arg_host_endian(lo_type type, void *data);
+
+/**
+ * \brief Convert the specified argument to network byte order where necessary.
+ *
+ * \param type The OSC type of the data item (eg. LO_FLOAT).
+ * \param data A pointer to the data item to be converted. It is changed
+ * in-place.
+ */
+void lo_arg_network_endian(lo_type type, void *data);
 
 /**
  * \brief Create a new server instance.
