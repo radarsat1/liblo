@@ -1007,7 +1007,7 @@ void lo_server_del_method(lo_server s, const char *path,
 	/* If paths match or handler is wildcard */
 	if ((it->path == path) ||
 	    (path && it->path && !strcmp(path, it->path)) ||
-	    (pattern && lo_pattern_match(it->path, path))) {
+	    (pattern && it->path && lo_pattern_match(it->path, path))) {
 	    /* If types match or handler is wildcard */
 	    if ((it->typespec == typespec) ||
 		(typespec && it->typespec && !strcmp(typespec, it->typespec))

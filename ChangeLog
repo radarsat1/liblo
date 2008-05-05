@@ -1,3 +1,6 @@
+2008-05-05  Stephen Sinclair <radarsat1@gmail.com>
+	* Fix invalid pointer in lo_server_del_method() when doing pattern matching. (Camille Troillard)
+	
 2008-04-28  Stephen Sinclair <radarsat1@gmail.com>
 	* Add support for multicast groups to LibLo.
 	* Add test case for sending a crafted packet that would crash a lo_server without validation.
