@@ -625,10 +625,10 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
     char *path = data;
 
     if (!strcmp(data, "#bundle")) {
-        ssize_t result = lo_validate_bundle(data, size);
-        if (result < 0) {
-            lo_throw(s, -result, "Invalid bundle", NULL);
-            return result;
+        ssize_t bundle_result = lo_validate_bundle(data, size);
+        if (bundle_result < 0) {
+            lo_throw(s, -bundle_result, "Invalid bundle", NULL);
+            return bundle_result;
         }
         char *pos = (char *)data + len;
         int remain = size - len;
