@@ -37,6 +37,10 @@
 #define PATHDELIM "/"
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 #define TEST(cond) if (!(cond)) { fprintf(stderr, "FAILED " #cond \
 					  " at %s:%d\n", __FILE__, __LINE__); \
 				  exit(1); } \
