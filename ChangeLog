@@ -1,3 +1,7 @@
+2008-06-18  Stephen Sinclair <radarsat1@gmail.com>
+	* Update AUTHORS
+	* Release version 0.25
+
 2008-06-05  Stephen Sinclair <radarsat1@gmail.com>
 	* Fix autogen.sh: Use glibtoolize if it exists, for OS X.
 	* Fix undefined MSG_NOSIGNAL in testlo.c.
