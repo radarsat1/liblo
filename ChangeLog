@@ -1,3 +1,8 @@
+2008-06-05  Stephen Sinclair <radarsat1@gmail.com>
+	* Fix autogen.sh: Use glibtoolize if it exists, for OS X.
+	* Fix undefined MSG_NOSIGNAL in testlo.c.
+	* Fix warning on lo_message_deserialize().
+
 2008-05-05  Stephen Sinclair <radarsat1@gmail.com>
 	* Fix invalid pointer in lo_server_del_method() when doing pattern matching. (Camille Troillard)
 	
