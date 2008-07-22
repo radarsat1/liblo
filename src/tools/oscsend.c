@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <errno.h>
 #include <config.h>
@@ -94,14 +95,22 @@ lo_message create_message(char **argv)
 			case LO_INT32:
 			{
 				char *endp;
-				int32_t v;
+				int64_t v;
 
 				v = strtol(arg, &endp, 10);
-				if(errno != 0 || *endp != '\0') {
+				if(*endp != '\0') {
 					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
 					goto EXIT;
 				}
-				lo_message_add_int32(message, v);
+				if((v == LONG_MAX || v == LONG_MIN) && errno == ERANGE) {
+					fprintf(stderr, "Value out of range: '%s'\n", arg);
+					goto EXIT;
+				}
+				if(v > INT_MAX || v < INT_MIN) {
+					fprintf(stderr, "Value out of range: '%s'\n", arg);
+					goto EXIT;
+				}
+				lo_message_add_int32(message, (int32_t)v);
 				argi++;
 				break;
 			}
@@ -111,8 +120,12 @@ lo_message create_message(char **argv)
 				int64_t v;
 
 				v = strtoll(arg, &endp, 10);
-				if(errno != 0 || *endp != '\0') {
+				if(*endp != '\0') {
 					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
+					goto EXIT;
+				}
+				if((v == LONG_MAX || v == LONG_MIN) && errno == ERANGE) {
+					fprintf(stderr, "Value out of range: '%s'\n", arg);
 					goto EXIT;
 				}
 				lo_message_add_int64(message, v);
@@ -124,8 +137,12 @@ lo_message create_message(char **argv)
 				char *endp;
 				float v;
 
+#ifdef __USE_ISOC99
+				v = strtof(arg, &endp);
+#else
 				v = (float)strtod(arg, &endp);
-				if(errno != 0 || *endp != '\0') {
+#endif /* __USE_ISOC99 */
+				if(*endp != '\0') {
 					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
 					goto EXIT;
 				}
@@ -139,7 +156,8 @@ lo_message create_message(char **argv)
 				double v;
 
 				v = strtod(arg, &endp);
-				if(errno != 0 || *endp != '\0') {
+				if(*endp != '\0') {
+					perror(NULL);
 					fprintf(stderr, "An invalid value was given: '%s'\n", arg);
 					goto EXIT;
 				}

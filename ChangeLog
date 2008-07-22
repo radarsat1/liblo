@@ -1,3 +1,8 @@
+2008-07-11  Kentaro Fukuchi <fukuchi@megaui.net>
+	* Some error checks have been added.
+	* oscsend now uses strtod() instead of strtof(). strtof of glibc returned
+	  buggy results when --std=c99 is not given. (strtof is described in C99)
+
 2008-06-18  Stephen Sinclair <radarsat1@gmail.com>
 	* Update AUTHORS
 	* Release version 0.25
