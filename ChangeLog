@@ -1,3 +1,7 @@
+2008-07-11  Stephen Sinclair <radarsat1@gmail.com>
+	* Change license of LibLo to LGPL 2.1 or later.
+	  (With permission of all authors.)
+
 2008-07-11  Kentaro Fukuchi <fukuchi@megaui.net>
 	* Some error checks have been added.
 	* oscsend now uses strtod() instead of strtof(). strtof of glibc returned
