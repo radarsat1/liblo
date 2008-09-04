@@ -35,6 +35,7 @@ fi
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_LIBTOOL
+AM_PROG_CC_C_O
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
 AC_SUBST(DOXYGEN)
 
