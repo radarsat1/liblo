@@ -37,7 +37,7 @@ lo_address lo_address_new(const char *host, const char *port)
     lo_address a = calloc(1, sizeof(struct _lo_address));
 
     a->ai = NULL;
-	a->socket = -1;
+    a->socket = -1;
     a->protocol = LO_UDP;
     if (host) {
 	a->host = strdup(host);
@@ -66,8 +66,11 @@ lo_address lo_address_new_from_url(const char *url)
     }
 
     a = calloc(1, sizeof(struct _lo_address));
+    if(a == NULL) return NULL;
+
     protocol = lo_url_get_protocol(url);
     if (!protocol) {
+	free(a);
 	return NULL;
     } else if (!strcmp(protocol, "udp")) {
 	a->protocol = LO_UDP;

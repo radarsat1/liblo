@@ -865,9 +865,13 @@ static void dispatch_method(lo_server s, const char *path,
 		}
 	    }
 
-	    for (slit = sl; slit; slit = slit->next) {
+	    slit = sl;
+	    while(slit) {
 		lo_message_add_string(reply, slit->str);
-		free(slit->str);
+		slnew = slit;
+		slit = slit->next;
+		free(slnew->str);
+		free(slnew);
 	    }
 	    lo_send_message(src, "#reply", reply);
 	    lo_message_free(reply);

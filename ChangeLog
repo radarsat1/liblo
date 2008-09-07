@@ -1,3 +1,8 @@
+2008-09-07  Kentaro Fukuchi <fukuchi@megaui.net>
+	* Memory leak in lo_address_new_from_url() has been fixed.
+	* Memory leak in dispatch_method() has been fixed.
+	* Fix a typo and some missing free() in testlo.c.
+
 2008-09-04  Stephen Sinclair <radarsat1@gmail.com>
 	* Change license of LibLo to LGPL 2.1 or later.
 	  (With permission of all authors.)

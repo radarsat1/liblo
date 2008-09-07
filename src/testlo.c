@@ -165,6 +165,9 @@ int main()
     TEST(a != NULL);
     lo_address_free(a);
 
+    a = lo_address_new_from_url("osc.://localhost/");
+    TEST(a == NULL);
+
 
     atexit(exitcheck);
 
@@ -220,7 +223,7 @@ int main()
     protocol = lo_url_get_protocol("osc.tcp://localhost:9999/a/path/is/here");
     if (strcmp(protocol, "tcp")) {
 	printf("failed lo_url_get_protocol() test2\n");
-	printf("'%s' != 'udp'\n", protocol);
+	printf("'%s' != 'tcp'\n", protocol);
 	exit(1);
     } else {
 	printf("passed lo_url_get_protocol() test2\n");
@@ -441,6 +444,7 @@ int main()
 	exit(1);
     }
     system(cmd);
+    free(server_url);
 
 #ifdef WIN32
     Sleep(2000);
@@ -691,7 +695,8 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
     lo_server serv = (lo_server)user_data;
     lo_address src = lo_message_get_source(data);
     char *url = lo_address_get_url(src);
-    printf("Address of us: %s\n", lo_server_get_url(serv));
+    char *server_url = lo_server_get_url(serv);
+    printf("Address of us: %s\n", server_url);
     printf("%s <- f:%f, i:%d\n", path, argv[0]->f, argv[1]->i);
     if (lo_send_from(src, serv, LO_TT_IMMEDIATE, "/reply", "s", "a reply") == -1) {
 	printf("OSC reply error %d: %s\nSending to %s\n", lo_address_errno(src), lo_address_errstr(src), url);
@@ -699,6 +704,7 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
     } else {
 	printf("Reply sent to %s\n\n", url);
     }
+    free(server_url);
     free(url);
 
     return 0;
@@ -710,6 +716,7 @@ int reply_handler(const char *path, const char *types, lo_arg **argv, int argc,
     lo_address src = lo_message_get_source(data);
     char *url = lo_address_get_url(src);
     printf("Reply received from %s\n", url);
+    free(url);
     reply_count++;
 
     return 0;
@@ -917,7 +924,7 @@ void test_deserialise()
 
     // serialise it
     size_t len = lo_message_length(msg, "/foo");
-    printf("serialise message_length=%d\n", len);
+    printf("serialise message_length=%d\n", (int)len);
     char *buf = calloc(len, sizeof(char));
     size_t size = 0;
     char *tmp = lo_message_serialise(msg, "/foo", buf, &size);
@@ -959,7 +966,7 @@ void test_deserialise()
 
     // serialise it again, compare
     len = lo_message_length(msg, "/foo");
-    printf("serialise message_length=%d\n", len);
+    printf("serialise message_length=%d\n", (int)len);
     char *buf2 = calloc(len, sizeof(char));
     size = 0;
     tmp = lo_message_serialise(msg, "/foo", buf2, &size);
