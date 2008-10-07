@@ -686,7 +686,9 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     if (!to) {
 	to = calloc(1, s);
     }
+    memset(to + lo_strsize(path) - 4, 0, 4); // ensure zero-padding
     strcpy(to, path);
+    memset(to + lo_strsize(path) + lo_strsize(m->types) - 4, 0, 4);
     strcpy(to + lo_strsize(path), m->types);
 
     char *types = m->types + 1;
