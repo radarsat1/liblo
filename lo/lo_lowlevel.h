@@ -315,7 +315,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result);
  * (network byte order where appropriate).
  * \param size The size of data in bytes
  *
- * Returns the number of bytes used if successful, or 0 otherwise.
+ * Returns the number of bytes used if successful, or less than 0 otherwise.
  */
 int lo_server_dispatch_data(lo_server s, void *data, size_t size);
 
