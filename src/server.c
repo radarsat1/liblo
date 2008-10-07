@@ -62,7 +62,6 @@ struct lo_cs lo_client_sockets = {-1, -1};
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
-static int lo_server_dispatch_data(lo_server s, void *data, size_t size);
 static void dispatch_method(lo_server s, const char *path,
     lo_message msg);
 static int dispatch_queued(lo_server s);
@@ -711,7 +710,7 @@ static void dispatch_method(lo_server s, const char *path,
     msg->source = src;
 
     //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
-    if (s->protocol == LO_UDP) {
+    if (s->protocol == LO_UDP && s->addr_len>0) {
 	err = getnameinfo((struct sockaddr *)&s->addr, sizeof(s->addr),
 	    hostname, sizeof(hostname), portname, sizeof(portname),
 	    NI_NUMERICHOST | NI_NUMERICSERV);

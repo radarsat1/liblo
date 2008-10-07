@@ -304,6 +304,22 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
 lo_message lo_message_deserialise(void *data, size_t size, int *result);
 
 /**
+ * \brief  Dispatch a raw block of memory containing an OSC message.
+ *
+ * This is useful when a raw block of memory is available that is
+ * structured as OSC, and you wish to use liblo to dispatch the
+ * message to a handler function as if it had been received over the
+ * network.
+ *
+ * \param data Pointer to the raw OSC message data in network transmission form
+ * (network byte order where appropriate).
+ * \param size The size of data in bytes
+ *
+ * Returns the number of bytes used if successful, or 0 otherwise.
+ */
+int lo_server_dispatch_data(lo_server s, void *data, size_t size);
+
+/**
  * \brief  Return the hostname of a lo_address object
  *
  * Returned value most not be modified or free'd. Value will be a dotted quad,
