@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <config.h>
+#include <limits.h>
 #include <lo/lo.h>
 
 void usage(void)
