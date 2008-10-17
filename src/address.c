@@ -77,45 +77,33 @@ lo_address lo_address_new(const char *host, const char *port)
 lo_address lo_address_new_from_url(const char *url)
 {
     lo_address a;
-    char *protocol;
+    int protocol;
+    char *host, *port, *proto;
 
     if (!url || !*url) {
 	return NULL;
     }
 
-    a = calloc(1, sizeof(struct _lo_address));
-    if(a == NULL) return NULL;
-
-    protocol = lo_url_get_protocol(url);
-    if (!protocol) {
-	free(a);
-	return NULL;
-    } else if (!strcmp(protocol, "udp")) {
-	a->protocol = LO_UDP;
-	a->port = lo_url_get_port(url);
-    } else if (!strcmp(protocol, "tcp")) {
-	a->protocol = LO_TCP;
-	a->port = lo_url_get_port(url);
+    protocol = lo_url_get_protocol_id(url);
+    if (protocol == LO_UDP || protocol == LO_TCP) {
+	host = lo_url_get_hostname(url);
+	port = lo_url_get_port(url);
+	a = lo_address_new_with_proto(protocol, host, port);
+	if(host) free(host);
+	if(port) free(port);
 #ifndef WIN32
-    } else if (!strcmp(protocol, "unix")) {
-	a->protocol = LO_UNIX;
-	a->port = lo_url_get_path(url);
+    } else if (protocol == LO_UNIX) {
+	port = lo_url_get_path(url);
+	a = lo_address_new_with_proto(LO_UNIX, NULL, port);
+	if(port) free(port);
 #endif
     } else {
+	proto = lo_url_get_protocol(url);
 	fprintf(stderr, PACKAGE_NAME ": protocol '%s' not supported by this "
-	        "version\n", protocol);
-	free(a);
-	free(protocol);
+	        "version\n", proto);
+	if(proto) free(proto);
 
 	return NULL;
-    }
-    free(protocol);
-
-    a->ai = NULL;
-    a->socket = -1;
-    a->host = lo_url_get_hostname(url);
-    if (!a->host) {
-	a->host = strdup("localhost");
     }
 
     return a;

@@ -1,6 +1,7 @@
 2008-10-11  Kentaro Fukuchi <fukuchi@megaui.net>
 	* lo_url_get_protocol_id() has been added.
 	* lo_address_new_with_proto() has been added.
+	* Changed lo_address_new_from_url() to use lo_url_get_protocol_id().
 
 2008-10-09  Kentaro Fukuchi <fukuchi@megaui.net>
 	* src/tools/oscsend.c: Fixed compile-time error on OS X.
