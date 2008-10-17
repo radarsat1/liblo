@@ -1,3 +1,6 @@
+2008-10-11  Kentaro Fukuchi <fukuchi@megaui.net>
+	* lo_url_get_protocol_id() has been added.
+
 2008-10-09  Kentaro Fukuchi <fukuchi@megaui.net>
 	* src/tools/oscsend.c: Fixed compile-time error on OS X.
 	  (thanks to Koichiro Ozaki)

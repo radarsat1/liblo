@@ -240,6 +240,42 @@ int main()
     }
     free(protocol);
 
+    proto = lo_url_get_protocol_id("osc.udp://localhost:9999/a/path/is/here");
+    if (proto != LO_UDP) {
+	printf("failed lo_url_get_protocol_id() test1\n");
+	printf("'%d' != LO_UDP\n", proto);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol_id() test1\n");
+    }
+
+    proto = lo_url_get_protocol_id("osc.tcp://localhost:9999/a/path/is/here");
+    if (proto != LO_TCP) {
+	printf("failed lo_url_get_protocol_id() test2\n");
+	printf("'%d' != LO_TCP\n", proto);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol_id() test2\n");
+    }
+    
+    proto = lo_url_get_protocol_id("osc.invalid://localhost:9999/a/path/is/here");
+    if (proto != -1) {
+	printf("failed lo_url_get_protocol_id() test3\n");
+	printf("'%d' != -1\n", proto);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol_id() test3\n");
+    }
+    
+    proto = lo_url_get_protocol_id("osc.udp://[::ffff:localhost]:9999/a/path/is/here");
+    if (proto != LO_UDP) {
+	printf("failed lo_url_get_protocol_id() test1 (IPv6)\n");
+	printf("'%d' != LO_UDP\n", proto);
+	exit(1);
+    } else {
+	printf("passed lo_url_get_protocol_id() test1 (IPv6)\n");
+    }
+
     host = lo_url_get_hostname("osc.udp://foo.example.com:9999/a/path/is/here");
     if (strcmp(host, "foo.example.com")) {
 	printf("failed lo_url_get_hostname() test1\n");

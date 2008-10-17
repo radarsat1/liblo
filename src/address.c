@@ -232,6 +232,26 @@ char *lo_url_get_protocol(const char *url)
     return ret;
 }
 
+int lo_url_get_protocol_id(const char *url)
+{
+    if(!url) {
+	return -1;
+    }
+
+    if(!strncmp(url, "osc:", 4)) {
+	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
+		"assuming UDP.\n");
+	return LO_UDP; // should be LO_DEFAULT?
+    } else if(!strncmp(url, "osc.udp:", 8)) {
+	return LO_UDP;
+    } else if(!strncmp(url, "osc.tcp:", 8)) {
+	return LO_TCP;
+    } else if(!strncmp(url, "osc.unix:", 9)) {
+	return LO_UNIX;
+    }
+    return -1;
+}
+
 char *lo_url_get_hostname(const char *url)
 {
     char *hostname = malloc(strlen(url));

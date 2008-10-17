@@ -630,6 +630,19 @@ double lo_server_next_event_delay(lo_server s);
 char *lo_url_get_protocol(const char *url);
 
 /**
+ * \brief Return the protocol ID of an OSC URL.
+ *
+ * This library uses OSC URLs of the form: osc.prot://hostname:port/path if the
+ * prot part is missing, UDP is assumed.
+ * Returned value will be one of LO_UDP, LO_TCP, LO_UNIX or -1.
+ *
+ * \return An integer specifying the protocol. Return -1 when the protocol is
+ * not supported by liblo.
+ *
+ */
+int lo_url_get_protocol_id(const char *url);
+
+/**
  * \brief Return the hostname portion of an OSC URL.
  *
  * The return value should  bee free()'d when it is no longer needed.
