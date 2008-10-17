@@ -635,6 +635,10 @@ int main()
 	addr = lo_server_get_url(us);
 	TEST(!strcmp("osc.unix:////tmp/testlo.osc", addr));
 	free(addr);
+	lo_address_free(ua);
+	ua = lo_address_new_with_proto(LO_UNIX, NULL, "/tmp/testlo.osc");
+	TEST(lo_send(ua, "/unix", "f", 23.0) == 16);
+	TEST(lo_server_recv(us) == 16);
 	lo_server_free(us);
 	lo_address_free(ua);
     }

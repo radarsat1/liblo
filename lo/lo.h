@@ -42,6 +42,7 @@ extern "C" {
 
 /**
  * \brief Declare an OSC destination, given IP address and port number.
+ * Same as lo_address_new_with_proto(), but using UDP.
  *
  * \param host An IP address or number, or NULL for the local machine.
  * \param port a decimal port number or service name.
@@ -53,6 +54,22 @@ extern "C" {
  * the replies. The last lo_server(_thread) object creted will be the receiver.
  */
 lo_address lo_address_new(const char *host, const char *port);
+
+/**
+ * \brief Declare an OSC destination, given IP address and port number,
+ * specifying protocol.
+ *
+ * \param proto The protocol to use, must be one of LO_UDP, LO_TCP or LO_UNIX.
+ * \param host An IP address or number, or NULL for the local machine.
+ * \param port a decimal port number or service name.
+ *
+ * The lo_address object may be used as the target of OSC messages.
+ *
+ * Note: if you wish to receive replies from the target of this address, you
+ * must first create a lo_server_thread or lo_server object which will receive
+ * the replies. The last lo_server(_thread) object creted will be the receiver.
+ */
+lo_address lo_address_new_with_proto(int proto, const char *host, const char *port);
 
 /**
  * \brief Create a lo_address object from an OSC URL.

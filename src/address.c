@@ -32,19 +32,32 @@
 #include "lo/lo.h"
 #include "config.h"
 
-lo_address lo_address_new(const char *host, const char *port)
+lo_address lo_address_new_with_proto(int proto, const char *host, const char *port)
 {
-    lo_address a = calloc(1, sizeof(struct _lo_address));
+    lo_address a;
+    
+    if(proto != LO_UDP && proto != LO_TCP && proto != LO_UNIX) return NULL;
+
+    a = calloc(1, sizeof(struct _lo_address));
+    if(a == NULL) return NULL;
 
     a->ai = NULL;
     a->socket = -1;
-    a->protocol = LO_UDP;
-    if (host) {
-	a->host = strdup(host);
-    } else {
-	a->host = strdup("localhost");
+    a->protocol = proto;
+    switch(proto) {
+	default:
+	case LO_UDP:
+	case LO_TCP:
+	    if (host) {
+		a->host = strdup(host);
+	    } else {
+		a->host = strdup("localhost");
+	    }
+	    break;
+	case LO_UNIX:
+		a->host = strdup("localhost");
+	    break;
     }
-
     if (port) {
 	a->port = strdup(port);
     } else {
@@ -54,6 +67,11 @@ lo_address lo_address_new(const char *host, const char *port)
     a->ttl = -1;
 
     return a;
+}
+
+lo_address lo_address_new(const char *host, const char *port)
+{
+    return lo_address_new_with_proto(LO_UDP, host ,port);
 }
 
 lo_address lo_address_new_from_url(const char *url)
