@@ -319,6 +319,8 @@ char *lo_url_get_path(const char *url)
     }
 
     /* doesnt look like an OSC URL with port number and path*/
+    free(path);
+
     return NULL;
 }
 
