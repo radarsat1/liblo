@@ -103,11 +103,12 @@ typedef void (*lo_err_handler)(int num, const char *msg, const char *where);
  * \brief A callback function to receive notifcation of matching message
  * arriving in the server or server thread.
  *
- * The return value tells the method dispatcher wether this handler has dealt
- * with the message correctly, a return value of 0 indicates that it has been
- * handled, and it should not attempt to pass it on to any other handlers,
- * non-0 means that it has not been handled and the dispatcher will apptempt to
- * find more handlers that match the path and types of the incoming message.
+ * The return value tells the method dispatcher whether this handler
+ * has dealt with the message correctly: a return value of 0 indicates
+ * that it has been handled, and it should not attempt to pass it on
+ * to any other handlers, non-0 means that it has not been handled and
+ * the dispatcher will attempt to find more handlers that match the
+ * path and types of the incoming message.
  *
  * On callback the paramters will be set to the following values:
  *
