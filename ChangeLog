@@ -11,6 +11,7 @@
 	* Move lo_arg_size(), lo_get_path(), lo_arg_host/network_endian() back to lo_lowlevel.h.
 	* Expose the lo_server_dispatch_data() function as public.
 	* Fix zero-padding of path and type strings in lo_message_deserialise().
+	* Use the \internal Doxygen command to hide internal functions.
 
 2008-09-07  Kentaro Fukuchi <fukuchi@megaui.net>
 	* Memory leak in lo_address_new_from_url() has been fixed.

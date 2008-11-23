@@ -19,6 +19,11 @@
 
 #include "lo/lo_osc_types.h"
 
+/**
+ * \file lo_lowlevel.h The liblo headerfile defining the low-level API
+ * functions.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,7 +57,7 @@ typedef long double lo_hires;
  *
  * This is slightly more efficient than lo_send if you want to send a lot of
  * similar messages. The messages are constructed with the lo_message_new() and
- * lo_message_add*() functions.
+ * \ref lo_message_add_int32 "lo_message_add*()" functions.
  */
 int lo_send_message(lo_address targ, const char *path, lo_message msg);
 
@@ -61,7 +66,7 @@ int lo_send_message(lo_address targ, const char *path, lo_message msg);
  *
  * This is slightly more efficient than lo_send if you want to send a lot of
  * similar messages. The messages are constructed with the lo_message_new() and
- * lo_message_add*() functions.
+ * \ref lo_message_add_int32 "lo_message_add*()" functions.
  *
  * \param targ The address to send the message to
  * \param serv The server socket to send the message from
@@ -119,7 +124,7 @@ void lo_message_free(lo_message m);
  */
 int lo_message_add(lo_message m, const char *types, ...);
 
-/** \brief the real message_add function (don't call directly) */
+/** \internal \brief the real message_add function (don't call directly) */
 int lo_message_add_internal(lo_message m,  const char *file, const int line,
                             const char *types, ...);
 
@@ -143,7 +148,7 @@ int lo_message_add_internal(lo_message m,  const char *file, const int line,
  */
 int lo_message_add_varargs(lo_message m, const char *types, va_list ap);
 
-/** \brief the real message_add_varargs function (don't call directly) */
+/** \internal \brief the real message_add_varargs function (don't call directly) */
 int lo_message_add_varargs_internal(lo_message m, const char *types, va_list ap,
                                     const char *file, const int line);
 
@@ -311,6 +316,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result);
  * message to a handler function as if it had been received over the
  * network.
  *
+ * \param s The lo_server to use for dispatching.
  * \param data Pointer to the raw OSC message data in network transmission form
  * (network byte order where appropriate).
  * \param size The size of data in bytes
@@ -471,7 +477,7 @@ lo_hires lo_hires_val(lo_type type, lo_arg *p);
  * \brief Create a new server instance.
  *
  * lo_servers block until they receive OSC messages. if you want non-blocking
- * behaviour see the lo_server_thread_* functions.
+ * behaviour see the \ref lo_server_thread_new "lo_server_thread_*" functions.
  *
  * \param port If NULL is passed then an unused UDP port will be chosen by the
  * system, its number may be retreived with lo_server_thread_get_port()
@@ -487,7 +493,7 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h);
  * \brief Create a new server instance, specifying protocol.
  *
  * lo_servers block until they receive OSC messages. if you want non-blocking
- * behaviour see the lo_server_thread_* functions.
+ * behaviour see the \ref lo_server_thread_new "lo_server_thread_*" functions.
  *
  * \param port If using UDP then NULL may be passed to find an unused port.
  * Otherwise a decimal port number orservice name or may be passed.
@@ -525,7 +531,7 @@ void lo_server_free(lo_server s);
  *
  * \param s The server to wait for connections on.
  * \param timeout A timeout in milliseconds to wait for the incoming packet.
- * a value of 0 will return immediatly.
+ * a value of 0 will return immediately.
  *
  * The return value is the number of bytes in the received message or 0 is
  * there is no message. The message will be dispatched to a matching method
@@ -684,18 +690,18 @@ uint32_t lo_blobsize(lo_blob b);
 /**
  * \brief Test a string against an OSC pattern glob
  *
- * \param str The tring to test
+ * \param str The string to test
  * \param p   The pattern to test against
  */
 int lo_pattern_match(const char *str, const char *p);
 
-/** \brief the real send function (don't call directly) */
+/** \internal \brief the real send function (don't call directly) */
 int lo_send_internal(lo_address t, const char *file, const int line,
      const char *path, const char *types, ...);
-/** \brief the real send_timestamped function (don't call directly) */
+/** \internal \brief the real send_timestamped function (don't call directly) */
 int lo_send_timestamped_internal(lo_address t, const char *file, const int line,
      lo_timetag ts, const char *path, const char *types, ...);
-/** \brief the real lo_send_from function (don't call directly) */
+/** \internal \brief the real lo_send_from function (don't call directly) */
 int lo_send_from_internal(lo_address targ, lo_server from, const char *file, 
      const int line, const lo_timetag ts, 
      const char *path, const char *types, ...);
@@ -759,12 +765,31 @@ void lo_arg_network_endian(lo_type type, void *data);
  * stdout. Useful for debugging.
  * @{
  */
+
+/** \brief Pretty-print a lo_bundle object. */
 void lo_bundle_pp(lo_bundle b);
+
+/** \brief Pretty-print a lo_message object. */
 void lo_message_pp(lo_message m);
+
+/** \brief Pretty-print a set of typed arguments.
+ * \param type A type string in the form provided to lo_send().
+ * \param data An OSC data pointer, like that provided in the
+ * lo_method_handler.
+ */
 void lo_arg_pp(lo_type type, void *data);
+
+/** \brief Pretty-print a lo_server object. */
 void lo_server_pp(lo_server s);
+
+/** \brief Pretty-print a lo_method object. */
 void lo_method_pp(lo_method m);
+
+/** \brief Pretty-print a lo_method object, but prepend a given prefix
+ * to all field names. */
 void lo_method_pp_prefix(lo_method m, const char *p);
+
+/** \brief Pretty-print a lo_server_thread object. */
 void lo_server_thread_pp(lo_server_thread st);
 /** @} */
 

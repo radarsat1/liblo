@@ -35,8 +35,8 @@ extern "C" {
  * \defgroup liblo High-level OSC API
  *
  * Defines the high-level API functions neccesary to implement OSC support.
- * Should be adequate for most applications, but ig you require lower level
- * control you can use the functions defined in lo_lowlevel.h.
+ * Should be adequate for most applications, but if you require lower level
+ * control you can use the functions defined in lo_lowlevel.h
  * @{
  */
 
@@ -74,7 +74,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host, const char *po
 /**
  * \brief Create a lo_address object from an OSC URL.
  *
- * example: osc.udp://localhost:4444/my/path/
+ * example: \c "osc.udp://localhost:4444/my/path/"
  */
 lo_address lo_address_new_from_url(const char *url);
 
@@ -109,14 +109,16 @@ int lo_address_get_ttl(lo_address t);
  * \param targ The target OSC address
  * \param path The OSC path the message will be delivered to
  * \param type The types of the data items in the message, types are defined in
- * lo_types_common.h
+ * lo_osc_types.h
  * \param ... The data values to be transmitted. The types of the arguments
  * passed here must agree with the types specified in the type parameter.
  *
- * example:<br>
+ * example:
+ * \code
  * lo_send(t, "/foo/bar", "ff", 0.1f, 23.0f);
+ * \endcode
  *
- * returns -1 on failure.
+ * \return -1 on failure.
  */
 int lo_send(lo_address targ, const char *path, const char *type, ...);
 
@@ -130,16 +132,18 @@ int lo_send(lo_address targ, const char *path, const char *type, ...);
  * (can be LO_TT_IMMEDIATE if you don't want to attach a timetag)
  * \param path The OSC path the message will be delivered to
  * \param type The types of the data items in the message, types are defined in
- * lo_types_common.h
+ * lo_osc_types.h
  * \param ... The data values to be transmitted. The types of the arguments
  * passed here must agree with the types specified in the type parameter.
  *
- * example:<br>
- * serv = lo_server_new(NULL, err);<br>
+ * example:
+ * \code
+ * serv = lo_server_new(NULL, err);
  * lo_server_add_method(serv, "/reply", "ss", reply_handler, NULL);
  * lo_send_from(t, serv, LO_TT_IMMEDIATE, "/foo/bar", "ff", 0.1f, 23.0f);
+ * \endcode
  *
- * on success returns the number of bytes sent, returns -1 on failure.
+ * \return on success, the number of bytes sent, or -1 on failure.
  */
 int lo_send_from(lo_address targ, lo_server from, lo_timetag ts, 
 	       		const char *path, const char *type, ...);
@@ -152,16 +156,18 @@ int lo_send_from(lo_address targ, lo_server from, lo_timetag ts,
  * \param ts The OSC timetag timestamp at which the message will be processed
  * \param path The OSC path the message will be delivered to
  * \param type The types of the data items in the message, types are defined in
- * lo_types_common.h
+ * lo_osc_types.h
  * \param ... The data values to be transmitted. The types of the arguments
  * passed here must agree with the types specified in the type parameter.
  *
- * example:<br>
+ * example:
+ * \code
  * lo_timetag now;<br>
  * lo_timetag_now(&now);<br>
  * lo_send_timestamped(t, now, "/foo/bar", "ff", 0.1f, 23.0f);
+ * \endcode
  *
- * on success returns the number of bytes sent, returns -1 on failure.
+ * \return on success, the number of bytes sent, or -1 on failure.
  */
 int lo_send_timestamped(lo_address targ, lo_timetag ts, const char *path,
 	       		const char *type, ...);
@@ -309,7 +315,7 @@ int lo_server_thread_events_pending(lo_server_thread st);
 /**
  * \brief Create a new OSC blob type.
  *
- * \param size The ammount of space to allocate in the blob structure.
+ * \param size The amount of space to allocate in the blob structure.
  * \param data The data that will be used to initialise the blob, should be
  * size bytes long.
  */

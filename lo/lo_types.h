@@ -17,6 +17,10 @@
 #ifndef LO_TYPES_H
 #define LO_TYPES_H
 
+/**
+ * \file lo_types.h The liblo headerfile defining types used by this API.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

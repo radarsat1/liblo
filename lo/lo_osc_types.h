@@ -17,6 +17,11 @@
 #ifndef LO_OSC_TYPES_H
 #define LO_OSC_TYPES_H
 
+/**
+ * \file lo_osc_types.h A liblo header defining OSC-related types and
+ * constants.
+ */
+
 #include <stdint.h>
 
 /**
@@ -114,6 +119,7 @@ typedef union {
     lo_timetag t;
 } lo_arg;
 
+/** \brief A timetag constant representing "now". */
 #define LO_TT_IMMEDIATE ((lo_timetag){0U,0U})
 
 /** @} */
