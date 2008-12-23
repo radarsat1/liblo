@@ -527,6 +527,19 @@ lo_server lo_server_new_multicast(const char *group, const char *port,
 void lo_server_free(lo_server s);
 
 /**
+ * \brief Wait for an OSC message to be received
+ *
+ * \param s The server to wait for connections on.
+ * \param timeout A timeout in milliseconds to wait for the incoming packet.
+ * a value of 0 will return immediately.
+ *
+ * The return value is 1 if there is a message waiting or 0 if
+ * there is no message. If there is a message waiting you can now
+ * call lo_server_recv to receive that message.
+ */
+int lo_server_wait(lo_server s, int timeout);
+
+/**
  * \brief Look for an OSC message waiting to be received
  *
  * \param s The server to wait for connections on.

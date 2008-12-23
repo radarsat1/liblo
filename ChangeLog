@@ -1,4 +1,7 @@
-2008-23-11  Stephen Sinclair <radarsat1@gmail.com>
+2008-12-23  Nicholas Humfrey  <njh@aelius.com>
+	* Added a function called lo_server_wait() which waits for a message to be received.
+
+2008-11-23  Stephen Sinclair <radarsat1@gmail.com>
 	* Use the \internal Doxygen command to hide internal functions.
 
 2008-10-11  Kentaro Fukuchi <fukuchi@megaui.net>

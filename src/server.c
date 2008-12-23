@@ -487,7 +487,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
     return data;
 }
 
-int lo_server_recv_noblock(lo_server s, int timeout)
+int lo_server_wait(lo_server s, int timeout)
 {
     int sched_timeout = lo_server_next_event_delay(s) * 1000;
 #ifdef WIN32
@@ -514,7 +514,7 @@ int lo_server_recv_noblock(lo_server s, int timeout)
         return 0;
 
     if (res || lo_server_next_event_delay(s) < 0.01)
-	    return lo_server_recv(s);
+	    return 1;
 #else
     ps.fd = s->socket;
     ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
@@ -525,12 +525,22 @@ int lo_server_recv_noblock(lo_server s, int timeout)
 	return 0;
     }
     if (ps.revents || lo_server_next_event_delay(s) < 0.01) {
-	return lo_server_recv(s);
+	return 1;
     }
 #endif
 
     return 0;
 }
+
+int lo_server_recv_noblock(lo_server s, int timeout)
+{
+    int result = lo_server_wait(s,timeout);
+    if (result>0) {
+      return lo_server_recv(s);
+    } else {
+      return 0;
+    }
+}     
 
 int lo_server_recv(lo_server s)
 {
