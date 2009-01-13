@@ -280,12 +280,24 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         struct ip_mreq mreq;
         unsigned int yes = 1;
         memset(&mreq, 0, sizeof(mreq));
+#ifdef HAVE_INET_ATON
         if (inet_aton(group, &mreq.imr_multiaddr)==0) {
             int err = geterror();
             lo_throw(s, err, strerror(err), "inet_aton()");
             lo_server_free(s);
             return NULL;
         }
+#else
+	mreq.imr_multiaddr.s_addr = inet_addr(group);
+	if (mreq.imr_multiaddr.s_addr == INADDR_ANY
+	    || mreq.imr_multiaddr.s_addr == INADDR_NONE)
+	{
+            int err = geterror();
+            lo_throw(s, err, strerror(err), "inet_addr()");
+            lo_server_free(s);
+            return NULL;
+	}
+#endif
         mreq.imr_interface.s_addr=htonl(INADDR_ANY);
 
         setsockopt(s->socket,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));

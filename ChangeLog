@@ -1,5 +1,6 @@
 2009-01-04 Stephen Sinclair <radarsat1@gmail.com>
 	* Add checks to configure.ac for select() and poll().
+	* Use inet_addr if inet_aton is not available. (i.e., on Windows)
 
 2008-12-23  Nicholas Humfrey  <njh@aelius.com>
 	* Added a function called lo_server_wait() which waits for a message to be received.

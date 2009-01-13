@@ -64,6 +64,7 @@ AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is
                  [AC_MSG_RESULT(no)])
 ])
 AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
+AC_CHECK_FUNC([inet_aton], [AC_DEFINE(HAVE_INET_ATON, [1], [Define to 1 if inet_aton() is available.])])
 
 AC_C_BIGENDIAN([LO_BIGENDIAN="1"], [LO_BIGENDIAN="0"])
 AC_DEFINE_UNQUOTED(LO_BIGENDIAN, "$LO_BIGENDIAN", [If machine is bigendian])
