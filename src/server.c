@@ -72,6 +72,7 @@ static lo_server lo_server_new_with_proto_internal(const char *group,
                                                    lo_err_handler err_h);
 
 #ifdef WIN32
+#ifndef gai_strerror
 // Copied from the Win32 SDK 
 
 // WARNING: The gai_strerror inline functions below use static buffers,
@@ -97,7 +98,7 @@ char *WSAAPI gai_strerrorA(int ecode)
                               NULL);
     return buff;
 }
-
+#endif
 
 static int stateWSock = -1;
 
