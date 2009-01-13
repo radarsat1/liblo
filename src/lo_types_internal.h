@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_POLL
+#include <poll.h>
+#endif
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -65,7 +68,6 @@ typedef struct _lo_method {
 } *lo_method;
 
 typedef struct _lo_server {
-	int	                 socket;
 	struct addrinfo         *ai;
 	lo_method                first;
 	lo_err_handler           err_h;
@@ -76,6 +78,13 @@ typedef struct _lo_server {
 	void		        *queued;
 	struct sockaddr_storage  addr;
 	socklen_t 	         addr_len;
+	int                  sockets_len;
+	int                  sockets_alloc;
+#ifdef HAVE_POLL
+	struct pollfd        *sockets;
+#else
+	struct { int fd; }   *sockets;
+#endif
 } *lo_server;
 
 typedef struct _lo_server_thread {

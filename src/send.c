@@ -361,7 +361,7 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
 
     // Re-use existing socket?
     if (from) {
-	sock = from->socket;
+	sock = from->sockets[0].fd;
     } else if (a->protocol == LO_UDP && lo_client_sockets.udp!=-1) {
 	sock = lo_client_sockets.udp;
     } else {
@@ -392,10 +392,9 @@ static int send_data(lo_address a, lo_server from, char *data, const size_t data
 	ret = send(sock, data, data_len, MSG_NOSIGNAL);
     }
 
-    if (a->protocol == LO_TCP) {
-    	//XXX not sure this is the right behviour
-	close(a->socket);
-	a->socket=-1;
+    if (a->protocol == LO_TCP && ret == -1) {
+        close(a->socket);
+        a->socket=-1;
     }
 
     if (ret == -1) {

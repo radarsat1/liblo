@@ -33,7 +33,9 @@
 #else
 #include <netdb.h>
 #include <sys/socket.h>
+#ifdef HAVE_POLL
 #include <sys/poll.h>
+#endif
 #include <sys/un.h>
 #include <arpa/inet.h>
 #endif
@@ -70,6 +72,8 @@ static void queue_data(lo_server s, lo_timetag ts, const char *path,
 static lo_server lo_server_new_with_proto_internal(const char *group,
                                                    const char *port, int proto,
                                                    lo_err_handler err_h);
+static int lo_server_add_socket(lo_server s, int socket);
+static void lo_server_del_socket(lo_server s, int index, int socket);
 
 #ifdef WIN32
 #ifndef gai_strerror
@@ -171,6 +175,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 #endif
     
     s = calloc(1, sizeof(struct _lo_server));
+    if (!s) return 0;
 
     s->err_h = err_h;
     s->first = NULL;
@@ -180,7 +185,16 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
-    s->socket = -1;
+    s->sockets_len = 1;
+    s->sockets_alloc = 2;
+    s->sockets = calloc(2, sizeof(*(s->sockets)));
+
+    if (!s->sockets) {
+        free(s);
+        return 0;
+    }
+
+    s->sockets[0].fd = -1;
 
     memset(&hints, 0, sizeof(hints));
 
@@ -194,8 +208,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
 	struct sockaddr_un sa;
 
-	s->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
-	if (s->socket == -1) {
+	s->sockets[0].fd = socket(PF_UNIX, SOCK_DGRAM, 0);
+	if (s->sockets[0].fd == -1) {
         int err = geterror();
 	    used = NULL;
 	    lo_throw(s, err, strerror(err), "socket()");
@@ -207,7 +221,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, port, sizeof(sa.sun_path)-1);
 
-	if ((ret = bind(s->socket, (struct sockaddr *)&sa, sizeof(sa))) < 0) {
+	if ((ret = bind(s->sockets[0].fd,
+                    (struct sockaddr *)&sa, sizeof(sa))) < 0) {
         int err = geterror();      
 	    lo_throw(s, err, strerror(err), "bind()");
 
@@ -255,14 +270,14 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
 	used = NULL;
 	s->ai = ai;
-	s->socket = -1;
+	s->sockets[0].fd = -1;
 	s->port = 0;
 
-	for (it = ai; it && s->socket == -1; it = it->ai_next) {
+	for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
 	    used = it;
-	    s->socket = socket(it->ai_family, hints.ai_socktype, 0);
+	    s->sockets[0].fd = socket(it->ai_family, hints.ai_socktype, 0);
 	}
-	if (s->socket == -1) {
+	if (s->sockets[0].fd == -1) {
         int err = geterror();
 	    used = NULL;
 	    lo_throw(s, err, strerror(err), "socket()");
@@ -297,11 +312,13 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 #endif
         mreq.imr_interface.s_addr=htonl(INADDR_ANY);
 
-        setsockopt(s->socket,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
-        setsockopt(s->socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes));
+        setsockopt(s->sockets[0].fd,IPPROTO_IP,IP_ADD_MEMBERSHIP,
+                   &mreq,sizeof(mreq));
+        setsockopt(s->sockets[0].fd,SOL_SOCKET,SO_REUSEADDR,
+                   &yes,sizeof(yes));
     }
 
-	if ((ret = bind(s->socket, used->ai_addr, used->ai_addrlen)) < 0) {
+	if ((ret = bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen)) < 0) {
         int err = geterror();
 	    if (err == EINVAL || err == EADDRINUSE) {
 		used = NULL;
@@ -317,7 +334,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     } while (!used && tries++ < 16);
 
     if (proto == LO_TCP) {
-	listen(s->socket, 8);
+        listen(s->sockets[0].fd, 8);
     }
 
     if (!used) {
@@ -328,9 +345,9 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     }
 
     if (proto == LO_UDP) {
-	lo_client_sockets.udp = s->socket;
+        lo_client_sockets.udp = s->sockets[0].fd;
     } else if (proto == LO_TCP) {
-        lo_client_sockets.tcp = s->socket;
+        lo_client_sockets.tcp = s->sockets[0].fd;
     }
 
 	/* Set hostname to empty string */
@@ -391,15 +408,26 @@ void lo_server_free(lo_server s)
     if (s) {
 	lo_method it;
 	lo_method next;
+    int i;
 
-	if (s->socket != -1) {
-        if (s->protocol == LO_UDP && s->socket == lo_client_sockets.udp)
-            lo_client_sockets.udp = -1;
-        else if (s->protocol == LO_TCP && s->socket == lo_client_sockets.tcp)
-            lo_client_sockets.tcp = -1;
-		close(s->socket);
-		s->socket = -1;
-	}
+    for (i=s->sockets_len-1; i >= 0; i--)
+    {
+        if (s->sockets[i].fd != -1) {
+            if (s->protocol == LO_UDP
+                && s->sockets[i].fd == lo_client_sockets.udp)
+            {
+                lo_client_sockets.udp = -1;
+            }
+            else if (s->protocol == LO_TCP
+                     && s->sockets[0].fd == lo_client_sockets.tcp)
+            {
+                lo_client_sockets.tcp = -1;
+            }
+
+            close(s->sockets[i].fd);
+            s->sockets[i].fd = -1;
+        }
+    }
 	if (s->ai) {
 		freeaddrinfo(s->ai);
 		s->ai=NULL;
@@ -419,6 +447,7 @@ void lo_server_free(lo_server s)
 	    free((char *)it->typespec);
 	    free(it);
 	}
+	free(s->sockets);
 	free(s);
     }
 }
@@ -435,7 +464,7 @@ void *lo_server_recv_raw(lo_server s, size_t *size)
 
     s->addr_len = sizeof(s->addr);
 
-    ret = recvfrom(s->socket, buffer, LO_MAX_MSG_SIZE, 0,
+    ret = recvfrom(s->sockets[0].fd, buffer, LO_MAX_MSG_SIZE, 0,
 		   (struct sockaddr *)&s->addr, &s->addr_len);
     if (ret <= 0) {
 	return NULL;
@@ -454,42 +483,107 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
     socklen_t addr_len = sizeof(addr);
     char buffer[LO_MAX_MSG_SIZE];
     int32_t read_size;
-    int ret;
+    int ret, i;
     void *data = NULL;
-    int sock;
+    int sock = -1;
+    int repeat = 1;
+#ifdef HAVE_SELECT
+#ifndef HAVE_POLL
+    fd_set ps;
+    int nfds=0;
+#endif
+#endif
+
+    /* check sockets in reverse order so that already-open sockets
+     * have priority.  this allows checking for closed sockets even
+     * when new connections are being requested.  it also allows to
+     * continue looping through the list of sockets after closing and
+     * deleting a socket, since deleting sockets doesn't affect the
+     * order of the array to the left of the index. */
 
 #ifdef HAVE_POLL
-    struct pollfd ps;
-    ps.fd = s->socket;
-    ps.events = POLLIN | POLLPRI;
-    ps.revents = 0;
-    poll(&ps, 1, -1);
+    for (i=0; i < s->sockets_len; i++) {
+        s->sockets[i].events = POLLIN | POLLPRI;
+        s->sockets[i].revents = 0;
+    }
+
+    poll(s->sockets, s->sockets_len, -1);
+
+    for (i=(s->sockets_len-1); i >= 0; --i) {
+        if (s->sockets[i].revents == POLLERR
+            || s->sockets[i].revents == POLLHUP)
+        {
+            if (i>0) {
+                close(s->sockets[i].fd);
+                lo_server_del_socket(s, i, s->sockets[i].fd);
+                continue;
+            }
+            else
+                return NULL;
+        }
+        if (s->sockets[i].revents) {
+            sock = s->sockets[i].fd;
+
 #else
 #ifdef HAVE_SELECT
     if(!initWSock()) return NULL;
 
-    fd_set ps;
     FD_ZERO(&ps);
-    FD_SET(s->socket,&ps);
-    if(select(1,&ps,NULL,NULL,NULL) == SOCKET_ERROR)
+    for (i=(s->sockets_len-1); i >= 0; --i) {
+        FD_SET(s->sockets[i].fd, &ps);
+        if (s->sockets[i].fd > nfds)
+            nfds = s->sockets[i].fd;
+    }
+
+    if (select(nfds+1,&ps,NULL,NULL,NULL) == SOCKET_ERROR)
         return NULL;
+
+    for (i=0; i < s->sockets_len; i++) {
+        if (FD_ISSET(s->sockets[i].fd, &ps)) {
+            sock = s->sockets[i].fd;
+
 #endif
 #endif
-    sock = accept(s->socket, (struct sockaddr *)&addr, &addr_len);
+
+    if (sock == -1 || !repeat)
+        return NULL;
+
+    /* zeroeth socket is listening for new connections */
+    if (sock == s->sockets[0].fd) {
+        sock = accept(sock, (struct sockaddr *)&addr, &addr_len);
+        i = lo_server_add_socket(s, sock);
+
+        /* only repeat this loop for sockets other than the listening
+         * socket,  (otherwise i will be wrong next time around) */
+        repeat = 0;
+    }
+
+    if (i<0) {
+        close(sock);
+        return NULL;
+    }
 
     ret = recv(sock, &read_size, sizeof(read_size), 0);
     read_size = ntohl(read_size);
-    if (read_size > LO_MAX_MSG_SIZE) {
-	close(sock);
-	lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
-
-	return NULL;
+    if (read_size > LO_MAX_MSG_SIZE || ret <= 0) {
+        close(sock);
+        lo_server_del_socket(s, i, sock);
+        if (ret > 0)
+            lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
+        continue;
     }
     ret = recv(sock, buffer, read_size, 0);
-    //close(sock);
     if (ret <= 0) {
-	return NULL;
+        close(sock);
+        lo_server_del_socket(s, i, sock);
+        continue;
     }
+ 
+    /* end of loop over sockets: successfully read data */
+    break;
+        }
+    }
+
     data = malloc(ret);
     memcpy(data, buffer, ret);
 
@@ -501,30 +595,36 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
 int lo_server_wait(lo_server s, int timeout)
 {
     int sched_timeout = lo_server_next_event_delay(s) * 1000;
-#ifdef HAVE_POLL
-    struct pollfd ps;
-#else
+    int i;
 #ifdef HAVE_SELECT
+#ifndef HAVE_POLL
     fd_set ps;
     struct timeval stimeout;
 #endif
 #endif
 
 #ifdef HAVE_POLL
-    ps.fd = s->socket;
-    ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-    ps.revents = 0;
-    poll(&ps, 1, timeout > sched_timeout ? sched_timeout : timeout);
-
-    if (ps.revents == POLLERR || ps.revents == POLLHUP) {
-	return 0;
+    for (i=0; i < s->sockets_len; i++) {
+        s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+        s->sockets[i].revents = 0;
     }
-    if (ps.revents || lo_server_next_event_delay(s) < 0.01) {
-	return 1;
+
+    poll(s->sockets, s->sockets_len,
+         timeout > sched_timeout ? sched_timeout : timeout);
+
+    if (lo_server_next_event_delay(s) < 0.01)
+        return 1;
+
+    for (i=0; i < s->sockets_len; i++) {
+        if (s->sockets[i].revents == POLLERR
+            || s->sockets[i].revents == POLLHUP)
+            return 0;
+        if (s->sockets[i].revents)
+            return 1;
     }
 #else
 #ifdef HAVE_SELECT
-    int res,to;
+    int res,to,nfds=0;
 
     if(!initWSock()) return 0;
 
@@ -533,8 +633,13 @@ int lo_server_wait(lo_server s, int timeout)
     stimeout.tv_usec = (to%1000)*1000;
 
     FD_ZERO(&ps);
-    FD_SET(s->socket,&ps);
-    res = select(1,&ps,NULL,NULL,&stimeout);
+    for (i=0; i < s->sockets_len; i++) {
+        FD_SET(s->sockets[i].fd,&ps);
+        if (s->sockets[i].fd > nfds)
+            nfds = s->sockets[i].fd;
+    }
+
+    res = select(nfds+1,&ps,NULL,NULL,&stimeout);
 
     if(res == SOCKET_ERROR)
         return 0;
@@ -562,13 +667,12 @@ int lo_server_recv(lo_server s)
     void *data;
     size_t size;
     double sched_time = lo_server_next_event_delay(s);
-#ifdef HAVE_POLL
-    struct pollfd ps;
-#else
+    int i;
 #ifdef HAVE_SELECT
+#ifndef HAVE_POLL
     fd_set ps;
     struct timeval stimeout;
-    int res;
+    int res,nfds=0;
 #endif
 #endif
 
@@ -579,34 +683,46 @@ again:
 	}
 
 #ifdef HAVE_POLL
-	ps.fd = s->socket;
-	ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-	ps.revents = 0;
-	poll(&ps, 1, (int)(sched_time * 1000.0));
+    for (i=0; i < s->sockets_len; i++) {
+        s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+        s->sockets[i].revents = 0;
+    }
 
-	if (ps.revents == POLLERR || ps.revents == POLLHUP) {
-	    return 0;
-	}
+	poll(s->sockets, s->sockets_len, (int)(sched_time * 1000.0));
 
-	if (!ps.revents) {
-	    sched_time = lo_server_next_event_delay(s);
+    for (i=0; i < s->sockets_len; i++)
+    {
+        if (   s->sockets[i].revents == POLLERR
+            || s->sockets[i].revents == POLLHUP)
+            return 0;
 
-	    if (sched_time > 0.01) {
-		goto again;
-	    }
+        if (s->sockets[i].revents)
+            break;
+    }
 
-	    return dispatch_queued(s);
-	}
+    if (i >= s->sockets_len)
+    {
+        sched_time = lo_server_next_event_delay(s);
+
+        if (sched_time > 0.01)
+            goto again;
+
+        return dispatch_queued(s);
+    }
 #else
 #ifdef HAVE_SELECT
     if(!initWSock()) return 0;
 
-    ps.fd_count = 1;
-    ps.fd_array[0] = s->socket;
+    FD_ZERO(&ps);
+    for (i=0; i < s->sockets_len; i++) {
+        FD_SET(s->sockets[i].fd,&ps);
+        if (s->sockets[i].fd > nfds)
+            nfds = s->sockets[i].fd;
+    }
 
     stimeout.tv_sec = sched_time;
     stimeout.tv_usec = (sched_time-stimeout.tv_sec)*1.e6;
-	res = select(1,&ps,NULL,NULL,&stimeout);
+	res = select(nfds+1,&ps,NULL,NULL,&stimeout);
 	if(res == SOCKET_ERROR) {
 	    return 0;
 	}
@@ -614,9 +730,8 @@ again:
 	if(!res) {
 	    sched_time = lo_server_next_event_delay(s);
 
-	    if (sched_time > 0.01) {
-		goto again;
-	    }
+	    if (sched_time > 0.01)
+            goto again;
 
 	    return dispatch_queued(s);
 	}
@@ -640,6 +755,52 @@ again:
     }
     free(data);
     return size;
+}
+
+/** \internal \brief Add a socket to this server's list of sockets.
+ *  \param s The lo_server
+ *  \param socket The socket number to add.
+ *  \return The index number of the added socket, or -1 on failure.
+ */
+int lo_server_add_socket(lo_server s, int socket)
+{
+    if ((s->sockets_len+1) > s->sockets_alloc) {
+        void *sp = realloc(s->sockets,
+                           sizeof(*(s->sockets))*(s->sockets_alloc*2));
+        if (!sp)
+            return -1;
+        s->sockets = sp;
+        s->sockets_alloc *= 2;
+    }
+
+    s->sockets[s->sockets_len].fd = socket;
+    s->sockets_len ++;
+
+    return s->sockets_len-1;
+}
+
+/** \internal \brief Delete a socket from this server's list of sockets.
+ *  \param s The lo_server
+ *  \param index The index of the socket to delete, -1 if socket is provided.
+ *  \param socket The socket number to delete, -1 if index is provided.
+ *  \return The index number of the added socket.
+ */
+void lo_server_del_socket(lo_server s, int index, int socket)
+{
+    int i;
+
+    if (index < 0 && socket != -1) {
+        for (index=0; index < s->sockets_len; index++)
+            if (s->sockets[index].fd == socket)
+                break;
+    }
+
+    if (index < 0 || index >= s->sockets_len)
+        return;
+
+    for (i=index+1; i < s->sockets_len; i++)
+        s->sockets[i-1] = s->sockets[i];
+    s->sockets_len --;
 }
 
 int lo_server_dispatch_data(lo_server s, void *data, size_t size)
@@ -1072,7 +1233,7 @@ int lo_server_get_socket_fd(lo_server s)
     ) {
         return -1;  /* assume it is not supported */
     }
-    return s->socket;
+    return s->sockets[0].fd;
 }
 
 int lo_server_get_port(lo_server s)
@@ -1136,7 +1297,7 @@ void lo_server_pp(lo_server s)
 {
     lo_method it;
 
-    printf("socket: %d\n\n", s->socket);
+    printf("socket: %d\n\n", s->sockets[0].fd);
     printf("Methods\n");
     for (it = s->first; it; it = it->next) {
 	printf("\n");
