@@ -51,6 +51,20 @@ AC_CHECK_HEADERS([netdb.h netinet/in.h stdlib.h string.h sys/socket.h unistd.h])
 AC_C_CONST
 AC_TYPE_SIZE_T
 
+# Check for features
+AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])], [
+     AC_MSG_CHECKING([for select in ws2_32])
+     LIBS="$LIBS -lws2_32"
+     # some winsock2 functions require XP, so WINNT=0x501
+     CFLAGS="$CFLAGS -DWIN32 -D_WIN32_WINNT=0x501"
+     AC_TRY_LINK([#include <winsock2.h>],
+                 [select(0,0,0,0,0)],
+                 [AC_MSG_RESULT(yes)
+                 AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])],
+                 [AC_MSG_RESULT(no)])
+])
+AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
+
 AC_C_BIGENDIAN([LO_BIGENDIAN="1"], [LO_BIGENDIAN="0"])
 AC_DEFINE_UNQUOTED(LO_BIGENDIAN, "$LO_BIGENDIAN", [If machine is bigendian])
 AC_SUBST(LO_BIGENDIAN)

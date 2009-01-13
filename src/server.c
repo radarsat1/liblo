@@ -449,7 +449,14 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
     void *data = NULL;
     int sock;
 
-#ifdef WIN32
+#ifdef HAVE_POLL
+    struct pollfd ps;
+    ps.fd = s->socket;
+    ps.events = POLLIN | POLLPRI;
+    ps.revents = 0;
+    poll(&ps, 1, -1);
+#else
+#ifdef HAVE_SELECT
     if(!initWSock()) return NULL;
 
     fd_set ps;
@@ -457,12 +464,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
     FD_SET(s->socket,&ps);
     if(select(1,&ps,NULL,NULL,NULL) == SOCKET_ERROR)
         return NULL;
-#else
-    struct pollfd ps;
-    ps.fd = s->socket;
-    ps.events = POLLIN | POLLPRI;
-    ps.revents = 0;
-    poll(&ps, 1, -1);
+#endif
 #endif
     sock = accept(s->socket, (struct sockaddr *)&addr, &addr_len);
 
@@ -490,14 +492,29 @@ void *lo_server_recv_raw_stream(lo_server s, size_t *size)
 int lo_server_wait(lo_server s, int timeout)
 {
     int sched_timeout = lo_server_next_event_delay(s) * 1000;
-#ifdef WIN32
+#ifdef HAVE_POLL
+    struct pollfd ps;
+#else
+#ifdef HAVE_SELECT
     fd_set ps;
     struct timeval stimeout;
-#else
-    struct pollfd ps;
+#endif
 #endif
 
-#ifdef WIN32
+#ifdef HAVE_POLL
+    ps.fd = s->socket;
+    ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+    ps.revents = 0;
+    poll(&ps, 1, timeout > sched_timeout ? sched_timeout : timeout);
+
+    if (ps.revents == POLLERR || ps.revents == POLLHUP) {
+	return 0;
+    }
+    if (ps.revents || lo_server_next_event_delay(s) < 0.01) {
+	return 1;
+    }
+#else
+#ifdef HAVE_SELECT
     int res,to;
 
     if(!initWSock()) return 0;
@@ -515,18 +532,7 @@ int lo_server_wait(lo_server s, int timeout)
 
     if (res || lo_server_next_event_delay(s) < 0.01)
 	    return 1;
-#else
-    ps.fd = s->socket;
-    ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-    ps.revents = 0;
-    poll(&ps, 1, timeout > sched_timeout ? sched_timeout : timeout);
-
-    if (ps.revents == POLLERR || ps.revents == POLLHUP) {
-	return 0;
-    }
-    if (ps.revents || lo_server_next_event_delay(s) < 0.01) {
-	return 1;
-    }
+#endif
 #endif
 
     return 0;
@@ -547,12 +553,14 @@ int lo_server_recv(lo_server s)
     void *data;
     size_t size;
     double sched_time = lo_server_next_event_delay(s);
-#ifdef WIN32
+#ifdef HAVE_POLL
+    struct pollfd ps;
+#else
+#ifdef HAVE_SELECT
     fd_set ps;
     struct timeval stimeout;
     int res;
-#else
-    struct pollfd ps;
+#endif
 #endif
 
 again:
@@ -561,7 +569,27 @@ again:
 	    sched_time = 10.0;
 	}
 
-#ifdef WIN32
+#ifdef HAVE_POLL
+	ps.fd = s->socket;
+	ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+	ps.revents = 0;
+	poll(&ps, 1, (int)(sched_time * 1000.0));
+
+	if (ps.revents == POLLERR || ps.revents == POLLHUP) {
+	    return 0;
+	}
+
+	if (!ps.revents) {
+	    sched_time = lo_server_next_event_delay(s);
+
+	    if (sched_time > 0.01) {
+		goto again;
+	    }
+
+	    return dispatch_queued(s);
+	}
+#else
+#ifdef HAVE_SELECT
     if(!initWSock()) return 0;
 
     ps.fd_count = 1;
@@ -583,25 +611,7 @@ again:
 
 	    return dispatch_queued(s);
 	}
-#else
-	ps.fd = s->socket;
-	ps.events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-	ps.revents = 0;
-	poll(&ps, 1, (int)(sched_time * 1000.0));
-
-	if (ps.revents == POLLERR || ps.revents == POLLHUP) {
-	    return 0;
-	}
-
-	if (!ps.revents) {
-	    sched_time = lo_server_next_event_delay(s);
-
-	    if (sched_time > 0.01) {
-		goto again;
-	    }
-
-	    return dispatch_queued(s);
-	}
+#endif
 #endif
     } else {
 	return dispatch_queued(s);
