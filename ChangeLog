@@ -2,6 +2,7 @@
 	* Add checks to configure.ac for select() and poll().
 	* Use inet_addr if inet_aton is not available. (i.e., on Windows)
 	* Retry a TCP connection once if it failed to connect on send.
+	* Remove useless conditional call to freeaddrinfo().
 
 2008-12-23  Nicholas Humfrey  <njh@aelius.com>
 	* Added a function called lo_server_wait() which waits for a message to be received.

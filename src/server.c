@@ -245,10 +245,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 		     time(NULL)) % 10000);
 	}
 
-	if (ai) {
-	    freeaddrinfo(ai);
-	}
-
 	if ((ret = getaddrinfo(NULL, service, &hints, &ai))) {
 	    lo_throw(s, ret, gai_strerror(ret), NULL);
 	    freeaddrinfo(ai);
