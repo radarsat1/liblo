@@ -423,6 +423,12 @@ int lo_send_message_from(lo_address a, lo_server from, const char *path, lo_mess
     // Send the message
     int ret = send_data( a, from, data, data_len );
 
+    // For TCP, retry once if it failed.  The first try will return
+    // error if the connection was closed, so the second try will
+    // attempt to re-open the connection.
+    if (ret == -1 && a->protocol == LO_TCP)
+        ret = send_data( a, from, data, data_len );
+
     // Free the memory allocated by lo_message_serialise
     if (data) free( data );
 
