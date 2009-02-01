@@ -25,7 +25,7 @@
 double lo_timetag_diff(lo_timetag a, lo_timetag b)
 {
 	return (double)a.sec - (double)b.sec +
-		((double)a.frac - (double)b.frac) * 0.00000000093132257461;
+		((double)a.frac - (double)b.frac) * 0.00000000023283064365;
 }
 
 void lo_timetag_now(lo_timetag *t)

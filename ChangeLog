@@ -1,5 +1,6 @@
 2009-02-01 Stephen Sinclair <radarsat1@gmail.com>
 	* Add function lo_message_get_timestamp(). (Alex McLean)
+	* Fix magic constant in lo_timetag_diff. (Dominic Sacré)
 
 2009-01-04 Stephen Sinclair <radarsat1@gmail.com>
 	* Add checks to configure.ac for select() and poll().
