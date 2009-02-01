@@ -1,6 +1,11 @@
 2009-02-01 Stephen Sinclair <radarsat1@gmail.com>
 	* Add function lo_message_get_timestamp(). (Alex McLean)
 	* Fix magic constant in lo_timetag_diff. (Dominic Sacré)
+	* Bump the LO_SO_VERSION version major number to resolve ABI
+	  incompatibilities with previous versions.  In particular, the
+	  addition of 'const' to an argument of lo_blob_new() in r80
+	  constituted an API add and removal, hence the reset of the 3rd
+	  number ('age') according to the libtool manual. (SS)
 
 2009-01-04 Stephen Sinclair <radarsat1@gmail.com>
 	* Add checks to configure.ac for select() and poll().
