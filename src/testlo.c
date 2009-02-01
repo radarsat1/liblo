@@ -96,6 +96,9 @@ int coerce_handler(const char *path, const char *types, lo_arg **argv, int argc,
 int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
+int timestamp_handler(const char *path, const char *types, lo_arg **argv, 
+                 int argc, lo_message data, void *user_data);
+
 int jitter_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 lo_message data, void *user_data);
 
@@ -394,6 +397,8 @@ int main()
 
     lo_server_thread_add_method(st, "/bundle", NULL,
 				bundle_handler, NULL);
+    lo_server_thread_add_method(st, "/timestamp", NULL,
+				timestamp_handler, NULL);
     lo_server_thread_add_method(st, "/jitter", "ti",
 				jitter_handler, NULL);
 
@@ -550,6 +555,12 @@ int main()
     lo_bundle_free(b);
 
     lo_send_timestamped(a, sched, "/bundle", "s", "lo_send_timestamped() test");
+
+    /* test bundle timestamp ends up in message struct (and doesn't end up in
+       unbundled messages) */
+    lo_timetag_now(&sched);    
+    lo_send_timestamped(a, sched, "/timestamp", "it", 1, sched);
+    lo_send(a, "/timestamp", "it", 0, sched);
 
 #define JITTER_ITS 25
     /* jitter tests */
@@ -822,6 +833,24 @@ int bundle_handler(const char *path, const char *types, lo_arg **argv, int argc,
     bundle_count++;
     printf("received bundle\n");
 
+    return 0;
+}
+
+int timestamp_handler(const char *path, const char *types, lo_arg **argv, 
+		      int argc, lo_message data, void *user_data)
+{
+    int bundled = argv[0]->i;
+
+    lo_timetag ts, arg_ts;
+    ts = lo_message_get_timestamp(data);
+    arg_ts = argv[1]->t;
+
+    if (bundled) {
+      TEST((ts.sec == arg_ts.sec) && (ts.frac == arg_ts.frac));
+    }
+    else {
+      TEST(ts.sec == LO_TT_IMMEDIATE.sec && ts.frac == LO_TT_IMMEDIATE.frac);
+    }
     return 0;
 }
 

@@ -53,6 +53,8 @@ typedef struct _lo_message {
 	size_t     datasize;
 	lo_address source;
         lo_arg   **argv;
+        /* timestamp from bundle (LO_TT_IMMEDIATE for unbundled messages) */
+        lo_timetag ts;
 } *lo_message;
 
 typedef int (*lo_method_handler)(const char *path, const char *types,

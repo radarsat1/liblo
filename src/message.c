@@ -68,6 +68,7 @@ lo_message lo_message_new()
     m->datasize = 0;
     m->source = NULL;
     m->argv = NULL;
+    m->ts = LO_TT_IMMEDIATE;
 
     return m;
 }
@@ -641,6 +642,11 @@ lo_address lo_message_get_source(lo_message m)
     return m->source;
 }
 
+lo_timetag lo_message_get_timestamp(lo_message m)
+{
+    return m->ts;
+}
+
 size_t lo_message_length(lo_message m, const char *path)
 {
     return lo_strsize(path) + lo_strsize(m->types) + m->datalen;
@@ -724,6 +730,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     msg->datasize = 0;
     msg->source = NULL;
     msg->argv = NULL;
+    msg->ts = LO_TT_IMMEDIATE;
 
     // path
     int len = lo_validate_string(data, remain);

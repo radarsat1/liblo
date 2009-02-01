@@ -248,6 +248,14 @@ void lo_message_add_infinitum(lo_message m);
 lo_address lo_message_get_source(lo_message m);
 
 /**
+ * \brief  Returns the timestamp (lo_timetag *) of a bundled incoming message.
+ *
+ * Returns LO_TT_IMMEDIATE if the message is outgoing, or did not arrive
+ * contained in a bundle. Do not free the returned timetag.
+ */
+lo_timetag lo_message_get_timestamp(lo_message m);
+
+/**
  * \brief  Return the message type tag string.
  *
  * The result is valid until further data is added with lo_message_add*().

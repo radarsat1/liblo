@@ -1,3 +1,6 @@
+2009-02-01 Stephen Sinclair <radarsat1@gmail.com>
+	* Add function lo_message_get_timestamp(). (Alex McLean)
+
 2009-01-04 Stephen Sinclair <radarsat1@gmail.com>
 	* Add checks to configure.ac for select() and poll().
 	* Use inet_addr if inet_aton is not available. (i.e., on Windows)

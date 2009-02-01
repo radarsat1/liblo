@@ -840,6 +840,10 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
                 lo_throw(s, result, "Invalid bundle element received", path);
                 return -result;
             }
+
+	    // set timetag from bundle
+	    msg->ts = ts;
+
             // test for immediate dispatch
             if ((ts.sec == 0 && ts.frac == 1) ||
                                 lo_timetag_diff(ts, now) <= 0.0) {
