@@ -1,3 +1,6 @@
+2009-02-12 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix the definition of LO_TT_IMMEDIATE per the OSC spec. (Dominic Sacré)
+
 2009-02-01 Stephen Sinclair <radarsat1@gmail.com>
 	* Add function lo_message_get_timestamp(). (Alex McLean)
 	* Fix magic constant in lo_timetag_diff. (Dominic Sacré)

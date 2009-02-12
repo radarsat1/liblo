@@ -139,7 +139,8 @@ int lo_send_from_internal(lo_address to, lo_server from, const char *file,
     int ret;
     
     lo_message msg = lo_message_new();
-    if (ts.sec || ts.frac) b = lo_bundle_new(ts);
+    if (ts.sec!=LO_TT_IMMEDIATE.sec || ts.frac!=LO_TT_IMMEDIATE.frac)
+        b = lo_bundle_new(ts);
 
     // Clear any previous errors
     to->errnum = 0;

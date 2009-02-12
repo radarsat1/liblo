@@ -845,7 +845,8 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
 	    msg->ts = ts;
 
             // test for immediate dispatch
-            if ((ts.sec == 0 && ts.frac == 1) ||
+            if ((ts.sec == LO_TT_IMMEDIATE.sec
+                 && ts.frac == LO_TT_IMMEDIATE.frac) ||
                                 lo_timetag_diff(ts, now) <= 0.0) {
                 dispatch_method(s, pos, msg);
                 lo_message_free(msg);

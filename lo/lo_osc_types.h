@@ -120,7 +120,7 @@ typedef union {
 } lo_arg;
 
 /** \brief A timetag constant representing "now". */
-#define LO_TT_IMMEDIATE ((lo_timetag){0U,0U})
+#define LO_TT_IMMEDIATE ((lo_timetag){0U,1U})
 
 /** @} */
 
