@@ -1,3 +1,6 @@
+2009-02-17 Stephen Sinclair <radarsat1@gmail.com>
+	* For multicast, enable SO_REUSEPORT as well as SO_REUSEADDR. (Mike Wozniewski)
+
 2009-02-12 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix the definition of LO_TT_IMMEDIATE per the OSC spec. (Dominic Sacré)
 

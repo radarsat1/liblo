@@ -316,6 +316,10 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                    &mreq,sizeof(mreq));
         setsockopt(s->sockets[0].fd,SOL_SOCKET,SO_REUSEADDR,
                    &yes,sizeof(yes));
+#ifdef SO_REUSEPORT
+        setsockopt(s->sockets[0].fd,SOL_SOCKET,SO_REUSEPORT,
+                   &yes,sizeof(yes));
+#endif
     }
 
 	if ((ret = bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen)) < 0) {
