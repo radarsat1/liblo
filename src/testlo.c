@@ -938,8 +938,12 @@ void replace_char(char *str, size_t size, const char find, const char replace)
 
 void test_deserialise()
 {
-    const char *types = NULL;
+    char *buf, *buf2, *tmp;
+    const char *types = NULL, *path;
     lo_arg **argv = NULL;
+    size_t len, size;
+    char data[256];
+    int result = 0;
 
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
     uint8_t midi_data[4] = {0xff, 0xf7, 0xAA, 0x00};
@@ -992,17 +996,17 @@ void test_deserialise()
     TEST('I' == types[14] && NULL == argv[14]);
 
     // serialise it
-    size_t len = lo_message_length(msg, "/foo");
+    len = lo_message_length(msg, "/foo");
     printf("serialise message_length=%d\n", (int)len);
-    char *buf = calloc(len, sizeof(char));
-    size_t size = 0;
-    char *tmp = lo_message_serialise(msg, "/foo", buf, &size);
+    buf = calloc(len, sizeof(char));
+    size = 0;
+    tmp = lo_message_serialise(msg, "/foo", buf, &size);
     TEST(tmp == buf && size == len && 92 == len);
     lo_message_free(msg);
 
     // deserialise it
     printf("deserialise\n");
-    const char *path = lo_get_path(buf, len);
+    path = lo_get_path(buf, len);
     TEST(NULL != path && !strcmp(path, "/foo"));
     msg = lo_message_deserialise(buf, size, NULL);
     TEST(NULL != msg);
@@ -1036,7 +1040,7 @@ void test_deserialise()
     // serialise it again, compare
     len = lo_message_length(msg, "/foo");
     printf("serialise message_length=%d\n", (int)len);
-    char *buf2 = calloc(len, sizeof(char));
+    buf2 = calloc(len, sizeof(char));
     size = 0;
     tmp = lo_message_serialise(msg, "/foo", buf2, &size);
     TEST(tmp == buf2 && size == len && 92 == len);
@@ -1048,9 +1052,6 @@ void test_deserialise()
     free(buf2);
 
     // deserialise failure tests with invalid message data
-
-    char data[256];
-    int result = 0;
 
     msg = lo_message_deserialise(data, 0, &result); // 0 size
     TEST(NULL == msg && LO_ESIZE == result);

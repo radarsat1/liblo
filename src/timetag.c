@@ -36,8 +36,9 @@ void lo_timetag_now(lo_timetag *t)
         1601 and 1900 are 9435484800 seconds apart.
     */
     FILETIME ftime;
+    double dtime;
     GetSystemTimeAsFileTime(&ftime);
-    double dtime = 
+    dtime = 
         ((ftime.dwHighDateTime*4294967296.e-7)-9435484800.)+
         (ftime.dwLowDateTime*1.e-7);
 

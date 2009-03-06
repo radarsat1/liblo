@@ -1,6 +1,7 @@
 2009-03-06 Stephen Sinclair <radarsat1@gmail.com>
 	* Add a return value to lo_bundle_add_message().
 	* Avoid pointer arithmetic on void* types for compilers that can't handle it.
+	* Move all local variable declarations to the top of the scope.
 
 2009-02-17 Stephen Sinclair <radarsat1@gmail.com>
 	* For multicast, enable SO_REUSEPORT as well as SO_REUSEADDR. (Mike Wozniewski)

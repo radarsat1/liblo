@@ -470,12 +470,13 @@ ssize_t lo_validate_string(void *data, ssize_t size)
 ssize_t lo_validate_blob(void *data, ssize_t size)
 {
     ssize_t i, end, len;
+    uint32_t dsize;
     char *pos = (char *)data;
 
     if (size < 0) {
         return -LO_ESIZE;      // invalid size
     }
-    uint32_t dsize = lo_otoh32(*(uint32_t*)data);
+    dsize = lo_otoh32(*(uint32_t*)data);
     if (dsize > LO_MAX_MSG_SIZE) { // avoid int overflow in next step
         return -LO_ESIZE;
     }
@@ -659,13 +660,18 @@ int lo_message_get_argc(lo_message m)
 
 lo_arg **lo_message_get_argv(lo_message m)
 {
+    int i, argc;
+    char *types, *ptr;
+    lo_arg **argv;
+
     if (NULL != m->argv) { return m->argv; }
 
-    int i = 0, argc = m->typelen - 1;
-    char *types = m->types + 1;
-    char *ptr = m->data;
+    i = 0;
+    argc = m->typelen - 1;
+    types = m->types + 1;
+    ptr = m->data;
 
-    lo_arg **argv = calloc(argc, sizeof(lo_arg *));
+    argv = calloc(argc, sizeof(lo_arg *));
     for (i = 0; i < argc; ++i) {
         size_t len = lo_arg_size(types[i], ptr);
         argv[i] = len ? (lo_arg*)ptr : NULL;
@@ -683,6 +689,7 @@ char *lo_message_get_types(lo_message m)
 void *lo_message_serialise(lo_message m, const char *path, void *to,
 			   size_t *size)
 {
+    int i, argc;
     char *types, *ptr;
     size_t s = lo_message_length(m, path);
 
@@ -702,7 +709,8 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     ptr = (char*)to + lo_strsize(path) + lo_strsize(m->types);
     memcpy(ptr, m->data, m->datalen);
 
-    int i = 0, argc = m->typelen - 1;
+    i = 0;
+    argc = m->typelen - 1;
     for (i = 0; i < argc; ++i) {
         size_t len = lo_arg_size(types[i], ptr);
         lo_arg_network_endian(types[i], ptr);
@@ -716,7 +724,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
 {
     lo_message msg = NULL;
     char *types = NULL, *ptr = NULL;
-    int i = 0, argc = 0, remain = size, res = 0;
+    int i = 0, argc = 0, remain = size, res = 0, len;
 
     if (remain <= 0) { res = LO_ESIZE; goto fail; }
 
@@ -734,7 +742,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     msg->ts = LO_TT_IMMEDIATE;
 
     // path
-    int len = lo_validate_string(data, remain);
+    len = lo_validate_string(data, remain);
     if (len < 0) {
         res = LO_EINVALIDPATH; // invalid path string
         goto fail;
