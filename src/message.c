@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -50,6 +51,17 @@ static char lo_string_types[] = {
 static void lo_message_add_typechar(lo_message m, char t);
 static void *lo_message_add_data(lo_message m, size_t s);
 void lo_arg_pp_internal(lo_type type, void *data, int bigendian);
+
+// Used for calculating new sizes when expanding message data buffers.
+// Note that log(x)/0.69315 = log2(x): this simply finds the next
+// highest power of 2.
+#if 1
+#define lo_pow2_over(a,b) \
+    a = ((b > a) ? (a << ((int)((log(((double)b/(double)a))/0.69315)+1))) : a);
+#else
+#define lo_pow2_over(a,b) \
+    while (b > a) {a *= 2;}
+#endif
 
 lo_message lo_message_new()
 {
@@ -394,9 +406,7 @@ static void *lo_message_add_data(lo_message m, size_t s)
 	if (!m->datasize)
 	    m->datasize = LO_DEF_DATA_SIZE;
 
-    while (m->datalen > m->datasize)
-		m->datasize *= 2;
-
+    lo_pow2_over(m->datasize, m->datalen);
 	m->data = realloc(m->data, m->datasize);
 
     if (m->argv) {
