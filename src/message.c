@@ -124,11 +124,13 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 
 	case LO_STRING:
 	    s = va_arg(ap, char *);
+#ifdef __GNUC__
 	    if (s == (char *)LO_MARKER_A) {
 		fprintf(stderr, "liblo error: lo_send or lo_message_add called with "
 			"invalid string pointer for arg %d, probably arg mismatch\n"
 		        "at %s:%d, exiting.\n", count, file, line);
 	    }
+#endif
 	    lo_message_add_string(msg, s);
 	    break;
 
@@ -154,6 +156,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 
 	case LO_SYMBOL:
 	    s = va_arg(ap, char *);
+#ifdef __GNUC__
 	    if (s == (char *)LO_MARKER_A) {
 		fprintf(stderr, "liblo error: lo_send or lo_message_add called with "
 			"invalid symbol pointer for arg %d, probably arg mismatch\n"
@@ -161,6 +164,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         va_end(ap);
         return -2;
 	    }
+#endif
 	    lo_message_add_symbol(msg, s);
 	    break;
 
@@ -197,6 +201,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 	    break;
 	}
     }
+#ifdef __GNUC__
     i = va_arg(ap, uint32_t);
     if (i != LO_MARKER_A) {
 	ret = -2; // bad format/args
@@ -211,6 +216,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 	fprintf(stderr, "liblo error: lo_send, lo_message_add, or lo_message_add_varargs called with "
 			"mismatching types and data at\n%s:%d, exiting.\n", file, line);
     }
+#endif
     va_end(ap);
 
 	return ret;
@@ -219,11 +225,20 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 /* Don't call lo_message_add_internal directly, use lo_message_add,
  * a macro wrapping this function with appropriate values for file and line */
 
+#ifdef __GNUC__
 int lo_message_add_internal(lo_message msg, const char *file, const int line,
                             const char *types, ...)
+#else
+int lo_message_add(lo_message msg, const char *types, ...)
+#endif
 {
     va_list ap;
     int ret = 0;
+
+#ifndef __GNUC__
+    const char *file = "";
+    const int line = 0;
+#endif
 
     va_start(ap, types);
     ret = lo_message_add_varargs_internal(msg, types, ap, file, line);

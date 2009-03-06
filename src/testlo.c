@@ -456,6 +456,11 @@ int main()
     TEST(test_varargs(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123,
                       "123", btest, midi_data, 0x0123456789abcdefULL, tt,
                       0.9999, "sym", 'X', 'Y', LO_ARGS_END) == 0);
+
+#ifdef __GNUC__
+    // Note: Lack of support for variable-argument macros in non-GCC compilers
+    //       does not allow us to test for these conditions.
+
     // too many args
     TEST(test_varargs(a, "/lotsofformats", "f", 0.12345678f, 123,
                       "123", btest, midi_data, 0x0123456789abcdefULL, tt,
@@ -464,6 +469,7 @@ int main()
     TEST(test_varargs(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123,
                       "123", btest, midi_data, 0x0123456789abcdefULL, tt, 0.5,
                       LO_ARGS_END) != 0);
+#endif
 
     // test lo_message_add
     m1 = lo_message_new();

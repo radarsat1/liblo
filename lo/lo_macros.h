@@ -40,12 +40,14 @@ extern "C" {
 #define LO_MARKER_B 0xf00baa23
 #define LO_ARGS_END LO_MARKER_A, LO_MARKER_B
 
+#define lo_message_add_varargs(msg, types, list) \
+    lo_message_add_varargs_internal(msg, types, list, __FILE__, __LINE__)
+
+#ifdef __GNUC__
+
 #define lo_message_add(msg, types...)                         \
     lo_message_add_internal(msg, __FILE__, __LINE__, types,   \
                             LO_MARKER_A, LO_MARKER_B)
-
-#define lo_message_add_varargs(msg, types, list) \
-        lo_message_add_varargs_internal(msg, types, list, __FILE__, __LINE__)
 
 #define lo_send(targ, path, types...) \
         lo_send_internal(targ, __FILE__, __LINE__, path, types, \
@@ -58,6 +60,18 @@ extern "C" {
 #define lo_send_from(targ, from, ts, path, types...) \
         lo_send_from_internal(targ, from, __FILE__, __LINE__, ts, path, \
 		       	             types, LO_MARKER_A, LO_MARKER_B)
+
+#else
+
+/* In non-GCC compilers, there is no support for variable-argument
+ * macros, so provide "internal" vararg functions directly instead. */
+
+int lo_message_add(lo_message msg, const char *types, ...);
+int lo_send(lo_address targ, const char *path, const char *types, ...);
+int lo_send_timestamped(lo_address targ, lo_timetag ts, const char *path, const char *types, ...);
+int lo_send_from(lo_address targ, lo_server from, lo_timetag ts, const char *path, const char *types, ...);
+
+#endif
 
 #ifdef __cplusplus
 }

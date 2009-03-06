@@ -65,11 +65,19 @@ int lo_message_add_varargs_internal(lo_message m, const char *types, va_list ap,
 /* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
  * function with appropriate values for file and line */
 
+#ifdef __GNUC__
 int lo_send_internal(lo_address t, const char *file, const int line,
      const char *path, const char *types, ...)
+#else
+int lo_send(lo_address t, const char *path, const char *types, ...)
+#endif
 {
     va_list ap;
     int ret;
+#ifndef __GNUC__
+    const char *file = "";
+    int line = 0;
+#endif
 
     lo_message msg = lo_message_new();
 
@@ -97,15 +105,25 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 /* Don't call lo_send_timestamped_internal directly, use lo_send_timestamped, a
  * macro wrapping this function with appropriate values for file and line */
 
+#ifdef __GNUC__
 int lo_send_timestamped_internal(lo_address t, const char *file,
                                	 const int line, lo_timetag ts,
 				 const char *path, const char *types, ...)
+#else
+int lo_send_timestamped(lo_address t, lo_timetag ts,
+				 const char *path, const char *types, ...)
+#endif
 {
     va_list ap;
     int ret;
 
     lo_message msg = lo_message_new();
     lo_bundle b = lo_bundle_new(ts);
+
+#ifndef __GNUC__
+    const char *file = "";
+    int line = 0;
+#endif
 
     t->errnum = 0;
     t->errstr = NULL;
@@ -126,18 +144,27 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
     return ret;
 }
 
-
 /* Don't call lo_send_from_internal directly, use macros wrapping this 
  * function with appropriate values for file and line */
 
+#ifdef __GNUC__
 int lo_send_from_internal(lo_address to, lo_server from, const char *file,
                                	 const int line, lo_timetag ts,
 				 const char *path, const char *types, ...)
+#else
+int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
+				 const char *path, const char *types, ...)
+#endif
 {
     lo_bundle b = NULL;
     va_list ap;
     int ret;
     
+#ifndef __GNUC__
+    const char *file = "";
+    int line = 0;
+#endif
+
     lo_message msg = lo_message_new();
     if (ts.sec!=LO_TT_IMMEDIATE.sec || ts.frac!=LO_TT_IMMEDIATE.frac)
         b = lo_bundle_new(ts);
