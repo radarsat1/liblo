@@ -398,10 +398,12 @@ lo_bundle lo_bundle_new(lo_timetag tt);
 /**
  * \brief  Adds an OSC message to an existing bundle.
  *
- * The message passsed is appended to the list of messages in the bundle to be
+ * The message passed is appended to the list of messages in the bundle to be
  * dispatched to 'path'.
+ *
+ * \return 0 if successful, less than 0 otherwise.
  */
-void lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
+int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
 
 /**
  * \brief  Return the length of a bundle in bytes.
