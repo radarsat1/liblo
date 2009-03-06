@@ -2,6 +2,8 @@ SUBDIRS = . tools
 
 MAINTAINERCLEANFILES = Makefile.in
 
+EXTRA_DIST = liblo.def
+
 noinst_HEADERS = lo_types_internal.h lo_internal.h
 
 SOURCE_FILES = address.c send.c message.c server.c method.c \

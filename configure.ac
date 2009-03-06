@@ -81,5 +81,6 @@ AC_CONFIG_FILES([
 	liblo.pc
 	doc/Makefile
 	doc/reference.doxygen
+	build/Makefile
 ])
 AC_OUTPUT()

@@ -9,6 +9,7 @@
 	* Add numerous typical kludges necessary to cover differences in MSVC.
 	* Use log() instead of a while loop to calculate new data size.
 	* Add return values for all functions that can potentially fail.
+	* Add premake4-related files to the dist build.
 
 2009-02-17 Stephen Sinclair <radarsat1@gmail.com>
 	* For multicast, enable SO_REUSEPORT as well as SO_REUSEADDR. (Mike Wozniewski)
