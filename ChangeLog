@@ -4,6 +4,7 @@
 	* Move all local variable declarations to the top of the scope.
 	* Conditionally avoid the use of variable-argument macros if not GCC.
 	* Fix multicast on Windows: join multicast group after bind() instead of before.
+	* Avoid the use of C99 struct literals when giving timetag arguments.
 
 2009-02-17 Stephen Sinclair <radarsat1@gmail.com>
 	* For multicast, enable SO_REUSEPORT as well as SO_REUSEADDR. (Mike Wozniewski)

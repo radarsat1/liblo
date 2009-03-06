@@ -504,7 +504,10 @@ int main()
     TEST(subtest_reply_count == 22);
     printf("\n");
 
-    b = lo_bundle_new((lo_timetag){10,0xFFFFFFFC});
+    {
+        lo_timetag t = {10,0xFFFFFFFC};
+        b = lo_bundle_new(t);
+    }
     m1 = lo_message_new();
     lo_message_add_string(m1, "abcdefghijklmnopqrstuvwxyz");
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -514,7 +517,10 @@ int main()
     /* This should be safe for multiple copies of the same message. */
     lo_bundle_free_messages(b);
 
-    b = lo_bundle_new((lo_timetag){1,2});
+    {
+        lo_timetag t = {1,2};
+        b = lo_bundle_new(t);
+    }
     m1 = lo_message_new();
     lo_message_add_int32(m1, 23);
     lo_message_add_string(m1, "23");
@@ -537,7 +543,10 @@ int main()
     /* Test freeing out-of-order copies of messages in a bundle. */
     lo_bundle_free_messages(b);
 
-    b = lo_bundle_new((lo_timetag){10,0xFFFFFFFE});
+    {
+        lo_timetag t = {10,0xFFFFFFFE};
+        b = lo_bundle_new(t);
+    }
     m1 = lo_message_new();
     lo_message_add_string(m1, "abcdefghijklmnopqrstuvwxyz");
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
