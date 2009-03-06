@@ -48,7 +48,7 @@ static char lo_string_types[] = {
     '\0'
 };
 
-static void lo_message_add_typechar(lo_message m, char t);
+static int lo_message_add_typechar(lo_message m, char t);
 static void *lo_message_add_data(lo_message m, size_t s);
 void lo_arg_pp_internal(lo_type type, void *data, int bigendian);
 
@@ -258,135 +258,168 @@ int lo_message_add(lo_message msg, const char *types, ...)
 	return ret;
 }
 	
-void lo_message_add_int32(lo_message m, int32_t a)
+int lo_message_add_int32(lo_message m, int32_t a)
 {
     lo_pcast32 b;
     int32_t *nptr = lo_message_add_data(m, sizeof(a));
+    if (!nptr) return -1;
     b.i = a;
 
-    lo_message_add_typechar(m, LO_INT32);
+    if (lo_message_add_typechar(m, LO_INT32))
+        return -1;
     *nptr = b.nl;
+    return 0;
 }
     
-void lo_message_add_float(lo_message m, float a)
+int lo_message_add_float(lo_message m, float a)
 {
     lo_pcast32 b;
     int32_t *nptr = lo_message_add_data(m, sizeof(a));
+    if (!nptr) return -1;
     b.f = a;
 
-    lo_message_add_typechar(m, LO_FLOAT);
+    if (lo_message_add_typechar(m, LO_FLOAT))
+        return -1;
     *nptr = b.nl;
+    return 0;
 }
 
-void lo_message_add_string(lo_message m, const char *a)
+int lo_message_add_string(lo_message m, const char *a)
 {
     const int size = lo_strsize(a);
     char *nptr = lo_message_add_data(m, size);
+    if (!nptr) return -1;
 
-    lo_message_add_typechar(m, LO_STRING);
+    if (lo_message_add_typechar(m, LO_STRING))
+        return -1;
     strncpy(nptr, a, size);
+    return 0;
 }
 
-void lo_message_add_blob(lo_message m, lo_blob a)
+int lo_message_add_blob(lo_message m, lo_blob a)
 {
     const uint32_t size = lo_blobsize(a);
     const uint32_t dsize = lo_blob_datasize(a);
     char *nptr = lo_message_add_data(m, size);
+    if (!nptr) return -1;
 
-    lo_message_add_typechar(m, LO_BLOB);
+    if (lo_message_add_typechar(m, LO_BLOB))
+        return -1;
     memset(nptr + size - 4, 0, 4);
 
     memcpy(nptr, &dsize, sizeof(dsize));
     memcpy(nptr + sizeof(int32_t), lo_blob_dataptr(a), lo_blob_datasize(a));
+    return 0;
 }
 
-void lo_message_add_int64(lo_message m, int64_t a)
+int lo_message_add_int64(lo_message m, int64_t a)
 {
     lo_pcast64 b;
     uint64_t *nptr = lo_message_add_data(m, sizeof(a));
+    if (!nptr) return -1;
     b.i = a;
 
-    lo_message_add_typechar(m, LO_INT64);
+    if (lo_message_add_typechar(m, LO_INT64))
+        return -1;
     *nptr = b.nl;
+    return 0;
 }
 
-void lo_message_add_timetag(lo_message m, lo_timetag a)
+int lo_message_add_timetag(lo_message m, lo_timetag a)
 {
     lo_pcast64 b;
     uint64_t *nptr = lo_message_add_data(m, sizeof(a));
+    if (!nptr) return -1;
     b.tt = a;
 
-    lo_message_add_typechar(m, LO_TIMETAG);
+    if (lo_message_add_typechar(m, LO_TIMETAG))
+        return -1;
     *nptr = b.nl;
+    return 0;
 }
 
-void lo_message_add_double(lo_message m, double a)
+int lo_message_add_double(lo_message m, double a)
 {
     lo_pcast64 b;
     uint64_t *nptr = lo_message_add_data(m, sizeof(a));
+    if (!nptr) return -1;
     b.f = a;
 
-    lo_message_add_typechar(m, LO_DOUBLE);
+    if (lo_message_add_typechar(m, LO_DOUBLE))
+        return -1;
     *nptr = b.nl;
+    return 0;
 }
 
-void lo_message_add_symbol(lo_message m, const char *a)
+int lo_message_add_symbol(lo_message m, const char *a)
 {
     const int size = lo_strsize(a);
     char *nptr = lo_message_add_data(m, size);
+    if (!nptr) return -1;
 
-    lo_message_add_typechar(m, LO_SYMBOL);
+    if (lo_message_add_typechar(m, LO_SYMBOL))
+        return -1;
     strncpy(nptr, a, size);
+    return 0;
 }
 
-void lo_message_add_char(lo_message m, char a)
+int lo_message_add_char(lo_message m, char a)
 {
     lo_pcast32 b;
     int32_t *nptr = lo_message_add_data(m, sizeof(int32_t));
+    if (!nptr) return -1;
 
     b.c = a;
 
-    lo_message_add_typechar(m, LO_CHAR);
+    if (lo_message_add_typechar(m, LO_CHAR))
+        return -1;
     *nptr = b.nl;
+    return 0;
 }
 
-void lo_message_add_midi(lo_message m, uint8_t a[4])
+int lo_message_add_midi(lo_message m, uint8_t a[4])
 {
     char *nptr = lo_message_add_data(m, 4);
+    if (!nptr) return -1;
 
-    lo_message_add_typechar(m, LO_MIDI);
+    if (lo_message_add_typechar(m, LO_MIDI))
+        return -1;
 
     memcpy(nptr, a, sizeof(a));
+    return 0;
 }
 
-void lo_message_add_true(lo_message m)
+int lo_message_add_true(lo_message m)
 {
-    lo_message_add_typechar(m, LO_TRUE);
+    return lo_message_add_typechar(m, LO_TRUE);
 }
 
-void lo_message_add_false(lo_message m)
+int lo_message_add_false(lo_message m)
 {
-    lo_message_add_typechar(m, LO_FALSE);
+    return lo_message_add_typechar(m, LO_FALSE);
 }
 
-void lo_message_add_nil(lo_message m)
+int lo_message_add_nil(lo_message m)
 {
-    lo_message_add_typechar(m, LO_NIL);
+    return lo_message_add_typechar(m, LO_NIL);
 }
 
-void lo_message_add_infinitum(lo_message m)
+int lo_message_add_infinitum(lo_message m)
 {
-    lo_message_add_typechar(m, LO_INFINITUM);
+    return lo_message_add_typechar(m, LO_INFINITUM);
 }
 
-static void lo_message_add_typechar(lo_message m, char t)
+static int lo_message_add_typechar(lo_message m, char t)
 {
     if (m->typelen + 1 >= m->typesize) {
-	m->typesize *= 2;
-	if (!m->typesize) {
-	    m->typesize = LO_DEF_TYPE_SIZE;
-	}
-	m->types = realloc(m->types, m->typesize);
+        int new_typesize = m->typesize * 2;
+        char *new_types = 0;
+        if (!new_typesize)
+            new_typesize = LO_DEF_TYPE_SIZE;
+        new_types = realloc(m->types, new_typesize);
+        if (!new_types) return -1;
+        m->types = new_types;
+        m->typesize = new_typesize;
     }
     m->types[m->typelen] = t;
     m->typelen++;
@@ -395,19 +428,27 @@ static void lo_message_add_typechar(lo_message m, char t)
         free(m->argv);
         m->argv = NULL;
     }
+    return 0;
 }
 
 static void *lo_message_add_data(lo_message m, size_t s)
 {
     uint32_t old_dlen = m->datalen;
+    int new_datasize = m->datasize;
+    int new_datalen = m->datalen + s;
+    void *new_data = 0;
 
-    m->datalen += s;
-	
-	if (!m->datasize)
-	    m->datasize = LO_DEF_DATA_SIZE;
+	if (!new_datasize)
+	    new_datasize = LO_DEF_DATA_SIZE;
 
-    lo_pow2_over(m->datasize, m->datalen);
-	m->data = realloc(m->data, m->datasize);
+    lo_pow2_over(new_datasize, new_datalen);
+	new_data = realloc(m->data, new_datasize);
+    if (!new_data)
+        return 0;
+
+    m->datalen = new_datalen;
+    m->datasize = new_datasize;
+    m->data = new_data;
 
     if (m->argv) {
         free(m->argv);

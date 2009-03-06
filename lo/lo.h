@@ -278,15 +278,17 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
  * \brief Start the server thread
  *
  * \param st the server thread to start.
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_server_thread_start(lo_server_thread st);
+int lo_server_thread_start(lo_server_thread st);
 
 /**
  * \brief Stop the server thread
  *
  * \param st the server thread to start.
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_server_thread_stop(lo_server_thread st);
+int lo_server_thread_stop(lo_server_thread st);
 
 /**
  * \brief Return the port number that the server thread has bound to.

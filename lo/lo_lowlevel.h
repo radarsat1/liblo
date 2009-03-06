@@ -164,86 +164,114 @@ int lo_message_add_varargs_internal(lo_message m, const char *types, va_list ap,
  *
  * \param m The message to be extended.
  * \param a The data item.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_int32(lo_message m, int32_t a);
+int lo_message_add_int32(lo_message m, int32_t a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_float(lo_message m, float a);
+int lo_message_add_float(lo_message m, float a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_string(lo_message m, const char *a);
+int lo_message_add_string(lo_message m, const char *a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_blob(lo_message m, lo_blob a);
+int lo_message_add_blob(lo_message m, lo_blob a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_int64(lo_message m, int64_t a);
+int lo_message_add_int64(lo_message m, int64_t a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_timetag(lo_message m, lo_timetag a);
+int lo_message_add_timetag(lo_message m, lo_timetag a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_double(lo_message m, double a);
+int lo_message_add_double(lo_message m, double a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_symbol(lo_message m, const char *a);
+int lo_message_add_symbol(lo_message m, const char *a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_char(lo_message m, char a);
+int lo_message_add_char(lo_message m, char a);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_midi(lo_message m, uint8_t a[4]);
+int lo_message_add_midi(lo_message m, uint8_t a[4]);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_true(lo_message m);
+int lo_message_add_true(lo_message m);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_false(lo_message m);
+int lo_message_add_false(lo_message m);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_nil(lo_message m);
+int lo_message_add_nil(lo_message m);
 
 /**
  * \brief  Append a data item and typechar of the specified type to a message.
  * See lo_message_add_int32() for details.
+ *
+ * \return Less than 0 on failure, 0 on success.
  */
-void lo_message_add_infinitum(lo_message m);
+int lo_message_add_infinitum(lo_message m);
 
 /**
  * \brief  Returns the source (lo_address) of an incoming message.
