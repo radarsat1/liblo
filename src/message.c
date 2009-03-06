@@ -389,7 +389,7 @@ static void *lo_message_add_data(lo_message m, size_t s)
         m->argv = NULL;
     }
 
-    return m->data + old_dlen;
+    return (void*)((char*)m->data + old_dlen);
 }
 
 int lo_strsize(const char *s)
@@ -683,6 +683,7 @@ char *lo_message_get_types(lo_message m)
 void *lo_message_serialise(lo_message m, const char *path, void *to,
 			   size_t *size)
 {
+    char *types, *ptr;
     size_t s = lo_message_length(m, path);
 
     if (size) {
@@ -692,13 +693,13 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     if (!to) {
 	to = calloc(1, s);
     }
-    memset(to + lo_strsize(path) - 4, 0, 4); // ensure zero-padding
+    memset((char*)to + lo_strsize(path) - 4, 0, 4); // ensure zero-padding
     strcpy(to, path);
-    memset(to + lo_strsize(path) + lo_strsize(m->types) - 4, 0, 4);
-    strcpy(to + lo_strsize(path), m->types);
+    memset((char*)to + lo_strsize(path) + lo_strsize(m->types) - 4, 0, 4);
+    strcpy((char*)to + lo_strsize(path), m->types);
 
-    char *types = m->types + 1;
-    char *ptr = to + lo_strsize(path) + lo_strsize(m->types);
+    types = m->types + 1;
+    ptr = (char*)to + lo_strsize(path) + lo_strsize(m->types);
     memcpy(ptr, m->data, m->datalen);
 
     int i = 0, argc = m->typelen - 1;
@@ -745,7 +746,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
         res = LO_ENOTYPE; // no type tag string
         goto fail;
     }
-    types = data + len;
+    types = (char*)data + len;
     len = lo_validate_string(types, remain);
     if (len < 0) {
         res = LO_EINVALIDTYPE; // invalid type tag string
@@ -805,7 +806,7 @@ fail:
 void lo_message_pp(lo_message m)
 {
     void *d = m->data;
-    void *end = m->data + m->datalen;
+    void *end = (char*)m->data + m->datalen;
     int i;
 
     printf("%s ", m->types);
@@ -815,12 +816,12 @@ void lo_message_pp(lo_message m)
 	}
 
 	lo_arg_pp_internal(m->types[i], d, 1);
-	d += lo_arg_size(m->types[i], d);
+	d = (char*)d + lo_arg_size(m->types[i], d);
     }
     putchar('\n');
     if (d != end) {
 	fprintf(stderr, "liblo warning: type and data do not match (off by %d) in message %p\n",
-		abs(d - end), m);
+            abs((char*)d - (char*)end), m);
     }
 }
 
