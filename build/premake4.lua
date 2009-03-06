@@ -115,6 +115,7 @@
       "../src/*.c",
       "../src/*.h",
       "../lo/*.h",
+      "../src/liblo.def",
     }
 
     excludes {

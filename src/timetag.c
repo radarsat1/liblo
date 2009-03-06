@@ -14,11 +14,15 @@
  *  $Id$
  */
 
-#include <sys/time.h>
-#include <time.h>
-
 #include "lo_types_internal.h"
 #include "lo/lo.h"
+
+#ifdef _MSC_VER
+lo_timetag lo_get_tt_immediate() { lo_timetag tt = {0U,1U}; return tt; }
+#else
+#include <sys/time.h>
+#endif
+#include <time.h>
 
 #define JAN_1970 0x83aa7e80      /* 2208988800 1970 - 1900 in seconds */
 

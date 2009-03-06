@@ -22,7 +22,15 @@
  * constants.
  */
 
+#ifdef _MSC_VER
+#define int32_t __int32
+#define int64_t __int64
+#define uint32_t unsigned __int32
+#define uint64_t unsigned __int64
+#define uint8_t unsigned __int8
+#else
 #include <stdint.h>
+#endif
 
 /**
  * \addtogroup liblo
@@ -120,7 +128,13 @@ typedef union {
 } lo_arg;
 
 /** \brief A timetag constant representing "now". */
+/* Note: No struct literals in MSVC */
+#ifdef _MSC_VER
+lo_timetag lo_get_tt_immediate();
+#define LO_TT_IMMEDIATE lo_get_tt_immediate()
+#else
 #define LO_TT_IMMEDIATE ((lo_timetag){0U,1U})
+#endif
 
 /** @} */
 

@@ -23,8 +23,13 @@
 #include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+
+#ifdef _MSC_VER
+#define snprintf _snprintf
+#else
+#include <unistd.h>
+#endif
 
 #include "lo_types_internal.h"
 #include "lo_internal.h"
@@ -442,7 +447,9 @@ int main()
     lo_send(a, "/", "i", 242);
     lo_send(a, "/pattern/", "i", 243);
 
+#ifndef _MSC_VER  /* MS compiler refuses to compile this case */
     lo_send(a, "/bar", "ff", 0.12345678f, 1.0/0.0);
+#endif
     lo_send(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
 	    btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999, "sym",
 	    'X', 'Y');
@@ -1133,6 +1140,14 @@ void test_validation(lo_address a)
     int eok = error_okay;
     int sock = a->socket;
 
+    /* This code won't work with MSVC because the lo_client_sockets data structure
+     * is not explicitly made available to external programs.  We could expose it
+     * in debug mode, perhaps, but let's just skip this test for now.  (Can be tested
+     * on Windows using MingW.) */
+#ifdef _MSC_VER
+    return;
+#else
+
     printf("validation\n");
 
     if (sock == -1)
@@ -1153,6 +1168,7 @@ void test_validation(lo_address a)
     Sleep(10);
 #endif
     error_okay = eok;
+#endif
 }
 
 void test_multicast(lo_server_thread st)

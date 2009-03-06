@@ -16,9 +16,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+
+#ifdef _MSC_VER
+#include <io.h>
+#define snprintf _snprintf
+#else
+#include <unistd.h>
+#endif
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -155,7 +161,7 @@ static const char* get_protocol_name(int proto)
 char *lo_address_get_url(lo_address a)
 {
     char *buf;
-    int ret;
+    int ret=0;
     int needquote = strchr(a->host, ':') ? 1 : 0;
     char *fmt;
 
@@ -164,8 +170,10 @@ char *lo_address_get_url(lo_address a)
     } else {
 	fmt = "osc.%s://%s:%s/";
     }
+#ifndef _MSC_VER
     ret = snprintf(NULL, 0, fmt, 
 	    get_protocol_name(a->protocol), a->host, a->port);
+#endif
     if (ret <= 0) {
 	/* this libc is not C99 compliant, guess a size */
 	ret = 1023;

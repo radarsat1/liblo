@@ -23,8 +23,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
 #include <sys/types.h>
+
+#ifdef _MSC_VER
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 #ifdef WIN32
 #include <winsock2.h>

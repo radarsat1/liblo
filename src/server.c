@@ -19,12 +19,18 @@
 #endif
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <float.h>
 #include <sys/types.h>
+
+#ifdef _MSC_VER
+#define _WINSOCKAPI_
+#define snprintf _snprintf
+#else
+#include <unistd.h>
+#endif
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -1310,7 +1316,7 @@ int lo_server_get_protocol(lo_server s)
 
 char *lo_server_get_url(lo_server s)
 {
-    int ret;
+    int ret=0;
     char *buf;
 
     if (!s) {
@@ -1320,7 +1326,9 @@ char *lo_server_get_url(lo_server s)
     if (s->protocol == LO_UDP || s->protocol == LO_TCP) {
 	char *proto = s->protocol == LO_UDP ? "udp" : "tcp";
 
+#ifndef _MSC_VER
 	ret = snprintf(NULL, 0, "osc.%s://%s:%d/", proto, s->hostname, s->port);
+#endif
 	if (ret <= 0) {
 	    /* this libc is not C99 compliant, guess a size */
 	    ret = 1023;

@@ -20,6 +20,14 @@
 #include <netdb.h>
 #endif
 
+#ifdef _MSC_VER
+typedef SSIZE_T ssize_t;
+typedef unsigned __int64 uint64_t;
+typedef unsigned __int32 uint32_t;
+typedef __int64 int64_t;
+typedef __int32 int32_t;
+#endif
+
 #include <pthread.h>
 
 #include "lo/lo_osc_types.h"

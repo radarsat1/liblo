@@ -6,6 +6,7 @@
 	* Fix multicast on Windows: join multicast group after bind() instead of before.
 	* Avoid the use of C99 struct literals when giving timetag arguments.
 	* Add premake4, used to generate MSVC project/solution files.
+	* Add numerous typical kludges necessary to cover differences in MSVC.
 
 2009-02-17 Stephen Sinclair <radarsat1@gmail.com>
 	* For multicast, enable SO_REUSEPORT as well as SO_REUSEADDR. (Mike Wozniewski)

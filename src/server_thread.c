@@ -14,7 +14,6 @@
  *  $Id$
  */
 
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,6 +24,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
+#include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #endif
