@@ -12,6 +12,3 @@
 * Rendevous/OpenWhatever (eg. howl) service discovery [low priority]
 
 * Think about a JACK transport layer [maybe^W probably not, low priority]
-
-* Make TCP work to spec (currently the TCP server only reads the 1st packet
-  from every conneciton, then closes, dont think this is right) [low priority]
