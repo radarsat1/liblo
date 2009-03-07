@@ -3,6 +3,7 @@
 	* Remove TCP from TODO list.
 	* Add recent contributors to the AUTHORS list.
 	* Add previous release notes to the NEWS file.
+	* Add note about MSVC in README.
 
 2009-03-06 Stephen Sinclair <radarsat1@gmail.com>
 	* Add a return value to lo_bundle_add_message().

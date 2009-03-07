@@ -21,6 +21,10 @@ liblo is configured as a dynamically-linked library. To use liblo
 in a new application, you should install liblo with "make install"
 so that the liblo library can be located by your application.
 
+To build with MS Visual Studio on Windows, first run the premake4.exe
+application in the build directory with an argument describing which
+IDE you are using.  This will generate project and solution files.
+
 See examples for example source code for a simple client and two
 servers:
 
