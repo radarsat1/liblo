@@ -52,7 +52,7 @@ typedef struct {
  * \brief An enumeration of the OSC types liblo can send and receive.
  *
  * The value of the enumeration is the typechar used to tag messages and to
- * specify arguemnts with lo_send().
+ * specify arguments with lo_send().
  */
 typedef enum {
 /* basic OSC types */

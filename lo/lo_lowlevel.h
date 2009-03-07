@@ -42,7 +42,7 @@ extern "C" {
 /**
  * \defgroup liblolowlevel Low-level OSC API
  *
- * Use these functions if you require more precices control over OSC message
+ * Use these functions if you require more precise control over OSC message
  * contruction or handling that what is provided in the high-level functions
  * described in liblo.
  * @{
@@ -58,18 +58,18 @@ typedef long double lo_hires;
 
 
 /**
- * \brief send a lo_message object to target targ
+ * \brief Send a lo_message object to target targ
  *
- * This is slightly more efficient than lo_send if you want to send a lot of
+ * This is slightly more efficient than lo_send() if you want to send a lot of
  * similar messages. The messages are constructed with the lo_message_new() and
  * \ref lo_message_add_int32 "lo_message_add*()" functions.
  */
 int lo_send_message(lo_address targ, const char *path, lo_message msg);
 
 /**
- * \brief send a lo_message object to target targ from address of serv
+ * \brief Send a lo_message object to target targ from address of serv
  *
- * This is slightly more efficient than lo_send if you want to send a lot of
+ * This is slightly more efficient than lo_send() if you want to send a lot of
  * similar messages. The messages are constructed with the lo_message_new() and
  * \ref lo_message_add_int32 "lo_message_add*()" functions.
  *
@@ -83,7 +83,7 @@ int lo_send_message_from(lo_address targ, lo_server serv,
      const char *path, lo_message msg);
 
 /**
- * \brief send a lo_bundle object to address targ
+ * \brief Send a lo_bundle object to address targ
  *
  * Bundles are constructed with the
  * lo_bundle_new() and lo_bundle_add_message() functions.
@@ -91,7 +91,7 @@ int lo_send_message_from(lo_address targ, lo_server serv,
 int lo_send_bundle(lo_address targ, lo_bundle b);
 
 /**
- * \brief send a lo_bundle object to address targ from address of serv
+ * \brief Send a lo_bundle object to address targ from address of serv
  *
  * Bundles are constructed with the
  * lo_bundle_new() and lo_bundle_add_message() functions.
@@ -109,8 +109,8 @@ int lo_send_bundle_from(lo_address targ, lo_server serv, lo_bundle b);
 lo_message lo_message_new();
 
 /**
- * \brief Free memory allocated by lo_message_new and any subsequent
- * lo_message_add*() calls.
+ * \brief Free memory allocated by lo_message_new() and any subsequent
+ * \ref lo_message_add_int32 lo_message_add*() calls.
  */
 void lo_message_free(lo_message m);
 
@@ -369,7 +369,7 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size);
 /**
  * \brief  Return the hostname of a lo_address object
  *
- * Returned value most not be modified or free'd. Value will be a dotted quad,
+ * Returned value must not be modified or free'd. Value will be a dotted quad,
  * colon'd IPV6 address, or resolvable name.
  */
 const char *lo_address_get_hostname(lo_address a);
@@ -377,7 +377,7 @@ const char *lo_address_get_hostname(lo_address a);
 /**
  * \brief  Return the port/service name of a lo_address object
  *
- * Returned value most not be modified or free'd. Value will be a service name
+ * Returned value must not be modified or free'd. Value will be a service name
  * or ASCII representation of the port number.
  */
 const char *lo_address_get_port(lo_address a);
@@ -419,7 +419,7 @@ int lo_address_get_ttl(lo_address t);
 /**
  * \brief  Create a new bundle object.
  *
- * OSC Bundles ecapsulate one or more OSC messages and may include a timestamp
+ * OSC Bundles encapsulate one or more OSC messages and may include a timestamp
  * indicating when the bundle should be dispatched.
  *
  * \param tt The timestamp when the bundle should be handled by the receiver.
@@ -477,7 +477,7 @@ void lo_bundle_free(lo_bundle b);
 void lo_bundle_free_messages(lo_bundle b);
 
 /**
- * \brief return true if the type specified has a numerical value, such as
+ * \brief Return true if the type specified has a numerical value, such as
  * LO_INT32, LO_FLOAT etc.
  *
  * \param a The type to be tested.
@@ -485,7 +485,7 @@ void lo_bundle_free_messages(lo_bundle b);
 int lo_is_numerical_type(lo_type a);
 
 /**
- * \brief return true if the type specified has a textual value, such as
+ * \brief Return true if the type specified has a textual value, such as
  * LO_STRING or LO_SYMBOL.
  *
  * \param a The type to be tested.
@@ -493,7 +493,7 @@ int lo_is_numerical_type(lo_type a);
 int lo_is_string_type(lo_type a);
 
 /**
- * \brief attempt to convert one OSC type to another.
+ * \brief Attempt to convert one OSC type to another.
  *
  * Numerical types (eg LO_INT32, LO_FLOAT etc.) may be converted to other
  * numerical types and string types (LO_STRING and LO_SYMBOL) may be converted
@@ -511,7 +511,7 @@ int lo_is_string_type(lo_type a);
 int lo_coerce(lo_type type_to, lo_arg *to, lo_type type_from, lo_arg *from);
 
 /**
- * \brief return the numerical value of the given argument with the
+ * \brief Return the numerical value of the given argument with the
  * maximum native system precision.
  */
 lo_hires lo_hires_val(lo_type type, lo_arg *p);
@@ -519,11 +519,13 @@ lo_hires lo_hires_val(lo_type type, lo_arg *p);
 /**
  * \brief Create a new server instance.
  *
- * lo_servers block until they receive OSC messages. if you want non-blocking
- * behaviour see the \ref lo_server_thread_new "lo_server_thread_*" functions.
+ * Using lo_server_recv(), lo_servers block until they receive OSC
+ * messages.  If you want non-blocking behaviour see
+ * lo_server_recv_noblock() or the \ref lo_server_thread_new
+ * "lo_server_thread_*" functions.
  *
  * \param port If NULL is passed then an unused UDP port will be chosen by the
- * system, its number may be retreived with lo_server_thread_get_port()
+ * system, its number may be retrieved with lo_server_thread_get_port()
  * so it can be passed to clients. Otherwise a decimal port number, service
  * name or UNIX domain socket path may be passed.
  * \param err_h An error callback function that will be called if there is an
@@ -535,8 +537,10 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h);
 /**
  * \brief Create a new server instance, specifying protocol.
  *
- * lo_servers block until they receive OSC messages. if you want non-blocking
- * behaviour see the \ref lo_server_thread_new "lo_server_thread_*" functions.
+ * Using lo_server_recv(), lo_servers block until they receive OSC
+ * messages.  If you want non-blocking behaviour see
+ * lo_server_recv_noblock() or the \ref lo_server_thread_new
+ * "lo_server_thread_*" functions.
  *
  * \param port If using UDP then NULL may be passed to find an unused port.
  * Otherwise a decimal port number orservice name or may be passed.
@@ -578,7 +582,7 @@ void lo_server_free(lo_server s);
  *
  * The return value is 1 if there is a message waiting or 0 if
  * there is no message. If there is a message waiting you can now
- * call lo_server_recv to receive that message.
+ * call lo_server_recv() to receive that message.
  */
 int lo_server_wait(lo_server s, int timeout);
 
@@ -589,7 +593,7 @@ int lo_server_wait(lo_server s, int timeout);
  * \param timeout A timeout in milliseconds to wait for the incoming packet.
  * a value of 0 will return immediately.
  *
- * The return value is the number of bytes in the received message or 0 is
+ * The return value is the number of bytes in the received message or 0 if
  * there is no message. The message will be dispatched to a matching method
  * if one is found.
  */
@@ -640,7 +644,7 @@ void lo_server_del_method(lo_server s, const char *path,
  * returns the file descriptor needed, otherwise, it returns -1.
  *
  * WARNING: when using this function beware that not all OSC packets that are
- * received are dispatched immediatly. lo_server_events_pending() and
+ * received are dispatched immediately. lo_server_events_pending() and
  * lo_server_next_event_delay() can be used to tell if there are pending
  * events and how long before you should attempt to receive them.
  */
@@ -664,7 +668,7 @@ int lo_server_get_protocol(lo_server s);
 /**
  * \brief Return an OSC URL that can be used to contact the server.
  *
- * The return value should  bee free()'d when it is no longer needed.
+ * The return value should be free()'d when it is no longer needed.
  */
 char *lo_server_get_url(lo_server s);
 
@@ -687,7 +691,7 @@ double lo_server_next_event_delay(lo_server s);
  * This library uses OSC URLs of the form: osc.prot://hostname:port/path if the
  * prot part is missing, UDP is assumed.
  *
- * The return value should  bee free()'d when it is no longer needed.
+ * The return value should be free()'d when it is no longer needed.
  */
 char *lo_url_get_protocol(const char *url);
 
@@ -707,21 +711,21 @@ int lo_url_get_protocol_id(const char *url);
 /**
  * \brief Return the hostname portion of an OSC URL.
  *
- * The return value should  bee free()'d when it is no longer needed.
+ * The return value should be free()'d when it is no longer needed.
  */
 char *lo_url_get_hostname(const char *url);
 
 /**
  * \brief Return the port portion of an OSC URL.
  *
- * The return value should  bee free()'d when it is no longer needed.
+ * The return value should be free()'d when it is no longer needed.
  */
 char *lo_url_get_port(const char *url);
 
 /**
  * \brief Return the path portion of an OSC URL.
  *
- * The return value should  bee free()'d when it is no longer needed.
+ * The return value should be free()'d when it is no longer needed.
  */
 char *lo_url_get_path(const char *url);
 
@@ -731,7 +735,7 @@ char *lo_url_get_path(const char *url);
  * \brief A function to calculate the amount of OSC message space required by a
  * C char *.
  *
- * Returns the storage size in bytes, will always be a multiple of four.
+ * Returns the storage size in bytes, which will always be a multiple of four.
  */
 int lo_strsize(const char *s);
 
@@ -739,7 +743,7 @@ int lo_strsize(const char *s);
  * \brief A function to calculate the amount of OSC message space required by a
  * lo_blob object.
  *
- * Returns the storage size in bytes, will always be a multiple of four.
+ * Returns the storage size in bytes, which will always be a multiple of four.
  */
 uint32_t lo_blobsize(lo_blob b);
 
@@ -757,7 +761,7 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 /** \internal \brief the real send_timestamped function (don't call directly) */
 int lo_send_timestamped_internal(lo_address t, const char *file, const int line,
      lo_timetag ts, const char *path, const char *types, ...);
-/** \internal \brief the real lo_send_from function (don't call directly) */
+/** \internal \brief the real lo_send_from() function (don't call directly) */
 int lo_send_from_internal(lo_address targ, lo_server from, const char *file, 
      const int line, const lo_timetag ts, 
      const char *path, const char *types, ...);
@@ -771,8 +775,8 @@ double lo_timetag_diff(lo_timetag a, lo_timetag b);
 
 /** \brief Return a timetag for the current time
  *
- * On exit the timetag pointed to by t is filled with the OSC represenation
- * of this instant in time.
+ * On exit the timetag pointed to by t is filled with the OSC
+ * representation of this instant in time.
  */
 void lo_timetag_now(lo_timetag *t);
 
@@ -817,7 +821,7 @@ void lo_arg_network_endian(lo_type type, void *data);
 /**
  * \defgroup pp Prettyprinting functions
  *
- * These functions all print an ASCII representation of thier argument to
+ * These functions all print an ASCII representation of their argument to
  * stdout. Useful for debugging.
  * @{
  */

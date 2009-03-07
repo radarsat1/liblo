@@ -34,7 +34,7 @@ extern "C" {
 /**
  * \defgroup liblo High-level OSC API
  *
- * Defines the high-level API functions neccesary to implement OSC support.
+ * Defines the high-level API functions necessary to implement OSC support.
  * Should be adequate for most applications, but if you require lower level
  * control you can use the functions defined in lo_lowlevel.h
  * @{
@@ -173,14 +173,14 @@ int lo_send_timestamped(lo_address targ, lo_timetag ts, const char *path,
 	       		const char *type, ...);
 
 /**
- * \brief Return the error number from the last failed lo_send or
- * lo_address_new call
+ * \brief Return the error number from the last failed lo_send() or
+ * lo_address_new() call
  */
 int lo_address_errno(lo_address a);
 
 /**
- * \brief Return the error string from the last failed lo_send or
- * lo_address_new call
+ * \brief Return the error string from the last failed lo_send() or
+ * lo_address_new() call
  */
 const char *lo_address_errstr(lo_address a);
 
@@ -189,11 +189,11 @@ const char *lo_address_errstr(lo_address a);
  * messages.
  *
  * Server threads take care of the message reception and dispatch by
- * transparently creating a systme thread to handle incoming messages.
+ * transparently creating a system thread to handle incoming messages.
  * Use this if you do not want to handle the threading yourself.
  *
  * \param port If NULL is passed then an unused port will be chosen by the
- * system, its number may be retreived with lo_server_thread_get_port()
+ * system, its number may be retrieved with lo_server_thread_get_port()
  * so it can be passed to clients. Otherwise a decimal port number, service
  * name or UNIX domain socket path may be passed.
  * \param err_h A function that will be called in the event of an error being
@@ -204,6 +204,7 @@ lo_server_thread lo_server_thread_new(const char *port, lo_err_handler err_h);
 /**
  * \brief Create a new server thread to handle incoming OSC
  * messages, and join a UDP multicast group.
+ *
  * Server threads take care of the message reception and dispatch by
  * transparently creating a system thread to handle incoming messages.
  * Use this if you do not want to handle the threading yourself.
@@ -225,11 +226,11 @@ lo_server_thread lo_server_thread_new_multicast(const char *group, const char *p
  * messages, specifying protocol.
  *
  * Server threads take care of the message reception and dispatch by
- * transparently creating a systme thread to handle incoming messages.
+ * transparently creating a system thread to handle incoming messages.
  * Use this if you do not want to handle the threading yourself.
  *
  * \param port If NULL is passed then an unused port will be chosen by the
- * system, its number may be retreived with lo_server_thread_get_port()
+ * system, its number may be retrieved with lo_server_thread_get_port()
  * so it can be passed to clients. Otherwise a decimal port number, service
  * name or UNIX domain socket path may be passed.
  * \param proto The protocol to use, should be one of LO_UDP, LO_TCP or LO_UNIX.
@@ -329,7 +330,7 @@ lo_blob lo_blob_new(int32_t size, const void *data);
 void lo_blob_free(lo_blob b);
 
 /**
- * \brief Return the ammount of valid data in a lo blob object.
+ * \brief Return the amount of valid data in a lo_blob object.
  *
  * If you want to know the storage size, use lo_arg_size().
  */
