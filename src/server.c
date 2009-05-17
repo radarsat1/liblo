@@ -887,24 +887,31 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
             elem_len = lo_otoh32(*((uint32_t *)pos));
             pos += 4;
             remain -= 4;
-            msg = lo_message_deserialise(pos, elem_len, &result);
-            if (!msg) {
-                lo_throw(s, result, "Invalid bundle element received", path);
-                return -result;
-            }
 
-	    // set timetag from bundle
-	    msg->ts = ts;
-
-            // test for immediate dispatch
-            if ((ts.sec == LO_TT_IMMEDIATE.sec
-                 && ts.frac == LO_TT_IMMEDIATE.frac) ||
-                                lo_timetag_diff(ts, now) <= 0.0) {
-                dispatch_method(s, pos, msg);
-                lo_message_free(msg);
+            if (!strcmp(pos, "#bundle")) {
+                lo_server_dispatch_data (s, pos, elem_len);
             } else {
-                queue_data(s, ts, pos, msg);
+                msg = lo_message_deserialise(pos, elem_len, &result);
+                if (!msg) {
+                    lo_throw(s, result, "Invalid bundle element received", path);
+                    return -result;
+                }
+
+                // set timetag from bundle
+                msg->ts = ts;
+
+                // test for immediate dispatch
+                if ( (   ts.sec == LO_TT_IMMEDIATE.sec
+                      && ts.frac == LO_TT_IMMEDIATE.frac)
+                    || lo_timetag_diff(ts, now) <= 0.0)
+                {
+                    dispatch_method(s, pos, msg);
+                    lo_message_free(msg);
+                } else {
+                    queue_data(s, ts, pos, msg);
+                }
             }
+
             pos += elem_len;
             remain -= elem_len;
         }
