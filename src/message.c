@@ -327,14 +327,14 @@ int lo_message_add_int64(lo_message m, int64_t a)
 
 int lo_message_add_timetag(lo_message m, lo_timetag a)
 {
-    lo_pcast64 b;
-    uint64_t *nptr = lo_message_add_data(m, sizeof(a));
+    uint32_t *nptr = lo_message_add_data(m, sizeof(a));
     if (!nptr) return -1;
-    b.tt = a;
 
     if (lo_message_add_typechar(m, LO_TIMETAG))
         return -1;
-    *nptr = b.nl;
+    *nptr = a.sec;
+    nptr++;
+    *nptr = a.frac;
     return 0;
 }
 
@@ -647,8 +647,13 @@ void lo_arg_host_endian(lo_type type, void *data)
 	*(int32_t *)data = lo_otoh32(*(int32_t *)data);
 	break;
 
-    case LO_INT64:
     case LO_TIMETAG:
+	*(int32_t *)data = lo_otoh32(*(int32_t *)data);
+        data = ((int32_t *)data)+1;
+	*(int32_t *)data = lo_otoh32(*(int32_t *)data);
+	break;
+
+    case LO_INT64:
     case LO_DOUBLE:
 	*(int64_t *)data = lo_otoh64(*(int64_t *)data);
 	break;
@@ -681,8 +686,13 @@ void lo_arg_network_endian(lo_type type, void *data)
         *(int32_t *)data = lo_htoo32(*(int32_t *)data);
         break;
 
-    case LO_INT64:
     case LO_TIMETAG:
+        *(uint32_t *)data = lo_htoo32(*(uint32_t *)data);
+        data = ((uint32_t *)data)+1;
+        *(uint32_t *)data = lo_htoo32(*(uint32_t *)data);
+        break;
+
+    case LO_INT64:
     case LO_DOUBLE:
         *(int64_t *)data = lo_htoo64(*(int64_t *)data);
         break;
@@ -908,6 +918,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 {
     lo_pcast32 val32;
     lo_pcast64 val64;
+    lo_timetag valtt = { 0, 1} ;
     int size;
     int i;
 
@@ -918,6 +929,12 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 	} else {
 	    val32.nl = *(int32_t *)data;
 	}
+    } else if (type == LO_TIMETAG) {
+        valtt.sec =
+            bigendian ? lo_otoh32(*(uint32_t *)data) : *(uint32_t *)data;
+        data = (uint32_t *)data + 1;
+        valtt.frac =
+            bigendian ? lo_otoh32(*(uint32_t *)data) : *(uint32_t *)data;
     } else if (size == 8) {
 	if (bigendian) {
 	    val64.nl = lo_otoh64(*(int64_t *)data);
@@ -958,7 +975,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 	break;
     
     case LO_TIMETAG:
-	printf("%08x.%08x", val64.tt.sec, val64.tt.frac);
+	printf("%08x.%08x", valtt.sec, valtt.frac);
 	break;
     
     case LO_DOUBLE:

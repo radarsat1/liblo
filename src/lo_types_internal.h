@@ -129,7 +129,6 @@ typedef union {
     int64_t    i;
     double     f;
     uint64_t   nl;
-    lo_timetag tt;
 } lo_pcast64;
 
 extern struct lo_cs {
