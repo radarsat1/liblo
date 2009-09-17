@@ -36,8 +36,14 @@ extern "C" {
 
 /* an internal value, ignored in transmission but check against LO_MARKER in the
  * argument list. Used to do primitive bounds checking */
-#define LO_MARKER_A 0xdeadbeef
-#define LO_MARKER_B 0xf00baa23
+#ifdef __LP64__
+#	define LO_MARKER_A (void *)0xdeadbeefdeadbeef
+#	define LO_MARKER_B (void *)0xf00baa23f00baa23
+#else /*__LP64__*/  
+#	define LO_MARKER_A (void *)0xdeadbeef
+#	define LO_MARKER_B (void *)0xf00baa23
+#endif
+
 #define LO_ARGS_END LO_MARKER_A, LO_MARKER_B
 
 #define lo_message_add_varargs(msg, types, list) \

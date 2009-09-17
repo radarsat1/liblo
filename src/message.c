@@ -103,94 +103,90 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
                                     va_list ap, const char *file, int line)
 {
     int count = 0;
-    int i;
-    int64_t i64;
-    float f;
-    char *s;
-    lo_blob b;
-    uint8_t *m;
-    lo_timetag tt;
-    double d;
     int ret = 0;
 
     while (types && *types) {
         count++;
-        i = 0;
-        i64 = 0;
-        f = 0;
-        s = 0;
-        b = 0;
-        m = 0;
-        d = 0;
+
         switch (*types++) {
 
-        case LO_INT32:
-            i = va_arg(ap, int32_t);
-            lo_message_add_int32(msg, i);
-            break;
-
-        case LO_FLOAT:
-            f = (float) va_arg(ap, double);
-            lo_message_add_float(msg, f);
-            break;
-
-        case LO_STRING:
-            s = va_arg(ap, char *);
-#ifdef __GNUC__
-            if (s == (char *) LO_MARKER_A) {
-                fprintf(stderr,
-                        "liblo error: lo_send or lo_message_add called with "
-                        "invalid string pointer for arg %d, probably arg mismatch\n"
-                        "at %s:%d, exiting.\n", count, file, line);
+        case LO_INT32:{
+                int32_t i = va_arg(ap, int32_t);
+                lo_message_add_int32(msg, i);
+                break;
             }
-#endif
-            lo_message_add_string(msg, s);
-            break;
 
-        case LO_BLOB:
-            b = va_arg(ap, lo_blob);
-            lo_message_add_blob(msg, b);
-            break;
-
-        case LO_INT64:
-            i64 = va_arg(ap, int64_t);
-            lo_message_add_int64(msg, i64);
-            break;
-
-        case LO_TIMETAG:
-            tt = va_arg(ap, lo_timetag);
-            lo_message_add_timetag(msg, tt);
-            break;
-
-        case LO_DOUBLE:
-            d = va_arg(ap, double);
-            lo_message_add_double(msg, d);
-            break;
-
-        case LO_SYMBOL:
-            s = va_arg(ap, char *);
-#ifdef __GNUC__
-            if (s == (char *) LO_MARKER_A) {
-                fprintf(stderr,
-                        "liblo error: lo_send or lo_message_add called with "
-                        "invalid symbol pointer for arg %d, probably arg mismatch\n"
-                        "at %s:%d, exiting.\n", count, file, line);
-                va_end(ap);
-                return -2;
+        case LO_FLOAT:{
+                float f = (float) va_arg(ap, double);
+                lo_message_add_float(msg, f);
+                break;
             }
+
+        case LO_STRING:{
+                char *s = va_arg(ap, char *);
+#ifdef __GNUC__
+                if (s == (char *) LO_MARKER_A) {
+                    fprintf(stderr,
+                            "liblo error: lo_send or lo_message_add called with "
+                            "invalid string pointer for arg %d, probably arg mismatch\n"
+                            "at %s:%d, exiting.\n", count, file, line);
+                }
 #endif
-            lo_message_add_symbol(msg, s);
-            break;
+                lo_message_add_string(msg, s);
+                break;
+            }
 
-        case LO_CHAR:
-            i = va_arg(ap, int);
-            lo_message_add_char(msg, i);
-            break;
+        case LO_BLOB:{
+                lo_blob b = va_arg(ap, lo_blob);
+                lo_message_add_blob(msg, b);
+                break;
+            }
 
-        case LO_MIDI:
-            m = va_arg(ap, uint8_t *);
-            lo_message_add_midi(msg, m);
-            break;
+        case LO_INT64:{
+                int64_t i64 = va_arg(ap, int64_t);
+                lo_message_add_int64(msg, i64);
+                break;
+            }
+
+        case LO_TIMETAG:{
+                lo_timetag tt = va_arg(ap, lo_timetag);
+                lo_message_add_timetag(msg, tt);
+                break;
+            }
+
+        case LO_DOUBLE:{
+                double d = va_arg(ap, double);
+                lo_message_add_double(msg, d);
+                break;
+            }
+
+        case LO_SYMBOL:{
+                char *s = va_arg(ap, char *);
+#ifdef __GNUC__
+                if (s == (char *) LO_MARKER_A) {
+                    fprintf(stderr,
+                            "liblo error: lo_send or lo_message_add called with "
+                            "invalid symbol pointer for arg %d, probably arg mismatch\n"
+                            "at %s:%d, exiting.\n", count, file, line);
+                    va_end(ap);
+                    return -2;
+                }
+#endif
+                lo_message_add_symbol(msg, s);
+                break;
+            }
+
+        case LO_CHAR:{
+                char c = va_arg(ap, int);
+                lo_message_add_char(msg, c);
+                break;
+            }
+
+        case LO_MIDI:{
+                uint8_t *m = va_arg(ap, uint8_t *);
+                lo_message_add_midi(msg, m);
+                break;
+            }
 
         case LO_TRUE:
             lo_message_add_true(msg);
@@ -208,15 +204,17 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
             lo_message_add_infinitum(msg);
             break;
 
-        default:
-            ret = -1;           // unknown type
-            fprintf(stderr, "liblo warning: unknown type '%c' at %s:%d\n",
-                    *(types - 1), file, line);
-            break;
+        default:{
+                ret = -1;       // unknown type
+                fprintf(stderr,
+                        "liblo warning: unknown type '%c' at %s:%d\n",
+                        *(types - 1), file, line);
+                break;
+            }
         }
     }
 #ifdef __GNUC__
-    i = va_arg(ap, uint32_t);
+    void *i = va_arg(ap, void *);
     if (i != LO_MARKER_A) {
         ret = -2;               // bad format/args
         fprintf(stderr,
@@ -226,7 +224,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         va_end(ap);
         return ret;
     }
-    i = va_arg(ap, uint32_t);
+    i = va_arg(ap, void *);
     if (i != LO_MARKER_B) {
         ret = -2;               // bad format/args
         fprintf(stderr,
@@ -766,7 +764,6 @@ lo_arg **lo_message_get_argv(lo_message m)
         return m->argv;
     }
 
-    i = 0;
     argc = m->typelen - 1;
     types = m->types + 1;
     ptr = m->data;
@@ -810,7 +807,6 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     ptr = (char *) to + lo_strsize(path) + lo_strsize(m->types);
     memcpy(ptr, m->data, m->datalen);
 
-    i = 0;
     argc = m->typelen - 1;
     for (i = 0; i < argc; ++i) {
         size_t len = lo_arg_size(types[i], ptr);

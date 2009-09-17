@@ -140,13 +140,11 @@ int lo_send_timestamped(lo_address t, lo_timetag ts,
     va_start(ap, types);
     ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
-    if (t->errnum) {
-        lo_message_free(msg);
-        return t->errnum;
+    if (ret == 0) {
+        lo_bundle_add_message(b, path, msg);
+        ret = lo_send_bundle(t, b);
     }
 
-    lo_bundle_add_message(b, path, msg);
-    ret = lo_send_bundle(t, b);
     lo_message_free(msg);
     lo_bundle_free(b);
 
@@ -185,20 +183,14 @@ int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
     va_start(ap, types);
     ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
-    if (to->errnum) {
-        if (b)
-            lo_bundle_free(b);
-        lo_message_free(msg);
-        return to->errnum;
+    if (ret == 0) {
+        if (b) {
+            lo_bundle_add_message(b, path, msg);
+            ret = lo_send_bundle_from(to, from, b);
+        } else {
+            ret = lo_send_message_from(to, from, path, msg);
+        }
     }
-
-    if (b) {
-        lo_bundle_add_message(b, path, msg);
-        ret = lo_send_bundle_from(to, from, b);
-    } else {
-        ret = lo_send_message_from(to, from, path, msg);
-    }
-
     // Free-up memory
     lo_message_free(msg);
     if (b)
@@ -417,32 +409,32 @@ static int send_data(lo_address a, lo_server from, char *data,
         sock = a->socket;
     }
 
-
-
-    // Send Length of the following data
+    // For TCP only, send the length of the following data
     if (a->protocol == LO_TCP) {
         int32_t size = htonl(data_len);
         ret = send(sock, &size, sizeof(size), MSG_NOSIGNAL);
     }
     // Send the data
-    if (a->protocol == LO_UDP) {
-        if (a->ttl >= 0) {
-            unsigned char ttl = (unsigned char) a->ttl;
-            setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl,
-                       sizeof(ttl));
+    if (ret != -1) {
+        if (a->protocol == LO_UDP) {
+            if (a->ttl >= 0) {
+                unsigned char ttl = (unsigned char) a->ttl;
+                setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl,
+                           sizeof(ttl));
+            }
+            ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
+                         a->ai->ai_addr, a->ai->ai_addrlen);
+        } else {
+            ret = send(sock, data, data_len, MSG_NOSIGNAL);
         }
-        ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
-                     a->ai->ai_addr, a->ai->ai_addrlen);
-    } else {
-        ret = send(sock, data, data_len, MSG_NOSIGNAL);
-    }
-
-    if (a->protocol == LO_TCP && ret == -1) {
-        close(a->socket);
-        a->socket = -1;
     }
 
     if (ret == -1) {
+        if (a->protocol == LO_TCP) {
+            close(a->socket);
+            a->socket = -1;
+        }
+
         a->errnum = geterror();
         a->errstr = NULL;
     } else {

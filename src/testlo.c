@@ -448,13 +448,13 @@ int main()
     lo_server_thread_stop(st);
     lo_server_thread_start(st);
 
-    if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
+    if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) < 0) {
         printf("OSC error A %d: %s\n", lo_address_errno(a),
                lo_address_errstr(a));
         exit(1);
     }
 
-    if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) == -1) {
+    if (lo_send(a, "/foo/bar", "ff", 0.12345678f, 23.0f) < 0) {
         printf("OSC error B %d: %s\n", lo_address_errno(a),
                lo_address_errstr(a));
         exit(1);

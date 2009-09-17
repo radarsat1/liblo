@@ -1,5 +1,7 @@
 2009-09-17 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix all whitespace inconsistancies using 'indent -kr -nut'. (SS)
+	* Fix warnings from the XCode static analyser. (Camille Troillard)
+	* Fix bug in LO_MARKER_A/_B for 64-bit platforms. (Camille Troillard)
 
 2009-03-07 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix some typos, grammar, and links in the documentation.

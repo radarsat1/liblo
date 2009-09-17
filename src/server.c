@@ -160,7 +160,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     lo_server s;
     struct addrinfo *ai = NULL, *it, *used;
     struct addrinfo hints;
-    int ret = -1;
     int tries = 0;
     char pnum[16];
     const char *service;
@@ -175,7 +174,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 #endif
             proto = LO_UDP;
     }
-
 #ifdef WIN32
     if (!initWSock())
         return NULL;
@@ -229,8 +227,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         sa.sun_family = AF_UNIX;
         strncpy(sa.sun_path, port, sizeof(sa.sun_path) - 1);
 
-        if ((ret = bind(s->sockets[0].fd,
-                        (struct sockaddr *) &sa, sizeof(sa))) < 0) {
+        if ((bind(s->sockets[0].fd,
+                  (struct sockaddr *) &sa, sizeof(sa))) < 0) {
             int err = geterror();
             lo_throw(s, err, strerror(err), "bind()");
 
@@ -269,7 +267,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                                                time(NULL)) % 10000);
         }
 
-        if ((ret = getaddrinfo(NULL, service, &hints, &ai))) {
+        int ret = getaddrinfo(NULL, service, &hints, &ai);
+        if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
             freeaddrinfo(ai);
 
@@ -302,17 +301,16 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                 return NULL;
 #endif
 
-        if ((ret =
-             bind(s->sockets[0].fd, used->ai_addr,
-                  used->ai_addrlen)) < 0) {
+        if ((used != NULL) &&
+            (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
+             0)) {
             int err = geterror();
             if (err == EINVAL || err == EADDRINUSE) {
                 used = NULL;
-
                 continue;
             }
-            lo_throw(s, err, strerror(err), "bind()");
 
+            lo_throw(s, err, strerror(err), "bind()");
             lo_server_free(s);
 
             return NULL;
@@ -944,7 +942,6 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
 {
     char *types = msg->types + 1;
     int argc = strlen(types);
-    lo_arg **argv = msg->argv;
     lo_method it;
     int ret = 1;
     int err;
@@ -1021,7 +1018,7 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
                 pptr = path;
                 if (it->path)
                     pptr = it->path;
-                ret = it->handler(pptr, types, argv, argc, msg,
+                ret = it->handler(pptr, types, msg->argv, argc, msg,
                                   it->user_data);
 
             } else if (lo_can_coerce_spec(types, it->typespec)) {
@@ -1030,7 +1027,7 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
                 char *ptr = msg->data;
                 char *data_co, *data_co_ptr;
 
-                argv = calloc(argc, sizeof(lo_arg *));
+                lo_arg **argv = calloc(argc, sizeof(lo_arg *));
                 for (i = 0; i < argc; i++) {
                     opsize += lo_arg_size(it->typespec[i], ptr);
                     ptr += lo_arg_size(types[i], ptr);
@@ -1077,7 +1074,8 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
             int len = strlen(path);
             lo_strlist *sl = NULL, *slit, *slnew, *slend;
 
-            if (!strcmp(types, "i")) {
+            lo_arg **argv = msg->argv;
+            if (!strcmp(types, "i") && argv != NULL) {
                 lo_message_add_int32(reply, argv[0]->i);
             }
             lo_message_add_string(reply, path);
