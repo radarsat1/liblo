@@ -23,18 +23,18 @@
 
 #include "lo/lo.h"
 
-int subtest_handler(const char *path, const char *types, lo_arg **argv,
+int subtest_handler(const char *path, const char *types, lo_arg ** argv,
                     int argc, lo_message data, void *user_data);
 
 int main(int argc, char *argv[])
 {
     lo_server st = lo_server_thread_new(NULL, NULL);
     lo_address t;
-   
-    if (argc != 2) {
-	fprintf(stderr, "Usage: subtest <uri>\n");
 
-	return 1;
+    if (argc != 2) {
+        fprintf(stderr, "Usage: subtest <uri>\n");
+
+        return 1;
     }
 
     lo_server_thread_add_method(st, NULL, "i", subtest_handler, NULL);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int subtest_handler(const char *path, const char *types, lo_arg **argv,
+int subtest_handler(const char *path, const char *types, lo_arg ** argv,
                     int argc, lo_message data, void *user_data)
 {
     int i;
@@ -61,33 +61,33 @@ int subtest_handler(const char *path, const char *types, lo_arg **argv,
 
     printf("subtest: got reply (%s)\n", path);
     if (!uri) {
-	uri = lo_address_get_url(a);
+        uri = lo_address_get_url(a);
     } else {
-	char *new_uri = lo_address_get_url(a);
+        char *new_uri = lo_address_get_url(a);
 
-	if (strcmp(uri, new_uri)) {
-	    printf("ERROR: %s != %s\n", uri, new_uri);
+        if (strcmp(uri, new_uri)) {
+            printf("ERROR: %s != %s\n", uri, new_uri);
 
-	    exit(1);
-	}
-	free(new_uri);
+            exit(1);
+        }
+        free(new_uri);
     }
     lo_send(a, "/subtest-reply", "i", 0xbaa);
     if (lo_address_errno(a)) {
-	fprintf(stderr, "subtest error %d: %s\n", lo_address_errno(a),
-		lo_address_errstr(a));
+        fprintf(stderr, "subtest error %d: %s\n", lo_address_errno(a),
+                lo_address_errstr(a));
 
-	exit(1);
+        exit(1);
     }
 
-    for (i=0; i<10; i++) {
+    for (i = 0; i < 10; i++) {
 #ifdef WIN32
         /* TODO: Wait time of 2.233 not easily doable in Windows */
         Sleep(2);
 #else
         usleep(2233);
 #endif
-	lo_send(a, "/subtest-reply", "i", 0xbaa+i);
+        lo_send(a, "/subtest-reply", "i", 0xbaa + i);
     }
 
     return 0;

@@ -1,3 +1,6 @@
+2009-09-17 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix all whitespace inconsistancies using 'indent -kr -nut'. (SS)
+
 2009-03-07 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix some typos, grammar, and links in the documentation.
 	* Remove TCP from TODO list.

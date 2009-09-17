@@ -38,36 +38,39 @@
 #include "lo/lo.h"
 #include "config.h"
 
-lo_address lo_address_new_with_proto(int proto, const char *host, const char *port)
+lo_address lo_address_new_with_proto(int proto, const char *host,
+                                     const char *port)
 {
     lo_address a;
-    
-    if(proto != LO_UDP && proto != LO_TCP && proto != LO_UNIX) return NULL;
+
+    if (proto != LO_UDP && proto != LO_TCP && proto != LO_UNIX)
+        return NULL;
 
     a = calloc(1, sizeof(struct _lo_address));
-    if(a == NULL) return NULL;
+    if (a == NULL)
+        return NULL;
 
     a->ai = NULL;
     a->socket = -1;
     a->protocol = proto;
-    switch(proto) {
-	default:
-	case LO_UDP:
-	case LO_TCP:
-	    if (host) {
-		a->host = strdup(host);
-	    } else {
-		a->host = strdup("localhost");
-	    }
-	    break;
-	case LO_UNIX:
-		a->host = strdup("localhost");
-	    break;
+    switch (proto) {
+    default:
+    case LO_UDP:
+    case LO_TCP:
+        if (host) {
+            a->host = strdup(host);
+        } else {
+            a->host = strdup("localhost");
+        }
+        break;
+    case LO_UNIX:
+        a->host = strdup("localhost");
+        break;
     }
     if (port) {
-	a->port = strdup(port);
+        a->port = strdup(port);
     } else {
-	a->port = NULL;
+        a->port = NULL;
     }
 
     a->ttl = -1;
@@ -77,7 +80,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host, const char *po
 
 lo_address lo_address_new(const char *host, const char *port)
 {
-    return lo_address_new_with_proto(LO_UDP, host ,port);
+    return lo_address_new_with_proto(LO_UDP, host, port);
 }
 
 lo_address lo_address_new_from_url(const char *url)
@@ -87,29 +90,34 @@ lo_address lo_address_new_from_url(const char *url)
     char *host, *port, *proto;
 
     if (!url || !*url) {
-	return NULL;
+        return NULL;
     }
 
     protocol = lo_url_get_protocol_id(url);
     if (protocol == LO_UDP || protocol == LO_TCP) {
-	host = lo_url_get_hostname(url);
-	port = lo_url_get_port(url);
-	a = lo_address_new_with_proto(protocol, host, port);
-	if(host) free(host);
-	if(port) free(port);
+        host = lo_url_get_hostname(url);
+        port = lo_url_get_port(url);
+        a = lo_address_new_with_proto(protocol, host, port);
+        if (host)
+            free(host);
+        if (port)
+            free(port);
 #ifndef WIN32
     } else if (protocol == LO_UNIX) {
-	port = lo_url_get_path(url);
-	a = lo_address_new_with_proto(LO_UNIX, NULL, port);
-	if(port) free(port);
+        port = lo_url_get_path(url);
+        a = lo_address_new_with_proto(LO_UNIX, NULL, port);
+        if (port)
+            free(port);
 #endif
     } else {
-	proto = lo_url_get_protocol(url);
-	fprintf(stderr, PACKAGE_NAME ": protocol '%s' not supported by this "
-	        "version\n", proto);
-	if(proto) free(proto);
+        proto = lo_url_get_protocol(url);
+        fprintf(stderr,
+                PACKAGE_NAME ": protocol '%s' not supported by this "
+                "version\n", proto);
+        if (proto)
+            free(proto);
 
-	return NULL;
+        return NULL;
     }
 
     return a;
@@ -118,7 +126,7 @@ lo_address lo_address_new_from_url(const char *url)
 const char *lo_address_get_hostname(lo_address a)
 {
     if (!a) {
-	return NULL;
+        return NULL;
     }
 
     return a->host;
@@ -127,7 +135,7 @@ const char *lo_address_get_hostname(lo_address a)
 int lo_address_get_protocol(lo_address a)
 {
     if (!a) {
-	return -1;
+        return -1;
     }
 
     return a->protocol;
@@ -136,22 +144,22 @@ int lo_address_get_protocol(lo_address a)
 const char *lo_address_get_port(lo_address a)
 {
     if (!a) {
-	return NULL;
+        return NULL;
     }
 
     return a->port;
 }
 
-static const char* get_protocol_name(int proto)
+static const char *get_protocol_name(int proto)
 {
-    switch(proto) {
-	case LO_UDP:
-	    return "udp";
-	case LO_TCP:
-	    return "tcp";
-#ifndef WIN32 
-	case LO_UNIX:
-	    return "unix";
+    switch (proto) {
+    case LO_UDP:
+        return "udp";
+    case LO_TCP:
+        return "tcp";
+#ifndef WIN32
+    case LO_UNIX:
+        return "unix";
 #endif
     }
     return NULL;
@@ -161,26 +169,26 @@ static const char* get_protocol_name(int proto)
 char *lo_address_get_url(lo_address a)
 {
     char *buf;
-    int ret=0;
+    int ret = 0;
     int needquote = strchr(a->host, ':') ? 1 : 0;
     char *fmt;
 
     if (needquote) {
-	fmt = "osc.%s://[%s]:%s/";
+        fmt = "osc.%s://[%s]:%s/";
     } else {
-	fmt = "osc.%s://%s:%s/";
+        fmt = "osc.%s://%s:%s/";
     }
 #ifndef _MSC_VER
-    ret = snprintf(NULL, 0, fmt, 
-	    get_protocol_name(a->protocol), a->host, a->port);
+    ret = snprintf(NULL, 0, fmt,
+                   get_protocol_name(a->protocol), a->host, a->port);
 #endif
     if (ret <= 0) {
-	/* this libc is not C99 compliant, guess a size */
-	ret = 1023;
+        /* this libc is not C99 compliant, guess a size */
+        ret = 1023;
     }
     buf = malloc((ret + 2) * sizeof(char));
-    snprintf(buf, ret+1, fmt,
-	get_protocol_name(a->protocol), a->host, a->port);
+    snprintf(buf, ret + 1, fmt,
+             get_protocol_name(a->protocol), a->host, a->port);
 
     return buf;
 }
@@ -188,13 +196,16 @@ char *lo_address_get_url(lo_address a)
 void lo_address_free(lo_address a)
 {
     if (a) {
-	if (a->socket != -1) {
-	    close(a->socket);
-	}
-	if (a->host) free(a->host);
-	if (a->port) free(a->port);
-	if (a->ai) freeaddrinfo(a->ai);
-	free(a);
+        if (a->socket != -1) {
+            close(a->socket);
+        }
+        if (a->host)
+            free(a->host);
+        if (a->port)
+            free(a->port);
+        if (a->ai)
+            freeaddrinfo(a->ai);
+        free(a);
     }
 }
 
@@ -208,14 +219,14 @@ const char *lo_address_errstr(lo_address a)
     char *msg;
 
     if (a->errstr) {
-	return a->errstr;
+        return a->errstr;
     }
 
     msg = strerror(a->errnum);
     if (msg) {
-	return msg;
+        return msg;
     } else {
-	return "unknown error";
+        return "unknown error";
     }
 
     return "unknown error";
@@ -223,22 +234,23 @@ const char *lo_address_errstr(lo_address a)
 
 char *lo_url_get_protocol(const char *url)
 {
-    char *protocol,*ret;
+    char *protocol, *ret;
 
     if (!url) {
-	return NULL;
+        return NULL;
     }
 
     protocol = malloc(strlen(url));
-    
+
     if (sscanf(url, "osc://%s", protocol)) {
-	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
-		"assuming UDP.\n");
+        fprintf(stderr,
+                PACKAGE_NAME " warning: no protocol specified in URL, "
+                "assuming UDP.\n");
         ret = strdup("udp");
     } else if (sscanf(url, "osc.%[^:/[]", protocol)) {
         ret = strdup(protocol);
     } else {
-	ret = NULL;
+        ret = NULL;
     }
 
     free(protocol);
@@ -248,20 +260,21 @@ char *lo_url_get_protocol(const char *url)
 
 int lo_url_get_protocol_id(const char *url)
 {
-    if(!url) {
-	return -1;
+    if (!url) {
+        return -1;
     }
 
-    if(!strncmp(url, "osc:", 4)) {
-	fprintf(stderr, PACKAGE_NAME " warning: no protocol specified in URL, "
-		"assuming UDP.\n");
-	return LO_UDP; // should be LO_DEFAULT?
-    } else if(!strncmp(url, "osc.udp:", 8)) {
-	return LO_UDP;
-    } else if(!strncmp(url, "osc.tcp:", 8)) {
-	return LO_TCP;
-    } else if(!strncmp(url, "osc.unix:", 9)) {
-	return LO_UNIX;
+    if (!strncmp(url, "osc:", 4)) {
+        fprintf(stderr,
+                PACKAGE_NAME " warning: no protocol specified in URL, "
+                "assuming UDP.\n");
+        return LO_UDP;          // should be LO_DEFAULT?
+    } else if (!strncmp(url, "osc.udp:", 8)) {
+        return LO_UDP;
+    } else if (!strncmp(url, "osc.tcp:", 8)) {
+        return LO_TCP;
+    } else if (!strncmp(url, "osc.unix:", 9)) {
+        return LO_UNIX;
     }
     return -1;
 }
@@ -297,10 +310,10 @@ char *lo_url_get_port(const char *url)
         return port;
     }
     if (sscanf(url, "osc://[%*[^]]]:%[0-9]", port)) {
-	return port;
+        return port;
     }
     if (sscanf(url, "osc.%*[^:]://[%*[^]]]:%[0-9]", port)) {
-	return port;
+        return port;
     }
 
     /* doesnt look like an OSC URL with port number */
@@ -326,7 +339,7 @@ char *lo_url_get_path(const char *url)
         return path;
     }
 
-    /* doesnt look like an OSC URL with port number and path*/
+    /* doesnt look like an OSC URL with port number and path */
     free(path);
 
     return NULL;

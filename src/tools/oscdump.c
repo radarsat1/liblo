@@ -30,56 +30,56 @@
 
 void usage(void)
 {
-	printf("oscdump version %s\n"
-		   "Copyright (C) 2008 Kentaro Fukuchi\n\n"
-		   "Usage: oscdump port\n"
-		   "Receive OpenSound Control messages via UDP and dump to standard output.\n\n"
-		   "Description\n"
-		   "port    : specifies the listening port number.\n\n",
-		   VERSION);
+    printf("oscdump version %s\n"
+           "Copyright (C) 2008 Kentaro Fukuchi\n\n"
+           "Usage: oscdump port\n"
+           "Receive OpenSound Control messages via UDP and dump to standard output.\n\n"
+           "Description\n"
+           "port    : specifies the listening port number.\n\n", VERSION);
 }
 
 void errorHandler(int num, const char *msg, const char *where)
 {
-	printf("liblo server error %d in path %s: %s\n", num, where, msg);
+    printf("liblo server error %d in path %s: %s\n", num, where, msg);
 }
 
-int messageHandler(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data)
+int messageHandler(const char *path, const char *types, lo_arg ** argv,
+                   int argc, lo_message msg, void *user_data)
 {
-	int i;
+    int i;
 
-	printf("%s %s", path, types);
+    printf("%s %s", path, types);
 
-	for(i=0; i<argc; i++) {
-		printf(" ");
-		lo_arg_pp((lo_type)types[i], argv[i]);
-	}
-	printf("\n");
+    for (i = 0; i < argc; i++) {
+        printf(" ");
+        lo_arg_pp((lo_type) types[i], argv[i]);
+    }
+    printf("\n");
 
-	return 0;
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
-	lo_server server;
+    lo_server server;
 
-	if(argc < 2) {
-		usage();
-		exit(1);
-	}
+    if (argc < 2) {
+        usage();
+        exit(1);
+    }
 
-	server = lo_server_new(argv[1], errorHandler);
-	if(server == NULL) {
-		printf("Could not start a server with port %s\n", argv[1]);
-		exit(1);
-	}
+    server = lo_server_new(argv[1], errorHandler);
+    if (server == NULL) {
+        printf("Could not start a server with port %s\n", argv[1]);
+        exit(1);
+    }
 
-	lo_server_add_method(server, NULL, NULL, messageHandler, NULL);
+    lo_server_add_method(server, NULL, NULL, messageHandler, NULL);
 
 
-	for(;;) {
-		lo_server_recv(server);
-	}
+    for (;;) {
+        lo_server_recv(server);
+    }
 
-	return 0;
+    return 0;
 }

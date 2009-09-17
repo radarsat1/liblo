@@ -32,14 +32,14 @@ int done = 0;
 
 void error(int num, const char *m, const char *path);
 
-int generic_handler(const char *path, const char *types, lo_arg **argv,
-		    int argc, void *data, void *user_data);
+int generic_handler(const char *path, const char *types, lo_arg ** argv,
+                    int argc, void *data, void *user_data);
 
-int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data);
+int foo_handler(const char *path, const char *types, lo_arg ** argv,
+                int argc, void *data, void *user_data);
 
-int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data);
+int quit_handler(const char *path, const char *types, lo_arg ** argv,
+                 int argc, void *data, void *user_data);
 
 void read_stdin(void);
 
@@ -67,7 +67,7 @@ int main()
     lo_fd = lo_server_get_socket_fd(s);
 
     if (lo_fd > 0) {
-        
+
         /* select() on lo_server fd is supported, so we'll use select()
          * to watch both stdin and the lo_server fd. */
 
@@ -75,11 +75,11 @@ int main()
 
             FD_ZERO(&rfds);
 #ifndef WIN32
-            FD_SET(0, &rfds);  /* stdin */
+            FD_SET(0, &rfds);   /* stdin */
 #endif
             FD_SET(lo_fd, &rfds);
 
-            retval = select(lo_fd + 1, &rfds, NULL, NULL, NULL); /* no timeout */
+            retval = select(lo_fd + 1, &rfds, NULL, NULL, NULL);        /* no timeout */
 
             if (retval == -1) {
 
@@ -107,7 +107,8 @@ int main()
         /* lo_server protocol does not support select(), so we'll watch
          * stdin while polling the lo_server. */
 #ifdef WIN32
-        printf("non-blocking input from stdin not supported under Windows\n");
+        printf
+            ("non-blocking input from stdin not supported under Windows\n");
         exit(1);
 #else
         do {
@@ -135,7 +136,7 @@ int main()
         } while (!done);
 #endif
     }
-    
+
     return 0;
 }
 
@@ -146,16 +147,16 @@ void error(int num, const char *msg, const char *path)
 
 /* catch any incoming messages and display them. returning 1 means that the
  * message has not been fully handled and the server should try other methods */
-int generic_handler(const char *path, const char *types, lo_arg **argv,
-		    int argc, void *data, void *user_data)
+int generic_handler(const char *path, const char *types, lo_arg ** argv,
+                    int argc, void *data, void *user_data)
 {
     int i;
 
     printf("path: <%s>\n", path);
-    for (i=0; i<argc; i++) {
-	printf("arg %d '%c' ", i, types[i]);
-	lo_arg_pp(types[i], argv[i]);
-	printf("\n");
+    for (i = 0; i < argc; i++) {
+        printf("arg %d '%c' ", i, types[i]);
+        lo_arg_pp(types[i], argv[i]);
+        printf("\n");
     }
     printf("\n");
     fflush(stdout);
@@ -163,8 +164,8 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
     return 1;
 }
 
-int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data)
+int foo_handler(const char *path, const char *types, lo_arg ** argv,
+                int argc, void *data, void *user_data)
 {
     /* example showing pulling the argument values out of the argv array */
     printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
@@ -173,8 +174,8 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
     return 0;
 }
 
-int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data)
+int quit_handler(const char *path, const char *types, lo_arg ** argv,
+                 int argc, void *data, void *user_data)
 {
     done = 1;
     printf("quiting\n\n");
