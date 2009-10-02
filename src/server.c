@@ -625,6 +625,11 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
         }
     }
 
+    /* it's possible for ret==0, in the case that one of the
+     * connections has been closed */
+    if (ret<=0)
+        return NULL;
+
     data = malloc(ret);
     memcpy(data, buffer, ret);
 
