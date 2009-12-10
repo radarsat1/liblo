@@ -62,15 +62,31 @@ int messageHandler(const char *path, const char *types, lo_arg ** argv,
 int main(int argc, char **argv)
 {
     lo_server server;
+    char *port=0, *group=0;
 
-    if (argc < 2) {
+    if (argc > 1) {
+        port = argv[1];
+    } else {
         usage();
         exit(1);
     }
 
-    server = lo_server_new(argv[1], errorHandler);
+    if (argc > 2) {
+        group = argv[2];
+    }
+
+    if (group) {
+        server = lo_server_new_multicast(group, port, errorHandler);
+    } else {
+        server = lo_server_new(port, errorHandler);
+    }
+
     if (server == NULL) {
-        printf("Could not start a server with port %s\n", argv[1]);
+        printf("Could not start a server with port %s", port);
+        if (group)
+            printf(", multicast group %s\n", group);
+        else
+            printf("\n");
         exit(1);
     }
 

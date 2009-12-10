@@ -1,3 +1,6 @@
+2009-12-10 Stephen Sinclair <radarsat1@gmail.com>
+	* Add optional multicast group to oscdump's command line. (SS)
+
 2009-09-17 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix all whitespace inconsistancies using 'indent -kr -nut'. (SS)
 	* Fix warnings from the XCode static analyser. (Camille Troillard)
