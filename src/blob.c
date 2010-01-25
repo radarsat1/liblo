@@ -58,7 +58,7 @@ uint32_t lo_blobsize(lo_blob b)
 {
     const uint32_t len = sizeof(uint32_t) + b->size;
 
-    return 4 * (len / 4 + 1);
+    return 4 * ((len + 3) / 4);
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

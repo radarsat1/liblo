@@ -565,7 +565,7 @@ ssize_t lo_validate_blob(void *data, ssize_t size)
         return -LO_ESIZE;
     }
     end = sizeof(uint32_t) + dsize;     // end of data
-    len = 4 * (end / 4 + 1);    // full padded size
+    len = 4 * ((end + 3) / 4);  // full padded size
     if (len > size) {
         return -LO_ESIZE;       // would overflow buffer
     }
