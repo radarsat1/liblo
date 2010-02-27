@@ -70,6 +70,9 @@ typedef int (*lo_method_handler)(const char *path, const char *types,
 				 lo_arg **argv, int argc, struct _lo_message
 				 *msg, void *user_data);
 
+typedef int (*lo_bundle_start_handler)(lo_timetag time, void *user_data);
+typedef int (*lo_bundle_end_handler)(void *user_data);
+
 typedef struct _lo_method {
 	const char        *path;
 	const char        *typespec;
@@ -96,6 +99,9 @@ typedef struct _lo_server {
 #else
 	struct { int fd; }   *sockets;
 #endif
+	lo_bundle_start_handler bundle_start_handler;
+	lo_bundle_end_handler   bundle_end_handler;
+	void                   *bundle_handler_user_data;
 } *lo_server;
 
 typedef struct _lo_server_thread {

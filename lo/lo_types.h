@@ -134,6 +134,36 @@ typedef int (*lo_method_handler)(const char *path, const char *types,
 				 lo_arg **argv, int argc, lo_message msg,
 				 void *user_data);
 
+/**
+ * \brief A callback function to receive notification of a bundle being
+ * dispatched by the server or server thread.
+ *
+ * This callback allows applications to be aware of incoming bundles
+ * and preserve ordering and atomicity of messages in bundles.
+ *
+ * If installed with lo_server_add_bundle_handlers, this callback will be
+ * called with \a time set to the time tag of the bundle, and \a user_data
+ * set to the user_data parameter passed to lo_server_add_bundle_handlers.
+ *
+ * Note that bundles may be nested, in which case calls to the bundle start
+ * and end handlers will also be nested.  The application can keep track of
+ * nested bundles in a stack-like manner by treating the start handler as
+ * "push" and the end handler as "pop".  For example, a bundle containing two
+ * bundles would fire 6 callbacks: begin, begin, end, begin, end, end.
+ */
+typedef int (*lo_bundle_start_handler)(lo_timetag time, void *user_data);
+
+/**
+ * \brief A callback function to receive notification of a bundle dispatch
+ * being completed by the server or server thread.
+ *
+ * If installed with lo_server_add_bundle_handlers, this callback will be
+ * called after all the messages of a bundle have been dispatched with
+ * \a user_data set to the user_data parameter passed to
+ * lo_server_add_bundle_handlers.
+ */
+typedef int (*lo_bundle_end_handler)(void *user_data);
+
 #ifdef __cplusplus
 }
 #endif

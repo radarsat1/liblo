@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([liblo], [0.26], [liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo], [0.27], [liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
@@ -15,7 +15,7 @@ AC_INIT([liblo], [0.26], [liblo-devel@lists.sourceforge.net])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-LO_SO_VERSION=7:0:0
+LO_SO_VERSION=8:0:1
 
 AC_CONFIG_SRCDIR([src/address.c])
 AM_CONFIG_HEADER([config.h])

@@ -194,6 +194,9 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
+	s->bundle_start_handler = NULL;
+	s->bundle_end_handler = NULL;
+	s->bundle_handler_user_data = NULL;
 
     if (!s->sockets) {
         free(s);
@@ -880,6 +883,9 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
         pos += 4;
         remain -= 8;
 
+		if (s->bundle_start_handler)
+			s->bundle_start_handler(ts, s->bundle_handler_user_data);
+
         while (remain >= 4) {
             lo_message msg;
             elem_len = lo_otoh32(*((uint32_t *) pos));
@@ -912,6 +918,10 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
             pos += elem_len;
             remain -= elem_len;
         }
+
+		if (s->bundle_end_handler)
+			s->bundle_end_handler(s->bundle_handler_user_data);
+
     } else {
         lo_message msg = lo_message_deserialise(data, size, &result);
         if (NULL == msg) {
@@ -1294,6 +1304,17 @@ void lo_server_del_method(lo_server s, const char *path,
         if (it)
             it = next;
     }
+}
+
+int lo_server_add_bundle_handlers(lo_server s,
+                                  lo_bundle_start_handler sh,
+                                  lo_bundle_end_handler eh,
+                                  void *user_data)
+{
+	s->bundle_start_handler = sh;
+	s->bundle_end_handler = eh;
+	s->bundle_handler_user_data = user_data;
+	return 0;
 }
 
 int lo_server_get_socket_fd(lo_server s)

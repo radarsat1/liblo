@@ -637,6 +637,22 @@ void lo_server_del_method(lo_server s, const char *path,
                                const char *typespec);
 
 /**
+ * \brief Add bundle notification handlers to the specified server.
+ *
+ * \param s The server the method is to be added to.
+ * \param sh The callback function that will be called before the messages
+ * of a bundle are dispatched
+ * \param eh The callback function that will be called after the messages
+ * of a bundle are dispatched
+ * \param user_data A value that will be passed to the user_data parameter
+ * of both callback functions.
+ */
+int lo_server_add_bundle_handlers(lo_server s,
+                                  lo_bundle_start_handler sh,
+                                  lo_bundle_end_handler eh,
+                                  void *user_data);
+
+/**
  * \brief Return the file descriptor of the server socket.
  *
  * If the server protocol supports exposing the server's underlying
