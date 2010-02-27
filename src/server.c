@@ -194,9 +194,9 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
-	s->bundle_start_handler = NULL;
-	s->bundle_end_handler = NULL;
-	s->bundle_handler_user_data = NULL;
+    s->bundle_start_handler = NULL;
+    s->bundle_end_handler = NULL;
+    s->bundle_handler_user_data = NULL;
 
     if (!s->sockets) {
         free(s);
@@ -630,7 +630,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
 
     /* it's possible for ret==0, in the case that one of the
      * connections has been closed */
-    if (ret<=0)
+    if (ret <= 0)
         return NULL;
 
     data = malloc(ret);
@@ -883,8 +883,8 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
         pos += 4;
         remain -= 8;
 
-		if (s->bundle_start_handler)
-			s->bundle_start_handler(ts, s->bundle_handler_user_data);
+        if (s->bundle_start_handler)
+            s->bundle_start_handler(ts, s->bundle_handler_user_data);
 
         while (remain >= 4) {
             lo_message msg;
@@ -919,8 +919,8 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
             remain -= elem_len;
         }
 
-		if (s->bundle_end_handler)
-			s->bundle_end_handler(s->bundle_handler_user_data);
+        if (s->bundle_end_handler)
+            s->bundle_end_handler(s->bundle_handler_user_data);
 
     } else {
         lo_message msg = lo_message_deserialise(data, size, &result);
@@ -1311,10 +1311,10 @@ int lo_server_add_bundle_handlers(lo_server s,
                                   lo_bundle_end_handler eh,
                                   void *user_data)
 {
-	s->bundle_start_handler = sh;
-	s->bundle_end_handler = eh;
-	s->bundle_handler_user_data = user_data;
-	return 0;
+    s->bundle_start_handler = sh;
+    s->bundle_end_handler = eh;
+    s->bundle_handler_user_data = user_data;
+    return 0;
 }
 
 int lo_server_get_socket_fd(lo_server s)
