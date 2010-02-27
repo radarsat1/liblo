@@ -197,7 +197,7 @@ void lo_address_free(lo_address a)
 {
     if (a) {
         if (a->socket != -1) {
-            close(a->socket);
+            closesocket(a->socket);
         }
         if (a->host)
             free(a->host);

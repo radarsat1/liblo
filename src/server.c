@@ -466,7 +466,7 @@ void lo_server_free(lo_server s)
                     lo_client_sockets.tcp = -1;
                 }
 
-                close(s->sockets[i].fd);
+                closesocket(s->sockets[i].fd);
                 s->sockets[i].fd = -1;
             }
         }
@@ -558,7 +558,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
         if (s->sockets[i].revents == POLLERR
             || s->sockets[i].revents == POLLHUP) {
             if (i > 0) {
-                close(s->sockets[i].fd);
+                closesocket(s->sockets[i].fd);
                 lo_server_del_socket(s, i, s->sockets[i].fd);
                 continue;
             } else
@@ -603,14 +603,14 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
             }
 
             if (i < 0) {
-                close(sock);
+                closesocket(sock);
                 return NULL;
             }
 
             ret = recv(sock, &read_size, sizeof(read_size), 0);
             read_size = ntohl(read_size);
             if (read_size > LO_MAX_MSG_SIZE || ret <= 0) {
-                close(sock);
+                closesocket(sock);
                 lo_server_del_socket(s, i, sock);
                 if (ret > 0)
                     lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
@@ -618,7 +618,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
             }
             ret = recv(sock, buffer, read_size, 0);
             if (ret <= 0) {
-                close(sock);
+                closesocket(sock);
                 lo_server_del_socket(s, i, sock);
                 continue;
             }

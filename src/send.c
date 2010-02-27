@@ -319,7 +319,7 @@ static int create_socket(lo_address a)
             if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
                 a->errnum = geterror();
                 a->errstr = NULL;
-                close(a->socket);
+                closesocket(a->socket);
                 a->socket = -1;
                 return -1;
             }
@@ -358,7 +358,7 @@ static int create_socket(lo_address a)
         if ((connect(a->socket, (struct sockaddr *) &sa, sizeof(sa))) < 0) {
             a->errnum = geterror();
             a->errstr = NULL;
-            close(a->socket);
+            closesocket(a->socket);
             a->socket = -1;
             return -1;
         }
@@ -431,7 +431,7 @@ static int send_data(lo_address a, lo_server from, char *data,
 
     if (ret == -1) {
         if (a->protocol == LO_TCP) {
-            close(a->socket);
+            closesocket(a->socket);
             a->socket = -1;
         }
 
