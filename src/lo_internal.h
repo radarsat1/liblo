@@ -60,4 +60,6 @@ ssize_t lo_validate_bundle(void *data, ssize_t size);
  */
 ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size);
 
+int lo_address_resolve(lo_address a);
+
 #endif

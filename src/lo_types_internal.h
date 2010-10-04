@@ -48,6 +48,12 @@ typedef struct _lo_address {
     int errnum;
     const char *errstr;
     int ttl;
+    union {
+        struct in_addr addr;
+        struct in6_addr addr6;
+    } inaddr;
+    size_t inaddr_size;
+    char *iface;
 } *lo_address;
 
 typedef struct _lo_blob {

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <arpa/inet.h>
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -38,6 +39,8 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
 #endif
 
 #include "lo_types_internal.h"
@@ -57,7 +60,6 @@ int initWSock();
 #define geterror() errno
 #endif
 
-static int resolve_address(lo_address a);
 static int create_socket(lo_address a);
 static int send_data(lo_address a, lo_server from, char *data,
                      const size_t data_len);
@@ -272,37 +274,6 @@ static char *format_to_types(const char *format)
 
 #endif
 
-
-static int resolve_address(lo_address a)
-{
-    int ret;
-
-    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
-        struct addrinfo *ai;
-        struct addrinfo hints;
-
-        memset(&hints, 0, sizeof(hints));
-#ifdef ENABLE_IPV6
-        hints.ai_family = PF_UNSPEC;
-#else
-        hints.ai_family = PF_INET;
-#endif
-        hints.ai_socktype =
-            a->protocol == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
-
-        if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
-            a->errnum = ret;
-            a->errstr = gai_strerror(ret);
-            a->ai = NULL;
-            return -1;
-        }
-
-        a->ai = ai;
-    }
-
-    return 0;
-}
-
 static int create_socket(lo_address a)
 {
     if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
@@ -391,7 +362,7 @@ static int send_data(lo_address a, lo_server from, char *data,
     }
     // Resolve the destination address, if not done already
     if (!a->ai) {
-        ret = resolve_address(a);
+        ret = lo_address_resolve(a);
         if (ret)
             return ret;
     }
@@ -417,6 +388,16 @@ static int send_data(lo_address a, lo_server from, char *data,
     // Send the data
     if (ret != -1) {
         if (a->protocol == LO_UDP) {
+            if (a->inaddr_size == sizeof(struct in_addr)) {
+                setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
+                           &a->inaddr, a->inaddr_size);
+            }
+#ifdef ENABLE_IPV6
+            else if (a->inaddr_size == sizeof(struct in6_addr)) {
+                setsockopt(sock, IPPROTO_IP, IPV6_MULTICAST_IF,
+                           &a->inaddr, a->inaddr_size);
+            }
+#endif
             if (a->ttl >= 0) {
                 unsigned char ttl = (unsigned char) a->ttl;
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl,

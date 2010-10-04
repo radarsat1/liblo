@@ -417,6 +417,36 @@ void lo_address_set_ttl(lo_address t, int ttl);
 int lo_address_get_ttl(lo_address t);
 
 /**
+ * \brief Set the network interface to use for a given target address.
+ *
+ * The caller should specify either the iface or ip variable.  The IP,
+ * if specified, should match the same network family as the OSC
+ * address.  (That is, should correctly correspond to IPv4 or IPv6.)
+ * Typically the assigned network interface will only be used in the
+ * case of sending multicast messages.  It is recommended to use the
+ * if_nameindex POSIX function to get a list of network interface
+ * names.
+ *
+ * \param t An OSC address.
+ * \param iface The name of a network interface on the local system.
+ * \param ip The IP address of a network interface on the local system.
+ * \return 0 if the interface was successfully identified, or non-zero
+ *         otherwise.
+ */
+int lo_address_set_iface(lo_address t, const char *iface, const char *ip);
+
+/**
+ * \brief  Get the name of the network interface assigned to an OSC address.
+ *
+ * \param t An OSC address.
+ * \return A string pointer or 0 if no interface has been assigned.
+ *         Caller should not modify the provided string.  It is a
+ *         legal pointer until the next call to lo_address_set_iface
+ *         or lo_address_free.
+ */
+const char* lo_address_get_iface(lo_address t);
+
+/**
  * \brief  Create a new bundle object.
  *
  * OSC Bundles encapsulate one or more OSC messages and may include a timestamp

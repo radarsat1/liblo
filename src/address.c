@@ -32,6 +32,8 @@
 #else
 #include <netdb.h>
 #include <sys/socket.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
 #endif
 
 #include "lo_types_internal.h"
@@ -74,6 +76,8 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     }
 
     a->ttl = -1;
+    a->inaddr_size = 0;
+    a->iface = 0;
 
     return a;
 }
@@ -205,6 +209,8 @@ void lo_address_free(lo_address a)
             free(a->port);
         if (a->ai)
             freeaddrinfo(a->ai);
+        if (a->iface)
+            free(a->iface);
         free(a);
     }
 }
@@ -354,6 +360,135 @@ void lo_address_set_ttl(lo_address t, int ttl)
 int lo_address_get_ttl(lo_address t)
 {
     return t->ttl;
+}
+
+int lo_address_resolve(lo_address a)
+{
+    int ret;
+
+    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
+        struct addrinfo *ai;
+        struct addrinfo hints;
+
+        memset(&hints, 0, sizeof(hints));
+#ifdef ENABLE_IPV6
+        hints.ai_family = PF_UNSPEC;
+#else
+        hints.ai_family = PF_INET;
+#endif
+        hints.ai_socktype =
+            a->protocol == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
+
+        if ((ret = getaddrinfo(a->host, a->port, &hints, &ai))) {
+            a->errnum = ret;
+            a->errstr = gai_strerror(ret);
+            a->ai = NULL;
+            return -1;
+        }
+
+        a->ai = ai;
+    }
+
+    return 0;
+}
+
+int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
+{
+    if (!t->ai) {
+        lo_address_resolve(t);
+        if (!t->ai)
+            return 2;  // Need the address family to continue
+    }
+    int fam = t->ai->ai_family;
+
+    union {
+        struct in_addr addr;
+#ifdef ENABLE_IPV6
+        struct in6_addr addr6;
+#endif
+    } a;
+
+    if (ip) {
+        int rc = inet_pton(fam, ip, &a);
+        if (rc!=1)
+            return (rc<0) ? 3 : 4;
+    }
+
+    struct ifaddrs *ifa, *ifa_list;
+    if (getifaddrs(&ifa_list)==-1)
+        return 5;
+    ifa = ifa_list;
+
+    int found = 0;
+    while (ifa) {
+        if (!ifa->ifa_addr) {
+            ifa = ifa->ifa_next;
+            continue;
+        }
+        if (ip) {
+            if (ifa->ifa_addr->sa_family == AF_INET && fam == AF_INET)
+            {
+                if (memcmp(&((struct sockaddr_in*)ifa->ifa_addr)->sin_addr,
+                           &a.addr, sizeof(struct in_addr))==0) {
+                    found = 1;
+                    t->inaddr_size = sizeof(struct in_addr);
+                    memcpy(&t->inaddr, &a, t->inaddr_size);
+                    break;
+                }
+            }
+#ifdef ENABLE_IPV6
+            else if (ifa->ifa_addr->sa_family == AF_INET6 && fam == AF_INET6)
+            {
+                if (memcmp(&((struct sockaddr_in6*)ifa->ifa_addr)->sin6_addr,
+                           &a.addr6, sizeof(struct in6_addr))==0) {
+                    found = 1;
+                    t->inaddr_size = sizeof(struct in6_addr);
+                    memcpy(&t->inaddr, &a, t->inaddr_size);
+                    break;
+                }
+            }
+#endif
+        }
+        if (iface) {
+            if (ifa->ifa_addr->sa_family == fam
+                && strcmp(ifa->ifa_name, iface)==0)
+            {
+                if (fam==AF_INET) {
+                    found = 1;
+                    t->inaddr_size = sizeof(struct in_addr);
+                    memcpy(&t->inaddr, &((struct sockaddr_in*)
+                                         ifa->ifa_addr)->sin_addr,
+                           t->inaddr_size);
+                    break;
+                }
+#ifdef ENABLE_IPV6
+                else if (fam==AF_INET6) {
+                    found = 1;
+                    t->inaddr_size = sizeof(struct in6_addr);
+                    memcpy(&t->inaddr, &((struct sockaddr_in6*)
+                                         ifa->ifa_addr)->sin6_addr,
+                           t->inaddr_size);
+                    break;
+                }
+#endif
+            }
+        }
+        ifa = ifa->ifa_next;
+    }
+
+    if (found && ifa->ifa_name) {
+        if (t->iface) free(t->iface);
+        t->iface = strdup(ifa->ifa_name);
+    }
+
+    freeifaddrs(ifa_list);
+    return !found;
+}
+
+const char* lo_address_get_iface(lo_address t)
+{
+    if (t)
+        return t->iface;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

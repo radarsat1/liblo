@@ -262,6 +262,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    lo_address_set_ttl(target, 1);
+
     message = create_message(argv);
     if (message == NULL) {
         fprintf(stderr, "Failed to create OSC message.\n");
