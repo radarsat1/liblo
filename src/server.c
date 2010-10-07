@@ -39,8 +39,6 @@
 #else
 #include <netdb.h>
 #include <sys/socket.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
 #ifdef HAVE_POLL
 #include <sys/poll.h>
 #endif
@@ -411,7 +409,6 @@ int lo_server_join_multicast_group(lo_server s, const char *group)
         lo_server_free(s);
         return err;
     }
-    printf("HAVE_INET_ATON: %d\n", mreq.imr_multiaddr);
 #else
     mreq.imr_multiaddr.s_addr = inet_addr(group);
     if (mreq.imr_multiaddr.s_addr == INADDR_ANY
@@ -422,27 +419,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group)
         return err;
     }
 #endif
-    struct ifconf ifc;
-    struct ifreq ifr[10];
-    memset(&ifc, 0, sizeof(struct ifconf));
-    memset(ifr, 0, sizeof(struct ifreq)*10);
-    ifc.ifc_len = sizeof(struct ifreq)*10;
-    ifc.ifc_ifcu.ifcu_req = ifr;
-    if (ioctl(s->sockets[0].fd, SIOCGIFCONF, &ifc)) {
-        perror("here1");
-    }
-    printf("ifc.ifc_len = %d\n", ifc.ifc_len);
-    int i;
-    for (i=0; i<ifc.ifc_len/sizeof(struct ifreq); i++) {
-        printf("%d name: %s\n", i, ifr[i].ifr_name);
-        printf("%d ip: %s\n", i, inet_ntoa(*(struct in_addr*)&ifr[i].ifr_ifru.ifru_addr.sa_data[2]));
-    }
-
-    //mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-
-    // mreq.imr_address.s_addr = htonl(INADDR_ANY);
-
-    mreq.imr_interface.s_addr = *(in_addr_t*)&ifr[0].ifr_ifru.ifru_addr.sa_data[2];
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
     if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                    &mreq, sizeof(mreq)) < 0) {
