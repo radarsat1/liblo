@@ -76,11 +76,15 @@ static void queue_data(lo_server s, lo_timetag ts, const char *path,
                        lo_message msg);
 static lo_server lo_server_new_with_proto_internal(const char *group,
                                                    const char *port,
+                                                   const char *iface,
+                                                   const char *ip,
                                                    int proto,
                                                    lo_err_handler err_h);
 static int lo_server_add_socket(lo_server s, int socket);
 static void lo_server_del_socket(lo_server s, int index, int socket);
-static int lo_server_join_multicast_group(lo_server s, const char *group);
+static int lo_server_join_multicast_group(lo_server s, const char *group,
+                                          int family,
+                                          const char *iface, const char *ip);
 
 #ifdef WIN32
 #ifndef gai_strerror
@@ -144,17 +148,27 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h)
 lo_server lo_server_new_multicast(const char *group, const char *port,
                                   lo_err_handler err_h)
 {
-    return lo_server_new_with_proto_internal(group, port, LO_UDP, err_h);
+    return lo_server_new_with_proto_internal(group, port, 0, 0, LO_UDP, err_h);
+}
+
+lo_server lo_server_new_multicast_iface(const char *group, const char *port,
+                                        const char *iface, const char *ip,
+                                        lo_err_handler err_h)
+{
+    return lo_server_new_with_proto_internal(group, port, iface, ip, LO_UDP, err_h);
 }
 
 lo_server lo_server_new_with_proto(const char *port, int proto,
                                    lo_err_handler err_h)
 {
-    return lo_server_new_with_proto_internal(NULL, port, proto, err_h);
+    return lo_server_new_with_proto_internal(NULL, port, 0, 0, proto, err_h);
 }
 
 lo_server lo_server_new_with_proto_internal(const char *group,
-                                            const char *port, int proto,
+                                            const char *port,
+                                            const char *iface,
+                                            const char *ip,
+                                            int proto,
                                             lo_err_handler err_h)
 {
     lo_server s;
@@ -197,6 +211,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->bundle_start_handler = NULL;
     s->bundle_end_handler = NULL;
     s->bundle_handler_user_data = NULL;
+    s->addr_if.iface = 0;
+    s->addr_if.size = 0;
 
     if (!s->sockets) {
         free(s);
@@ -300,7 +316,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         /* This must be done before bind() on POSIX, but after bind() Windows. */
 #ifndef WIN32
         if (group != NULL)
-            if (lo_server_join_multicast_group(s, group))
+            if (lo_server_join_multicast_group(s, group, used->ai_family, iface, ip))
                 return NULL;
 #endif
 
@@ -320,22 +336,22 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         }
     } while (!used && tries++ < 16);
 
-    /* Join multicast group if specified (see above). */
-#ifdef WIN32
-    if (group != NULL)
-        if (lo_server_join_multicast_group(s, group))
-            return NULL;
-#endif
-
-    if (proto == LO_TCP) {
-        listen(s->sockets[0].fd, 8);
-    }
-
     if (!used) {
         lo_throw(s, LO_NOPORT, "cannot find free port", NULL);
 
         lo_server_free(s);
         return NULL;
+    }
+
+    /* Join multicast group if specified (see above). */
+#ifdef WIN32
+    if (group != NULL)
+        if (lo_server_join_multicast_group(s, group, used->ai_family, iface, ip))
+            return NULL;
+#endif
+
+    if (proto == LO_TCP) {
+        listen(s->sockets[0].fd, 8);
     }
 
     if (proto == LO_UDP) {
@@ -397,7 +413,37 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     return s;
 }
 
-int lo_server_join_multicast_group(lo_server s, const char *group)
+static int lo_server_set_iface(lo_server s, int fam, const char *iface, const char *ip)
+{
+    int err = lo_inaddr_find_iface(&s->addr_if, fam, iface, ip);
+    if (err)
+        return err;
+
+    if (s->addr_if.size == sizeof(struct in_addr)) {
+        if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_MULTICAST_IF,
+                       &s->addr_if.a.addr, s->addr_if.size) < 0) {
+            err = geterror();
+            lo_throw(s, err, strerror(err), "setsockopt(IP_MULTICAST_IF)");
+            lo_server_free(s);
+            return err;
+        }
+    }
+#ifdef ENABLE_IPV6
+    else if (s->addr_if.size == sizeof(struct in6_addr)) {
+        if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IPV6_MULTICAST_IF,
+                       &s->addr_if.a.addr6, s->addr_if.size) < 0) {
+            err = geterror();
+            lo_throw(s, err, strerror(err), "setsockopt(IPV6_MULTICAST_IF)");
+            lo_server_free(s);
+            return err;
+        }
+    }
+#endif
+    return 0;
+}
+
+int lo_server_join_multicast_group(lo_server s, const char *group,
+                                   int fam, const char *iface, const char *ip)
 {
     struct ip_mreq mreq;
     unsigned int yes = 1;
@@ -419,7 +465,16 @@ int lo_server_join_multicast_group(lo_server s, const char *group)
         return err;
     }
 #endif
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    if (iface || ip) {
+        int err = lo_server_set_iface(s, fam, iface, ip);
+        if (err) return err;
+
+        mreq.imr_interface = s->addr_if.a.addr;
+        // TODO: the above assignment is for an in_addr, which assumes IPv4
+        //       how to specify group membership interface with IPv6?
+    }
+    else
+        mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
     if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                    &mreq, sizeof(mreq)) < 0) {
@@ -490,6 +545,8 @@ void lo_server_free(lo_server s)
             free((char *) it->typespec);
             free(it);
         }
+        if (s->addr_if.iface)
+            free(s->addr_if.iface);
         free(s->sockets);
         free(s);
     }

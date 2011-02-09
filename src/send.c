@@ -44,6 +44,7 @@
 #endif
 
 #include "lo_types_internal.h"
+#include "lo_internal.h"
 #include "lo/lo.h"
 
 #ifndef MSG_NOSIGNAL
@@ -388,14 +389,14 @@ static int send_data(lo_address a, lo_server from, char *data,
     // Send the data
     if (ret != -1) {
         if (a->protocol == LO_UDP) {
-            if (a->inaddr_size == sizeof(struct in_addr)) {
+            if (a->addr.size == sizeof(struct in_addr)) {
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
-                           &a->inaddr, a->inaddr_size);
+                           &a->addr.a, a->addr.size);
             }
 #ifdef ENABLE_IPV6
             else if (a->inaddr_size == sizeof(struct in6_addr)) {
                 setsockopt(sock, IPPROTO_IP, IPV6_MULTICAST_IF,
-                           &a->inaddr, a->inaddr_size);
+                           &a->addr.a, a->addr.size);
             }
 #endif
             if (a->ttl >= 0) {

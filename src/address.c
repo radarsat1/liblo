@@ -37,6 +37,7 @@
 #endif
 
 #include "lo_types_internal.h"
+#include "lo_internal.h"
 #include "lo/lo.h"
 #include "config.h"
 
@@ -76,8 +77,8 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     }
 
     a->ttl = -1;
-    a->inaddr_size = 0;
-    a->iface = 0;
+    a->addr.size = 0;
+    a->addr.iface = 0;
 
     return a;
 }
@@ -209,8 +210,8 @@ void lo_address_free(lo_address a)
             free(a->port);
         if (a->ai)
             freeaddrinfo(a->ai);
-        if (a->iface)
-            free(a->iface);
+        if (a->addr.iface)
+            free(a->addr.iface);
         free(a);
     }
 }
@@ -401,6 +402,13 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
     }
     int fam = t->ai->ai_family;
 
+    return lo_inaddr_find_iface(&t->addr, fam, iface, ip);
+}
+
+int lo_inaddr_find_iface(lo_inaddr t, int fam,
+                         const char *iface, const char *ip)
+{
+
     union {
         struct in_addr addr;
 #ifdef ENABLE_IPV6
@@ -431,8 +439,8 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
                 if (memcmp(&((struct sockaddr_in*)ifa->ifa_addr)->sin_addr,
                            &a.addr, sizeof(struct in_addr))==0) {
                     found = 1;
-                    t->inaddr_size = sizeof(struct in_addr);
-                    memcpy(&t->inaddr, &a, t->inaddr_size);
+                    t->size = sizeof(struct in_addr);
+                    memcpy(&t->a, &a, t->size);
                     break;
                 }
             }
@@ -442,8 +450,8 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
                 if (memcmp(&((struct sockaddr_in6*)ifa->ifa_addr)->sin6_addr,
                            &a.addr6, sizeof(struct in6_addr))==0) {
                     found = 1;
-                    t->inaddr_size = sizeof(struct in6_addr);
-                    memcpy(&t->inaddr, &a, t->inaddr_size);
+                    t->size = sizeof(struct in6_addr);
+                    memcpy(&t->a, &a, t->inaddr_size);
                     break;
                 }
             }
@@ -455,19 +463,19 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
             {
                 if (fam==AF_INET) {
                     found = 1;
-                    t->inaddr_size = sizeof(struct in_addr);
-                    memcpy(&t->inaddr, &((struct sockaddr_in*)
-                                         ifa->ifa_addr)->sin_addr,
-                           t->inaddr_size);
+                    t->size = sizeof(struct in_addr);
+                    memcpy(&t->a, &((struct sockaddr_in*)
+                                    ifa->ifa_addr)->sin_addr,
+                           t->size);
                     break;
                 }
 #ifdef ENABLE_IPV6
                 else if (fam==AF_INET6) {
                     found = 1;
-                    t->inaddr_size = sizeof(struct in6_addr);
-                    memcpy(&t->inaddr, &((struct sockaddr_in6*)
-                                         ifa->ifa_addr)->sin6_addr,
-                           t->inaddr_size);
+                    t->size = sizeof(struct in6_addr);
+                    memcpy(&t->a, &((struct sockaddr_in6*)
+                                    ifa->ifa_addr)->sin6_addr,
+                           t->size);
                     break;
                 }
 #endif
@@ -488,7 +496,8 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
 const char* lo_address_get_iface(lo_address t)
 {
     if (t)
-        return t->iface;
+        return t->addr.iface;
+    return 0;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

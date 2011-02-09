@@ -62,4 +62,17 @@ ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size);
 
 int lo_address_resolve(lo_address a);
 
+/**
+ * \internal \brief Look up a given interface by name or by IP and
+ * store the found information in a lo_inaddr.  Usually either iface
+ * or ip will be zero, but not both.
+ *
+ * \param t Location to store interface information.
+ * \param fam Family, either AF_INET or AF_INET6.
+ * \param iface The interface to look for by name.
+ * \param ip The IP to find an interface for.
+ */
+int lo_inaddr_find_iface(lo_inaddr t, int fam,
+                         const char *iface, const char *ip);
+
 #endif

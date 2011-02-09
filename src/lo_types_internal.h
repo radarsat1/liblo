@@ -39,6 +39,15 @@ typedef void (*lo_err_handler) (int num, const char *msg,
 
 struct _lo_method;
 
+typedef struct _lo_inaddr {
+    union {
+        struct in_addr addr;
+        struct in6_addr addr6;
+    } a;
+    size_t size;
+    char *iface;
+} *lo_inaddr;
+
 typedef struct _lo_address {
     char *host;
     int socket;
@@ -48,12 +57,7 @@ typedef struct _lo_address {
     int errnum;
     const char *errstr;
     int ttl;
-    union {
-        struct in_addr addr;
-        struct in6_addr addr6;
-    } inaddr;
-    size_t inaddr_size;
-    char *iface;
+    struct _lo_inaddr addr;
 } *lo_address;
 
 typedef struct _lo_blob {
@@ -113,6 +117,7 @@ typedef struct _lo_server {
     lo_bundle_start_handler bundle_start_handler;
     lo_bundle_end_handler bundle_end_handler;
     void *bundle_handler_user_data;
+    struct _lo_inaddr addr_if;
 } *lo_server;
 
 typedef struct _lo_server_thread {
