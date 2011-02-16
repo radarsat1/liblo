@@ -394,7 +394,7 @@ static int send_data(lo_address a, lo_server from, char *data,
                            &a->addr.a, a->addr.size);
             }
 #ifdef ENABLE_IPV6
-            else if (a->inaddr_size == sizeof(struct in6_addr)) {
+            else if (a->addr.size == sizeof(struct in6_addr)) {
                 setsockopt(sock, IPPROTO_IP, IPV6_MULTICAST_IF,
                            &a->addr.a, a->addr.size);
             }

@@ -451,7 +451,7 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
                            &a.addr6, sizeof(struct in6_addr))==0) {
                     found = 1;
                     t->size = sizeof(struct in6_addr);
-                    memcpy(&t->a, &a, t->inaddr_size);
+                    memcpy(&t->a, &a, t->size);
                     break;
                 }
             }
