@@ -517,7 +517,7 @@ void lo_server_free(lo_server s)
                     && s->sockets[i].fd == lo_client_sockets.udp) {
                     lo_client_sockets.udp = -1;
                 } else if (s->protocol == LO_TCP
-                           && s->sockets[0].fd == lo_client_sockets.tcp) {
+                           && s->sockets[i].fd == lo_client_sockets.tcp) {
                     lo_client_sockets.tcp = -1;
                 }
 
