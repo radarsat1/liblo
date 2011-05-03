@@ -111,3 +111,9 @@ EXPORTS
     lo_url_get_port                        @108
     lo_url_get_protocol                    @109
     lo_url_get_protocol_id                 @110
+    lo_send_internal                       @111
+    lo_send_from_internal                  @112
+    lo_send_timestamped_internal           @113
+    lo_message_add_internal                @114
+    lo_address_set_iface                   @115
+    lo_server_new_multicast_iface          @116

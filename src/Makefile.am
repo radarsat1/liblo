@@ -11,10 +11,14 @@ SOURCE_FILES = address.c send.c message.c server.c method.c \
 
 lib_LTLIBRARIES = liblo.la
 
+if WINDOWS_DLL
+lt_windows = -no-undefined -export-symbols liblo.def
+endif
+
 liblo_la_CFLAGS = -Wall -I$(top_srcdir)
 liblo_la_SOURCES = $(SOURCE_FILES)
 liblo_la_LIBADD = -lpthread
-liblo_la_LDFLAGS  = -export-dynamic -version-info @LO_SO_VERSION@
+liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 
 noinst_PROGRAMS = testlo subtest
 

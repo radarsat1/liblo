@@ -34,6 +34,7 @@ fi
 
 # Checks for programs.
 AC_PROG_CC
+AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 AM_PROG_CC_C_O
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
@@ -55,21 +56,28 @@ AC_TYPE_SIZE_T
 # Check for features
 AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])], [
      AC_MSG_CHECKING([for select in ws2_32])
-     LIBS="$LIBS -lws2_32"
+     extralibs="-lws2_32 -liphlpapi"
+     LIBS="$LIBS $extralibs"
      # some winsock2 functions require XP, so WINNT=0x501
      CFLAGS="$CFLAGS -DWIN32 -D_WIN32_WINNT=0x501"
      AC_TRY_LINK([#include <winsock2.h>],
                  [select(0,0,0,0,0)],
                  [AC_MSG_RESULT(yes)
-                 AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])],
+                 AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])
+                 is_windows=yes],
                  [AC_MSG_RESULT(no)])
 ])
 AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
-AC_CHECK_FUNC([inet_aton], [AC_DEFINE(HAVE_INET_ATON, [1], [Define to 1 if inet_aton() is available.])])
+AC_CHECK_FUNC([inet_pton], [AC_DEFINE(HAVE_INET_PTON, [1], [Define to 1 if inet_pton() is available.])])
+
+AM_CONDITIONAL(WINDOWS, test x$is_windows = xyes)
+AM_CONDITIONAL(WINDOWS_DLL, test x$is_windows = xyes && test x$enable_shared = xyes)
 
 AC_C_BIGENDIAN([LO_BIGENDIAN="1"], [LO_BIGENDIAN="0"])
 AC_DEFINE_UNQUOTED(LO_BIGENDIAN, "$LO_BIGENDIAN", [If machine is bigendian])
 AC_SUBST(LO_BIGENDIAN)
+
+AC_SUBST(extralibs)
 
 AC_CONFIG_FILES([
 	Makefile

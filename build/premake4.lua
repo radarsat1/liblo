@@ -128,6 +128,7 @@
       links   { "user32",
                 "wsock32",
                 "ws2_32",
+                "iphlpapi",
                 "pthreadVC2",
               }
             

@@ -140,6 +140,21 @@ int initWSock()
 }
 #endif
 
+#ifdef ENABLE_IPV6
+static unsigned int get_family_PF(const char *ip, const char *port)
+{
+    struct addrinfo *ai=0;
+    unsigned int fam=PF_UNSPEC;
+    int ret = getaddrinfo(ip, port, 0, &ai);
+    if (ai) {
+        if (ret==0)
+            fam = ai->ai_family;
+        freeaddrinfo(ai);
+    }
+    return fam;
+}
+#endif
+
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
     return lo_server_new_with_proto(port, LO_DEFAULT, err_h);
@@ -268,7 +283,14 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     }
 
 #ifdef ENABLE_IPV6
+    /* Determine the address family based on provided IP string or
+       multicast group, if available, otherwise let the operating
+       system decide. */
     hints.ai_family = PF_UNSPEC;
+    if (ip)
+        hints.ai_family = get_family_PF(ip, port);
+    else if (group)
+        hints.ai_family = get_family_PF(group, port);
 #else
     hints.ai_family = PF_INET;
 #endif
@@ -280,13 +302,14 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         service = port;
     }
     do {
+        int ret;
         if (!port) {
             /* not a good way to get random numbers, but its not critical */
             snprintf(pnum, 15, "%ld", 10000 + ((unsigned int) rand() +
                                                time(NULL)) % 10000);
         }
 
-        int ret = getaddrinfo(NULL, service, &hints, &ai);
+        ret = getaddrinfo(NULL, service, &hints, &ai);
         if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
             freeaddrinfo(ai);
@@ -313,12 +336,10 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         }
 
         /* Join multicast group if specified. */
-        /* This must be done before bind() on POSIX, but after bind() Windows. */
-#ifndef WIN32
         if (group != NULL)
-            if (lo_server_join_multicast_group(s, group, used->ai_family, iface, ip))
+            if (lo_server_join_multicast_group(s, group, used->ai_family,
+                                               iface, ip))
                 return NULL;
-#endif
 
         if ((used != NULL) &&
             (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
@@ -342,13 +363,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         lo_server_free(s);
         return NULL;
     }
-
-    /* Join multicast group if specified (see above). */
-#ifdef WIN32
-    if (group != NULL)
-        if (lo_server_join_multicast_group(s, group, used->ai_family, iface, ip))
-            return NULL;
-#endif
 
     if (proto == LO_TCP) {
         listen(s->sockets[0].fd, 8);
@@ -448,23 +462,28 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
     struct ip_mreq mreq;
     unsigned int yes = 1;
     memset(&mreq, 0, sizeof(mreq));
-#ifdef HAVE_INET_ATON
-    if (inet_aton(group, &mreq.imr_multiaddr) == 0) {
-        int err = geterror();
-        lo_throw(s, err, strerror(err), "inet_aton()");
-        lo_server_free(s);
-        return err;
-    }
+
+    // TODO ipv6 support here
+
+    if (fam==AF_INET) {
+#ifdef HAVE_INET_PTON
+        if (inet_pton(AF_INET, group, &mreq.imr_multiaddr) == 0) {
+            int err = geterror();
+            lo_throw(s, err, strerror(err), "inet_aton()");
+            lo_server_free(s);
+            return err;
+        }
 #else
-    mreq.imr_multiaddr.s_addr = inet_addr(group);
-    if (mreq.imr_multiaddr.s_addr == INADDR_ANY
-        || mreq.imr_multiaddr.s_addr == INADDR_NONE) {
-        int err = geterror();
-        lo_throw(s, err, strerror(err), "inet_addr()");
-        lo_server_free(s);
-        return err;
-    }
+        mreq.imr_multiaddr.s_addr = inet_addr(group);
+        if (mreq.imr_multiaddr.s_addr == INADDR_ANY
+            || mreq.imr_multiaddr.s_addr == INADDR_NONE) {
+            int err = geterror();
+            lo_throw(s, err, strerror(err), "inet_addr()");
+            lo_server_free(s);
+            return err;
+        }
 #endif
+    }
     if (iface || ip) {
         int err = lo_server_set_iface(s, fam, iface, ip);
         if (err) return err;

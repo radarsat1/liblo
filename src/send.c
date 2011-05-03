@@ -24,7 +24,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -41,6 +40,7 @@
 #include <sys/un.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <arpa/inet.h>
 #endif
 
 #include "lo_types_internal.h"
@@ -70,31 +70,17 @@ int lo_message_add_varargs_internal(lo_message m, const char *types,
                                     va_list ap, const char *file,
                                     int line);
 
-
-
-/* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
- * function with appropriate values for file and line */
-
-#ifdef __GNUC__
-int lo_send_internal(lo_address t, const char *file, const int line,
-                     const char *path, const char *types, ...)
-#else
-int lo_send(lo_address t, const char *path, const char *types, ...)
-#endif
+static
+int lo_send_varargs_internal(lo_address t, const char *file,
+                 const int line, const char *path,
+                 const char *types, va_list ap)
 {
-    va_list ap;
     int ret;
-#ifndef __GNUC__
-    const char *file = "";
-    int line = 0;
-#endif
-
     lo_message msg = lo_message_new();
 
     t->errnum = 0;
     t->errstr = NULL;
 
-    va_start(ap, types);
     ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
     if (ret) {
@@ -113,34 +99,41 @@ int lo_send(lo_address t, const char *path, const char *types, ...)
     return ret;
 }
 
-
-/* Don't call lo_send_timestamped_internal directly, use lo_send_timestamped, a
- * macro wrapping this function with appropriate values for file and line */
-
-#ifdef __GNUC__
-int lo_send_timestamped_internal(lo_address t, const char *file,
-                                 const int line, lo_timetag ts,
-                                 const char *path, const char *types, ...)
-#else
-int lo_send_timestamped(lo_address t, lo_timetag ts,
-                        const char *path, const char *types, ...)
-#endif
+#ifdef USE_ANSI_C
+int lo_send(lo_address t, const char *path, const char *types, ...)
 {
-    va_list ap;
-    int ret;
-
-    lo_message msg = lo_message_new();
-    lo_bundle b = lo_bundle_new(ts);
-
-#ifndef __GNUC__
     const char *file = "";
     int line = 0;
+    va_list ap;
+    va_start(ap, types);
+    return lo_send_varargs_internal(t, file, line, path, types, ap);
+}
 #endif
+
+/* Don't call lo_send_internal directly, use lo_send, a macro wrapping this
+ * function with appropriate values for file and line */
+
+int lo_send_internal(lo_address t, const char *file, const int line,
+                     const char *path, const char *types, ...)
+{
+    va_list ap;
+    va_start(ap, types);
+    return lo_send_varargs_internal(t, file, line, path, types, ap);
+}
+
+static
+int lo_send_timestamped_varargs_internal(lo_address t, const char *file,
+                     const int line, lo_timetag ts,
+                     const char *path, const char *types,
+                     va_list ap)
+{
+    int ret;
+    lo_message msg = lo_message_new();
+    lo_bundle b = lo_bundle_new(ts);
 
     t->errnum = 0;
     t->errstr = NULL;
 
-    va_start(ap, types);
     ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
     if (ret == 0) {
@@ -154,26 +147,41 @@ int lo_send_timestamped(lo_address t, lo_timetag ts,
     return ret;
 }
 
-/* Don't call lo_send_from_internal directly, use macros wrapping this 
- * function with appropriate values for file and line */
 
-#ifdef __GNUC__
-int lo_send_from_internal(lo_address to, lo_server from, const char *file,
-                          const int line, lo_timetag ts,
-                          const char *path, const char *types, ...)
-#else
-int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
-                 const char *path, const char *types, ...)
-#endif
+#ifdef USE_ANSI_C
+int lo_send_timestamped(lo_address t, lo_timetag ts,
+                        const char *path, const char *types, ...)
 {
-    lo_bundle b = NULL;
-    va_list ap;
-    int ret;
-
-#ifndef __GNUC__
     const char *file = "";
     int line = 0;
+    va_list ap;
+    va_start(ap, types);
+    return lo_send_timestamped_varargs_internal(t, file, line, ts, path,
+                                                types, ap);
+}
 #endif
+
+/* Don't call lo_send_timestamped_internal directly, use lo_send_timestamped, a
+ * macro wrapping this function with appropriate values for file and line */
+int lo_send_timestamped_internal(lo_address t, const char *file,
+                                 const int line, lo_timetag ts,
+                                 const char *path, const char *types, ...)
+{
+    va_list ap;
+    va_start(ap, types);
+    return lo_send_timestamped_varargs_internal(t, file, line, ts, path,
+                                                types, ap);
+}
+
+static
+int lo_send_from_varargs_internal(lo_address to, lo_server from,
+                  const char *file,
+                  const int line, lo_timetag ts,
+                  const char *path, const char *types,
+                  va_list ap)
+{
+    lo_bundle b = NULL;
+    int ret;
 
     lo_message msg = lo_message_new();
     if (ts.sec != LO_TT_IMMEDIATE.sec || ts.frac != LO_TT_IMMEDIATE.frac)
@@ -183,7 +191,6 @@ int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
     to->errnum = 0;
     to->errstr = NULL;
 
-    va_start(ap, types);
     ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
 
     if (ret == 0) {
@@ -202,6 +209,31 @@ int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
     return ret;
 }
 
+#ifdef USE_ANSI_C
+int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
+                 const char *path, const char *types, ...)
+{
+    const char *file = "";
+    int line = 0;
+    va_list ap;
+    va_start(ap, types);
+    return lo_send_from_varargs_internal(to, from, file, line, ts,
+                                         path, types, ap);
+}
+#endif
+
+/* Don't call lo_send_from_internal directly, use macros wrapping this 
+ * function with appropriate values for file and line */
+
+int lo_send_from_internal(lo_address to, lo_server from, const char *file,
+                          const int line, const lo_timetag ts,
+                          const char *path, const char *types, ...)
+{
+    va_list ap;
+    va_start(ap, types);
+    return lo_send_from_varargs_internal(to, from, file, line, ts,
+                                         path, types, ap);
+}
 
 #if 0
 

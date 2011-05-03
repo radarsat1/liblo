@@ -17,13 +17,14 @@
 #include "lo_types_internal.h"
 #include "lo/lo.h"
 
-#ifdef _MSC_VER
+#ifdef USE_ANSI_C
 lo_timetag lo_get_tt_immediate()
 {
     lo_timetag tt = { 0U, 1U };
     return tt;
 }
-#else
+#endif
+#ifndef _MSC_VER
 #include <sys/time.h>
 #endif
 #include <time.h>

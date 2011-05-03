@@ -124,7 +124,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 
         case LO_STRING:{
                 char *s = va_arg(ap, char *);
-#ifdef __GNUC__
+#ifndef USE_ANSI_C
                 if (s == (char *) LO_MARKER_A) {
                     fprintf(stderr,
                             "liblo error: lo_send or lo_message_add called with "
@@ -162,7 +162,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
 
         case LO_SYMBOL:{
                 char *s = va_arg(ap, char *);
-#ifdef __GNUC__
+#ifndef USE_ANSI_C
                 if (s == (char *) LO_MARKER_A) {
                     fprintf(stderr,
                             "liblo error: lo_send or lo_message_add called with "
@@ -213,7 +213,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
             }
         }
     }
-#ifdef __GNUC__
+#ifndef USE_ANSI_C
     void *i = va_arg(ap, void *);
     if (i != LO_MARKER_A) {
         ret = -2;               // bad format/args
@@ -238,28 +238,26 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
     return ret;
 }
 
+#ifdef USE_ANSI_C
+int lo_message_add(lo_message msg, const char *types, ...)
+{
+    va_list ap;
+    const char *file = "";
+    const int line = 0;
+    va_start(ap, types);
+    return lo_message_add_varargs_internal(msg, types, ap, file, line);
+}
+#endif
+
 /* Don't call lo_message_add_internal directly, use lo_message_add,
  * a macro wrapping this function with appropriate values for file and line */
 
-#ifdef __GNUC__
 int lo_message_add_internal(lo_message msg, const char *file,
                             const int line, const char *types, ...)
-#else
-int lo_message_add(lo_message msg, const char *types, ...)
-#endif
 {
     va_list ap;
-    int ret = 0;
-
-#ifndef __GNUC__
-    const char *file = "";
-    const int line = 0;
-#endif
-
     va_start(ap, types);
-    ret = lo_message_add_varargs_internal(msg, types, ap, file, line);
-
-    return ret;
+    return lo_message_add_varargs_internal(msg, types, ap, file, line);
 }
 
 int lo_message_add_int32(lo_message m, int32_t a)

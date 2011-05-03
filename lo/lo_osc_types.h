@@ -23,11 +23,14 @@
  */
 
 #ifdef _MSC_VER
+#ifndef UINTSDEFINED
+#define UINTSDEFINED
 #define int32_t __int32
 #define int64_t __int64
 #define uint32_t unsigned __int32
 #define uint64_t unsigned __int64
 #define uint8_t unsigned __int8
+#endif
 #else
 #include <stdint.h>
 #endif
@@ -127,14 +130,26 @@ typedef union {
     lo_timetag t;
 } lo_arg;
 
-/** \brief A timetag constant representing "now". */
 /* Note: No struct literals in MSVC */
 #ifdef _MSC_VER
+#ifndef USE_ANSI_C
+#define USE_ANSI_C
+#endif
+#endif
+
+#ifdef DLL_EXPORT
+#ifndef USE_ANSI_C
+#define USE_ANSI_C
+#endif
+#endif
+
+/** \brief A timetag constant representing "now". */
+#ifdef USE_ANSI_C
 lo_timetag lo_get_tt_immediate();
 #define LO_TT_IMMEDIATE lo_get_tt_immediate()
-#else
+#else // !USE_ANSI_C
 #define LO_TT_IMMEDIATE ((lo_timetag){0U,1U})
-#endif
+#endif // USE_ANSI_C
 
 /** @} */
 

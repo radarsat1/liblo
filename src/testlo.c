@@ -1184,8 +1184,12 @@ void test_validation(lo_address a)
 
     printf("validation\n");
 
+    /* Note: lo_client_sockets is not available when liblo is compiled
+     * as a DLL. */
+#ifndef WIN32
     if (sock == -1)
         sock = lo_client_sockets.udp;
+#endif
     if (sock == -1) {
         fprintf(stderr,
                 "Couldn't get socket in test_validation(), %s:%d\n",

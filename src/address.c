@@ -29,6 +29,7 @@
 #ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
 #else
 #include <netdb.h>
 #include <sys/socket.h>
@@ -202,7 +203,9 @@ void lo_address_free(lo_address a)
 {
     if (a) {
         if (a->socket != -1) {
+#ifdef SHUT_WR
             shutdown(a->socket, SHUT_WR);
+#endif
             closesocket(a->socket);
         }
         if (a->host)
@@ -396,12 +399,13 @@ int lo_address_resolve(lo_address a)
 
 int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
 {
+    int fam;
     if (!t->ai) {
         lo_address_resolve(t);
         if (!t->ai)
             return 2;  // Need the address family to continue
     }
-    int fam = t->ai->ai_family;
+    fam = t->ai->ai_family;
 
     return lo_inaddr_find_iface(&t->addr, fam, iface, ip);
 }
@@ -409,8 +413,15 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
 int lo_inaddr_find_iface(lo_inaddr t, int fam,
                          const char *iface, const char *ip)
 {
+#ifdef WIN32
+    ULONG size;
+    int tries;
+    PIP_ADAPTER_ADDRESSES paa, aa;
+    DWORD rc;
+    int found;
+#endif
 
-    union {
+	union {
         struct in_addr addr;
 #ifdef ENABLE_IPV6
         struct in6_addr addr6;
@@ -418,10 +429,108 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
     } a;
 
     if (ip) {
+#ifdef HAVE_INET_PTON
         int rc = inet_pton(fam, ip, &a);
         if (rc!=1)
             return (rc<0) ? 3 : 4;
+#else
+        if (fam!=AF_INET6)
+            *((unsigned long*)&a.addr) = inet_addr(ip);
+#endif
     }
+
+#ifdef WIN32
+
+    /* Start with recommended 15k buffer for GetAdaptersAddresses. */
+    size = 15*1024/2;
+    tries = 3;
+    paa = malloc(size*2);
+    rc = ERROR_SUCCESS-1;
+    while (rc!=ERROR_SUCCESS && paa && tries-- > 0) {
+        size *= 2;
+        paa = realloc(paa, size);
+        rc = GetAdaptersAddresses(fam, 0, 0, paa, &size);
+    }
+    if (rc!=ERROR_SUCCESS)
+        return 2;
+
+    aa = paa;
+    found=0;
+    while (aa && rc==ERROR_SUCCESS) {
+        if (iface) {
+            if (strcmp(iface, aa->AdapterName)==0)
+                found = 1;
+            else if (lstrcmpW(iface, aa->FriendlyName)==0)
+                found = 1;
+        }
+        if (ip) {
+            PIP_ADAPTER_UNICAST_ADDRESS pua = aa->FirstUnicastAddress;
+            while (pua && !found) {
+                if (fam==AF_INET) {
+                    struct sockaddr_in *s =
+                        (struct sockaddr_in*)pua->Address.lpSockaddr;
+                    if (fam == s->sin_family
+                        && memcmp(&a.addr, &s->sin_addr,
+                                  sizeof(struct in_addr))==0) {
+                        memcpy(&t->a.addr, &s->sin_addr,
+                               sizeof(struct in_addr));
+                        found = 1;
+                    }
+                }
+#ifdef ENABLE_IPV6
+                else if (fam==AF_INET6) {
+                    struct sockaddr_in6 *s =
+                        (struct sockaddr_in6*)pua->Address.lpSockaddr;
+                    if (fam == s->sin6_family
+                        && memcmp(&a.addr6, &s->sin6_addr,
+                                  sizeof(struct in6_addr))==0) {
+                        memcpy(&t->a.addr6, &s->sin6_addr,
+                               sizeof(struct in6_addr));
+                        found = 1;
+                    }
+                }
+#endif
+                pua = pua->Next;
+            }
+        }
+
+        if (aa && found) {
+            t->iface = strdup(aa->AdapterName);
+            if (!ip && aa->FirstUnicastAddress) {
+                PIP_ADAPTER_UNICAST_ADDRESS pua = aa->FirstUnicastAddress;
+                while (pua) {
+                    struct sockaddr_in *s =
+                        (struct sockaddr_in*)pua->Address.lpSockaddr;
+                    if (s->sin_family==fam) {
+                        if (fam==AF_INET) {
+                            memcpy(&t->a.addr, &s->sin_addr,
+                                   sizeof(struct in_addr));
+                            break;
+                        }
+#ifdef ENABLE_IPV6
+                        else if (fam==AF_INET6) {
+                            struct sockaddr_in6 *s6 =
+                                (struct sockaddr_in6*)pua->Address.lpSockaddr;
+                            memcpy(&t->a.addr6, &s6->sin6_addr,
+                                   sizeof(struct in6_addr));
+                            break;
+                        }
+#endif
+                    }
+                    pua = pua->Next;
+                }
+            }
+            break;
+        }
+
+        aa = aa->Next;
+    }
+
+    if (paa) free(paa);
+
+    return !found;
+
+#else // !WIN32
 
     struct ifaddrs *ifa, *ifa_list;
     if (getifaddrs(&ifa_list)==-1)
@@ -492,6 +601,7 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
 
     freeifaddrs(ifa_list);
     return !found;
+#endif
 }
 
 const char* lo_address_get_iface(lo_address t)

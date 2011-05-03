@@ -18,7 +18,19 @@
 #define LO_ENDIAN_H
 
 #include <sys/types.h>
+
+#ifdef _MSC_VER
+#ifndef UINTSDEFINED
+#define UINTSDEFINED
+#define int32_t __int32
+#define int64_t __int64
+#define uint32_t unsigned __int32
+#define uint64_t unsigned __int64
+#define uint8_t unsigned __int8
+#endif
+#else
 #include <stdint.h>
+#endif
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -86,7 +98,7 @@ typedef union {
     } part;
 } lo_split64;
 
-static inline uint64_t lo_swap64(uint64_t x)
+static uint64_t lo_swap64(uint64_t x)
 {
     lo_split64 in, out;
 
