@@ -138,6 +138,28 @@ int initWSock()
 
     return stateWSock;
 }
+
+static int detect_windows_server_2003_or_later()
+{
+    OSVERSIONINFOEX osvi;
+    DWORDLONG dwlConditionMask = 0;
+    int op=VER_GREATER_EQUAL;
+
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    osvi.dwMajorVersion = 5;
+    osvi.dwMinorVersion = 2;
+
+    VER_SET_CONDITION( dwlConditionMask, VER_MAJORVERSION, op );
+    VER_SET_CONDITION( dwlConditionMask, VER_MINORVERSION, op );
+
+    return VerifyVersionInfo(
+        &osvi, 
+        VER_MAJORVERSION | VER_MINORVERSION | 
+        VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
+        dwlConditionMask);
+}
+
 #endif
 
 #ifdef ENABLE_IPV6
@@ -193,6 +215,13 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     char pnum[16];
     const char *service;
     char hostname[LO_HOST_SIZE];
+
+#ifdef WIN32
+    /* Windows Server 2003 or later (Vista, 7, etc.) must join the
+     * multicast group before bind(), but Windows XP must join
+     * after bind(). */
+    int wins2003_or_later = detect_windows_server_2003_or_later();
+#endif
 
     // Set real protocol, if Default is requested
     if (proto == LO_DEFAULT) {
@@ -335,6 +364,9 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             return NULL;
         }
 
+#ifdef WIN32
+        if (wins2003_or_later)
+#endif
         /* Join multicast group if specified. */
         if (group != NULL)
             if (lo_server_join_multicast_group(s, group, used->ai_family,
@@ -363,6 +395,15 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         lo_server_free(s);
         return NULL;
     }
+
+#ifdef WIN32
+    if (!wins2003_or_later)
+    /* Join multicast group if specified. */
+    if (group != NULL)
+        if (lo_server_join_multicast_group(s, group, used->ai_family,
+                                           iface, ip))
+            return NULL;
+#endif
 
     if (proto == LO_TCP) {
         listen(s->sockets[0].fd, 8);
