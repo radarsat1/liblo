@@ -98,7 +98,12 @@ typedef union {
     } part;
 } lo_split64;
 
-static uint64_t lo_swap64(uint64_t x)
+#ifdef _MSC_VER
+#define LO_INLINE __inline
+#else
+#define LO_INLINE inline
+#endif
+static LO_INLINE uint64_t lo_swap64(uint64_t x)
 {
     lo_split64 in, out;
 
@@ -108,6 +113,7 @@ static uint64_t lo_swap64(uint64_t x)
 
     return out.all;
 }
+#undef LO_INLINE
 #endif
 
 /* Host to OSC and OSC to Host conversion macros */
