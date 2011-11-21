@@ -463,7 +463,10 @@ static int send_data(lo_address a, lo_server from, char *data,
             
             do {
                 ret = send(sock, data, data_len, MSG_NOSIGNAL);
-                ai = ai->ai_next;
+                if (a->protocol == LO_TCP)
+                    ai = ai->ai_next;
+                else
+                    ai = 0;
             } while (ret == -1 && ai != NULL);
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
