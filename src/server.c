@@ -177,6 +177,26 @@ static unsigned int get_family_PF(const char *ip, const char *port)
 }
 #endif
 
+static int lo_server_setsock_reuseaddr(lo_server s)
+{
+    unsigned int yes = 1;
+    if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEADDR,
+                   &yes, sizeof(yes)) < 0) {
+        int err = geterror();
+        lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEADDR)");
+        return err;
+    }
+#ifdef SO_REUSEPORT
+    if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEPORT,
+                   &yes, sizeof(yes)) < 0) {
+        int err = geterror();
+        lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEPORT)");
+        return err;
+    }
+#endif
+    return 0;
+}
+
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
     return lo_server_new_with_proto(port, LO_DEFAULT, err_h);
@@ -215,6 +235,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     char pnum[16];
     const char *service;
     char hostname[LO_HOST_SIZE];
+    int err = 0;
 
 #ifdef WIN32
     /* Windows Server 2003 or later (Vista, 7, etc.) must join the
@@ -279,7 +300,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
         s->sockets[0].fd = socket(PF_UNIX, SOCK_DGRAM, 0);
         if (s->sockets[0].fd == -1) {
-            int err = geterror();
+            err = geterror();
             used = NULL;
             lo_throw(s, err, strerror(err), "socket()");
             lo_server_free(s);
@@ -292,7 +313,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
         if ((bind(s->sockets[0].fd,
                   (struct sockaddr *) &sa, sizeof(sa))) < 0) {
-            int err = geterror();
+            err = geterror();
             lo_throw(s, err, strerror(err), "bind()");
 
             lo_server_free(s);
@@ -368,13 +389,20 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     unsigned int v6only_off = 0;
     if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY,
                    &v6only_off, sizeof(v6only_off)) < 0) {
-        int err = geterror();
+        err = geterror();
         lo_throw(s, err, strerror(err), "setsockopt(IPV6_V6ONLY)");
         lo_server_free(s);
         return NULL;
     }
 #endif
 
+        if (group != NULL) {
+            err = lo_server_setsock_reuseaddr(s);
+            if (err) {
+                lo_server_free(s);
+                return err;
+            }
+        }
 
 #ifdef WIN32
         if (wins2003_or_later)
@@ -388,7 +416,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         if ((used != NULL) &&
             (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
              0)) {
-            int err = geterror();
+            err = geterror();
             if (err == EINVAL || err == EADDRINUSE) {
                 used = NULL;
                 continue;
@@ -555,23 +583,6 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
         lo_server_free(s);
         return err;
     }
-
-    if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEADDR,
-                   &yes, sizeof(yes)) < 0) {
-        int err = geterror();
-        lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEADDR)");
-        lo_server_free(s);
-        return err;
-    }
-#ifdef SO_REUSEPORT
-    if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEPORT,
-                   &yes, sizeof(yes)) < 0) {
-        int err = geterror();
-        lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEPORT)");
-        lo_server_free(s);
-        return err;
-    }
-#endif
 
     return 0;
 }
