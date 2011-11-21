@@ -373,7 +373,7 @@ static int create_socket(lo_address a)
         return -2;
     }
 
-#ifdef __APPLE__
+#ifdef SO_NOSIGPIPE
     {
         // On Mac OS X: Prevent the socket from causing a SIGPIPE.
         // cf MSG_NOSIGNAL on Linux.

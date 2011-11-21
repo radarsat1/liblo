@@ -367,10 +367,10 @@ int lo_address_get_ttl(lo_address t)
     return t->ttl;
 }
 
-int is_dotted_ipv4_address (const char* address)
+static int is_dotted_ipv4_address (const char* address)
 {
     int a[4];
-    return sscanf(address, "”%u.%u.%u.%u", &a[0], &a[1], &a[2], &a[3]);
+    return sscanf(address, "%u.%u.%u.%u", &a[0], &a[1], &a[2], &a[3]);
 }
 
 int lo_address_resolve(lo_address a)
@@ -380,22 +380,20 @@ int lo_address_resolve(lo_address a)
     if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
         struct addrinfo *ai;
         struct addrinfo hints;
-        char* host = NULL;
+        char* host = a->host;
+        char hosttmp[7+16+1]; // room for ipv6 prefix + a dotted quad
 
         memset(&hints, 0, sizeof(hints));
 #ifdef ENABLE_IPV6
         hints.ai_family = PF_UNSPEC;
 
         if (is_dotted_ipv4_address(a->host)) {
-            size_t len = strlen(host);
-            host = calloc(len + 7, sizeof(char));
+            host = hosttmp;
             strcpy(host, "::FFFF:");
-            strncpy(host + 7, a->host, len);
+            strncpy(host + 7, a->host, 16);
         }
 #else
         hints.ai_family = PF_INET;
-
-        host = a->host;
 #endif
         hints.ai_socktype =
             a->protocol == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
@@ -406,10 +404,6 @@ int lo_address_resolve(lo_address a)
             a->ai = NULL;
             return -1;
         }
-
-#ifdef ENABLE_IPV6
-        free(host);
-#endif
         
         a->ai = ai;
     }
