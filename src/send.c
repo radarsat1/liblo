@@ -373,6 +373,16 @@ static int create_socket(lo_address a)
         return -2;
     }
 
+#ifdef __APPLE__
+    {
+        // On Mac OS X: Prevent the socket from causing a SIGPIPE.
+        // cf MSG_NOSIGNAL on Linux.
+        int option = 1; // yes, we don't want SIGPIPE
+        setsockopt(a->socket, SOL_SOCKET, SO_NOSIGPIPE, &option,
+                   sizeof(option));
+    }
+#endif
+    
     return 0;
 }
 
@@ -436,10 +446,23 @@ static int send_data(lo_address a, lo_server from, char *data,
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl,
                            sizeof(ttl));
             }
-            ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
-                         a->ai->ai_addr, a->ai->ai_addrlen);
+
+            struct addrinfo* ai = a->ai;
+            ret = -1;
+
+            do {
+                ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
+                             ai->ai_addr, ai->ai_addrlen);
+                ai = ai->ai_next;
+            } while (ret == -1 && ai != NULL);
         } else {
-            ret = send(sock, data, data_len, MSG_NOSIGNAL);
+            struct addrinfo* ai = a->ai;
+            ret = -1;
+            
+            do {
+                ret = send(sock, data, data_len, MSG_NOSIGNAL);
+                ai = ai->ai_next;
+            } while (ret == -1 && ai != NULL);
         }
     }
 

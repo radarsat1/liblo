@@ -315,7 +315,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     /* Determine the address family based on provided IP string or
        multicast group, if available, otherwise let the operating
        system decide. */
-    hints.ai_family = PF_UNSPEC;
+    hints.ai_family = PF_INET6;
     if (ip)
         hints.ai_family = get_family_PF(ip, port);
     else if (group)
@@ -363,6 +363,17 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             lo_server_free(s);
             return NULL;
         }
+
+#ifdef ENABLE_IPV6
+    unsigned int v6only_off = 0;
+    if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY, &v6only_off, sizeof(v6only_off)) < 0) {
+            int err = geterror();
+            lo_throw(s, err, strerror(err), "setsockopt(IPV6_V6ONLY)");
+            lo_server_free(s);
+            return NULL;
+        }
+#endif
+
 
 #ifdef WIN32
         if (wins2003_or_later)
