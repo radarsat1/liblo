@@ -54,6 +54,7 @@ typedef struct _lo_address {
     char *port;
     int protocol;
     struct addrinfo *ai;
+    struct addrinfo *ai_first;
     int errnum;
     const char *errstr;
     int ttl;

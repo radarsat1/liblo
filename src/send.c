@@ -455,6 +455,8 @@ static int send_data(lo_address a, lo_server from, char *data,
                              ai->ai_addr, ai->ai_addrlen);
                 ai = ai->ai_next;
             } while (ret == -1 && ai != NULL);
+            if (ret == -1 && ai != NULL && a->ai!=ai)
+                a->ai = ai;
         } else {
             struct addrinfo* ai = a->ai;
             ret = -1;
@@ -463,6 +465,8 @@ static int send_data(lo_address a, lo_server from, char *data,
                 ret = send(sock, data, data_len, MSG_NOSIGNAL);
                 ai = ai->ai_next;
             } while (ret == -1 && ai != NULL);
+            if (ret == -1 && ai != NULL && a->ai!=ai)
+                a->ai = ai;
         }
     }
 

@@ -55,6 +55,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
         return NULL;
 
     a->ai = NULL;
+    a->ai_first = NULL;
     a->socket = -1;
     a->protocol = proto;
     switch (proto) {
@@ -212,8 +213,8 @@ void lo_address_free(lo_address a)
             free(a->host);
         if (a->port)
             free(a->port);
-        if (a->ai)
-            freeaddrinfo(a->ai);
+        if (a->ai_first)
+            freeaddrinfo(a->ai_first);
         if (a->addr.iface)
             free(a->addr.iface);
         free(a);
@@ -402,10 +403,12 @@ int lo_address_resolve(lo_address a)
             a->errnum = ret;
             a->errstr = gai_strerror(ret);
             a->ai = NULL;
+            a->ai_first = NULL;
             return -1;
         }
         
         a->ai = ai;
+        a->ai_first = ai;
     }
 
     return 0;
