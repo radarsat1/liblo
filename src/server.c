@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #define EADDRINUSE WSAEADDRINUSE
@@ -46,7 +46,7 @@
 #include <arpa/inet.h>
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #define geterror() WSAGetLastError()
 #else
 #define geterror() errno
@@ -86,7 +86,7 @@ static int lo_server_join_multicast_group(lo_server s, const char *group,
                                           int family,
                                           const char *iface, const char *ip);
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #ifndef gai_strerror
 // Copied from the Win32 SDK 
 
@@ -237,7 +237,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     char hostname[LO_HOST_SIZE];
     int err = 0;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     /* Windows Server 2003 or later (Vista, 7, etc.) must join the
      * multicast group before bind(), but Windows XP must join
      * after bind(). */
@@ -246,14 +246,14 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
     // Set real protocol, if Default is requested
     if (proto == LO_DEFAULT) {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
         if (port && *port == '/')
             proto = LO_UNIX;
         else
 #endif
             proto = LO_UDP;
     }
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     if (!initWSock())
         return NULL;
 #endif
@@ -293,7 +293,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     } else if (proto == LO_TCP) {
         hints.ai_socktype = SOCK_STREAM;
     }
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     else if (proto == LO_UNIX) {
 
         struct sockaddr_un sa;
@@ -404,7 +404,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             }
         }
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
         if (wins2003_or_later)
 #endif
         /* Join multicast group if specified. */
@@ -436,7 +436,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         return NULL;
     }
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     if (!wins2003_or_later)
     /* Join multicast group if specified. */
     if (group != NULL)
@@ -641,7 +641,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
     int ret;
     void *data = NULL;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     if (!initWSock())
         return NULL;
 #endif
@@ -1134,7 +1134,7 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
             case EAI_NONAME:
                 lo_throw(s, err, "Cannot resolve", path);
                 break;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
             case EAI_SYSTEM:
                 lo_throw(s, err, strerror(err), path);
                 break;
@@ -1243,7 +1243,7 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
 
                     tmp = malloc(strlen(it->path + len) + 1);
                     strcpy(tmp, it->path + len);
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
                     sec = strchr(tmp, '/');
 #else
                     sec = index(tmp, '/');
@@ -1460,7 +1460,7 @@ int lo_server_add_bundle_handlers(lo_server s,
 int lo_server_get_socket_fd(lo_server s)
 {
     if (s->protocol != LO_UDP && s->protocol != LO_TCP
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
         && s->protocol != LO_UNIX
 #endif
         ) {
@@ -1515,7 +1515,7 @@ char *lo_server_get_url(lo_server s)
 
         return buf;
     }
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     else if (s->protocol == LO_UNIX) {
         ret = snprintf(NULL, 0, "osc.unix:///%s", s->path);
         if (ret <= 0) {

@@ -19,18 +19,14 @@
 #include <string.h>
 #include <sys/types.h>
 
-#ifdef _MSC_VER
+#if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
 #define snprintf _snprintf
-#else
-#include <unistd.h>
-#endif
-
-#ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #else
+#include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
@@ -109,7 +105,7 @@ lo_address lo_address_new_from_url(const char *url)
             free(host);
         if (port)
             free(port);
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     } else if (protocol == LO_UNIX) {
         port = lo_url_get_path(url);
         a = lo_address_new_with_proto(LO_UNIX, NULL, port);
@@ -164,7 +160,7 @@ static const char *get_protocol_name(int proto)
         return "udp";
     case LO_TCP:
         return "tcp";
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     case LO_UNIX:
         return "unix";
 #endif
@@ -430,7 +426,7 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
 int lo_inaddr_find_iface(lo_inaddr t, int fam,
                          const char *iface, const char *ip)
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     ULONG size;
     int tries;
     PIP_ADAPTER_ADDRESSES paa, aa;
@@ -456,7 +452,7 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
 #endif
     }
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 
     /* Start with recommended 15k buffer for GetAdaptersAddresses. */
     size = 15*1024/2;

@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else

@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     t = lo_address_new_from_url(argv[1]);
     lo_send(t, "/subtest", "i", 0xf00);
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     Sleep(4000);
 #else
     sleep(4);
@@ -81,7 +81,7 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
     }
 
     for (i = 0; i < 10; i++) {
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
         /* TODO: Wait time of 2.233 not easily doable in Windows */
         Sleep(2);
 #else

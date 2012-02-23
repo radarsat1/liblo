@@ -25,13 +25,8 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#ifdef _MSC_VER
+#if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
-#else
-#include <unistd.h>
-#endif
-
-#ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
@@ -41,6 +36,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #endif
 
 #include "lo_types_internal.h"
@@ -51,11 +47,11 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 int initWSock();
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #define geterror() WSAGetLastError()
 #else
 #define geterror() errno
@@ -345,7 +341,7 @@ static int create_socket(lo_address a)
         }
 
     }
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     else if (a->protocol == LO_UNIX) {
         struct sockaddr_un sa;
 
@@ -392,7 +388,7 @@ static int send_data(lo_address a, lo_server from, char *data,
     int ret = 0;
     int sock = -1;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     if (!initWSock())
         return -1;
 #endif

@@ -36,7 +36,7 @@
 #include "lo/lo.h"
 #include "config.h"
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #define PATHDELIM "\\"
 #else
 #define PATHDELIM "/"
@@ -153,7 +153,7 @@ int main()
     /* leak check */
     st = lo_server_thread_new(NULL, error);
     lo_server_thread_start(st);
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     Sleep(4);
 #else
     usleep(4000);
@@ -522,7 +522,7 @@ int main()
     system(cmd);
     free(server_url);
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     Sleep(2000);
 #else
     sleep(2);
@@ -624,7 +624,7 @@ int main()
         }
     }
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
     Sleep(2000);
 #else
     sleep(2);
@@ -636,7 +636,7 @@ int main()
 
     while (lo_server_thread_events_pending(st)) {
         printf("pending events, wait...\n");
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
         fflush(stdout);
         Sleep(1000);
 #else
@@ -678,7 +678,7 @@ int main()
     lo_server_free(s);
     free(server_url);
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     {                           /* UNIX domain tests */
         lo_address ua;
         lo_server us;
@@ -731,7 +731,7 @@ int main()
     lo_address_free(a);
 
     while (!done) {
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
         Sleep(1);
 #else
         usleep(1000);
@@ -1186,7 +1186,7 @@ void test_validation(lo_address a)
 
     /* Note: lo_client_sockets is not available when liblo is compiled
      * as a DLL. */
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_MSC_VER)
     if (sock == -1)
         sock = lo_client_sockets.udp;
 #endif
@@ -1204,10 +1204,10 @@ void test_validation(lo_address a)
                 "Error sending packet in test_validation(), %s:%d\n",
                 __FILE__, __LINE__);
     }
-#ifndef WIN32
-    usleep(10000);
-#else
+#if defined(WIN32) || defined(_MSC_VER)
     Sleep(10);
+#else
+    usleep(10000);
 #endif
     error_okay = eok;
 #endif
