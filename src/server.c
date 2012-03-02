@@ -675,13 +675,14 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
     int ret = 0, i;
     void *data = NULL;
     int sock = -1;
-    int repeat = 1;
 #ifdef HAVE_SELECT
 #ifndef HAVE_POLL
     fd_set ps;
     int nfds = 0;
 #endif
 #endif
+
+  again:
 
     /* check sockets in reverse order so that already-open sockets
      * have priority.  this allows checking for closed sockets even
@@ -718,6 +719,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
         return NULL;
 #endif
 
+    nfds = 0;
     FD_ZERO(&ps);
     for (i = (s->sockets_len - 1); i >= 0; --i) {
         FD_SET(s->sockets[i].fd, &ps);
@@ -735,7 +737,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
 #endif
 #endif
 
-            if (sock == -1 || !repeat)
+            if (sock == -1)
                 return NULL;
 
             /* zeroeth socket is listening for new connections */
@@ -743,9 +745,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
                 sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
                 i = lo_server_add_socket(s, sock);
 
-                /* only repeat this loop for sockets other than the listening
-                 * socket,  (otherwise i will be wrong next time around) */
-                repeat = 0;
+                /* after adding a new socket, call select()/poll()
+                 * again, since we are supposed to block until a
+                 * message is received. */
+                goto again;
             }
 
             if (i < 0) {
@@ -792,6 +795,9 @@ int lo_server_wait(lo_server s, int timeout)
 {
     int sched_timeout = lo_server_next_event_delay(s) * 1000;
     int i;
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+    lo_timetag now, then;
 #ifdef HAVE_SELECT
 #ifndef HAVE_POLL
     fd_set ps;
@@ -800,24 +806,59 @@ int lo_server_wait(lo_server s, int timeout)
 #endif
 
 #ifdef HAVE_POLL
+  again:
     for (i = 0; i < s->sockets_len; i++) {
         s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
         s->sockets[i].revents = 0;
     }
 
+    lo_timetag_now(&then);
+
     poll(s->sockets, s->sockets_len,
          timeout > sched_timeout ? sched_timeout : timeout);
 
-    if (lo_server_next_event_delay(s) < 0.01)
-        return 1;
+    if (s->sockets[0].revents == POLLERR
+        || s->sockets[0].revents == POLLHUP)
+        return 0;
 
-    for (i = 0; i < s->sockets_len; i++) {
+    // If select() was reporting a new connection on the listening
+    // socket rather than a ready message, accept it and check again.
+    if (s->sockets[0].revents)
+    {
+        if (s->protocol == LO_TCP)
+        {
+            int sock = accept(s->sockets[0].fd,
+                              (struct sockaddr *) &addr, &addr_len);
+
+            i = lo_server_add_socket(s, sock);
+            if (i < 0)
+                closesocket(sock);
+
+            lo_timetag_now(&now);
+
+            double diff = lo_timetag_diff(now, then);
+
+            sched_timeout = lo_server_next_event_delay(s) * 1000;
+            timeout -= (int)(diff*1000);
+            if (timeout < 0) timeout = 0;
+
+            goto again;
+        }
+        else {
+            return 1;
+        }
+    }
+
+    for (i = 1; i < s->sockets_len; i++) {
         if (s->sockets[i].revents == POLLERR
             || s->sockets[i].revents == POLLHUP)
             return 0;
         if (s->sockets[i].revents)
             return 1;
     }
+
+    if (lo_server_next_event_delay(s) < 0.01)
+        return 1;
 #else
 #ifdef HAVE_SELECT
     int res, to, nfds = 0;
@@ -831,6 +872,7 @@ int lo_server_wait(lo_server s, int timeout)
     stimeout.tv_sec = to / 1000;
     stimeout.tv_usec = (to % 1000) * 1000;
 
+  again:
     FD_ZERO(&ps);
     for (i = 0; i < s->sockets_len; i++) {
         FD_SET(s->sockets[i].fd, &ps);
@@ -838,10 +880,47 @@ int lo_server_wait(lo_server s, int timeout)
             nfds = s->sockets[i].fd;
     }
 
+    lo_timetag_now(&then);
     res = select(nfds + 1, &ps, NULL, NULL, &stimeout);
 
     if (res == SOCKET_ERROR)
         return 0;
+
+    if (s->protocol == LO_TCP) {
+        // If select() was reporting a new connection on the listening
+        // socket rather than a ready message, accept it and check again.
+        if (FD_ISSET(s->sockets[0].fd, &ps)) {
+            int sock = accept(s->sockets[0].fd,
+                              (struct sockaddr *) &addr, &addr_len);
+
+            i = lo_server_add_socket(s, sock);
+            if (i < 0)
+                closesocket(sock);
+
+            lo_timetag_now(&now);
+
+            // Subtract time waited from total timeout
+            double diff = lo_timetag_diff(now, then);
+            struct timeval tvdiff;
+            tvdiff.tv_sec = stimeout.tv_sec - (int)diff;
+            tvdiff.tv_usec = stimeout.tv_usec - (diff*1000000
+                                                 -(int)diff*1000000);
+
+            // Handle underflow
+            if (tvdiff.tv_usec < 0) {
+                tvdiff.tv_sec -= 1;
+                tvdiff.tv_usec = 1000000 + tvdiff.tv_usec;
+            }
+            if (tvdiff.tv_sec < 0) {
+                stimeout.tv_sec = 0;
+                stimeout.tv_usec = 0;
+            }
+            else
+                stimeout = tvdiff;
+
+            goto again;
+        }
+    }
 
     if (res || lo_server_next_event_delay(s) < 0.01)
         return 1;
