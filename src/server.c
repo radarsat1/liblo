@@ -52,6 +52,10 @@
 #define geterror() errno
 #endif
 
+#ifndef SOCKET_ERROR
+#define SOCKET_ERROR -1
+#endif
+
 #include "lo_types_internal.h"
 #include "lo_internal.h"
 #include "lo/lo.h"
@@ -709,8 +713,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
 
 #else
 #ifdef HAVE_SELECT
+#if defined(WIN32) || defined(_MSC_VER)
     if (!initWSock())
         return NULL;
+#endif
 
     FD_ZERO(&ps);
     for (i = (s->sockets_len - 1); i >= 0; --i) {
@@ -816,8 +822,10 @@ int lo_server_wait(lo_server s, int timeout)
 #ifdef HAVE_SELECT
     int res, to, nfds = 0;
 
+#if defined(WIN32) || defined(_MSC_VER)
     if (!initWSock())
         return 0;
+#endif
 
     to = timeout > sched_timeout ? sched_timeout : timeout;
     stimeout.tv_sec = to / 1000;
@@ -899,8 +907,10 @@ int lo_server_recv(lo_server s)
         }
 #else
 #ifdef HAVE_SELECT
+#if defined(WIN32) || defined(_MSC_VER)
         if (!initWSock())
             return 0;
+#endif
 
         FD_ZERO(&ps);
         for (i = 0; i < s->sockets_len; i++) {
