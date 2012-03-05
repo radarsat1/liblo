@@ -212,12 +212,14 @@ lo_server lo_server_new_multicast(const char *group, const char *port,
     return lo_server_new_with_proto_internal(group, port, 0, 0, LO_UDP, err_h);
 }
 
+#if defined(WIN32) || defined(_MSC_VER) || defined(HAVE_GETIFADDRS)
 lo_server lo_server_new_multicast_iface(const char *group, const char *port,
                                         const char *iface, const char *ip,
                                         lo_err_handler err_h)
 {
     return lo_server_new_with_proto_internal(group, port, iface, ip, LO_UDP, err_h);
 }
+#endif
 
 lo_server lo_server_new_with_proto(const char *port, int proto,
                                    lo_err_handler err_h)
