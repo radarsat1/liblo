@@ -41,7 +41,10 @@ AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
 AC_SUBST(DOXYGEN)
 
 # Checks for libraries.
-AC_CHECK_LIB([pthread], [pthread_create])
+AC_SEARCH_LIBS([pthread_create], [c pthread],
+  [AS_IF([! test "$ac_res" = "-lc"],
+         [LIBPTHREAD="$ac_res"])])
+AC_SUBST(LIBPTHREAD)
 AC_SEARCH_LIBS([recvfrom], [socket])
 AC_CHECK_FUNC([log], [], [AC_CHECK_LIB([m],[log])])
 AC_CHECK_FUNCS([getifaddrs])

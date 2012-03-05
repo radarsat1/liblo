@@ -17,7 +17,7 @@ endif
 
 liblo_la_CFLAGS = -Wall -I$(top_srcdir)
 liblo_la_SOURCES = $(SOURCE_FILES)
-liblo_la_LIBADD = -lpthread
+liblo_la_LIBADD = @LIBPTHREAD@
 liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 
 noinst_PROGRAMS = testlo subtest
