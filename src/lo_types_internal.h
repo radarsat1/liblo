@@ -20,6 +20,7 @@
 #else
 #define closesocket close
 #include <netdb.h>
+#include <arpa/inet.h>
 #endif
 
 #ifdef _MSC_VER

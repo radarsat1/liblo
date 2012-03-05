@@ -19,6 +19,8 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "config.h"
+
 #if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
 #define snprintf _snprintf
@@ -29,14 +31,15 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
-#include <ifaddrs.h>
 #include <arpa/inet.h>
+#ifdef HAVE_GETIFADDRS
+#include <ifaddrs.h>
+#endif
 #endif
 
 #include "lo_types_internal.h"
 #include "lo_internal.h"
 #include "lo/lo.h"
-#include "config.h"
 
 lo_address lo_address_new_with_proto(int proto, const char *host,
                                      const char *port)
@@ -410,6 +413,8 @@ int lo_address_resolve(lo_address a)
     return 0;
 }
 
+#if defined(WIN32) || defined(_MSC_VER) || defined(HAVE_GETIFADDRS)
+
 int lo_address_set_iface(lo_address t, const char *iface, const char *ip)
 {
     int fam;
@@ -623,5 +628,7 @@ const char* lo_address_get_iface(lo_address t)
         return t->addr.iface;
     return 0;
 }
+
+#endif // HAVE_GETIFADDRS
 
 /* vi:set ts=8 sts=4 sw=4: */

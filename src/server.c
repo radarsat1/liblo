@@ -512,6 +512,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     return s;
 }
 
+#if defined(WIN32) || defined(_MSC_VER) || defined(HAVE_GETIFADDRS)
+
 static int lo_server_set_iface(lo_server s, int fam, const char *iface, const char *ip)
 {
     int err = lo_inaddr_find_iface(&s->addr_if, fam, iface, ip);
@@ -541,6 +543,8 @@ static int lo_server_set_iface(lo_server s, int fam, const char *iface, const ch
     return 0;
 }
 
+#endif // HAVE_GETIFADDRS
+
 int lo_server_join_multicast_group(lo_server s, const char *group,
                                    int fam, const char *iface, const char *ip)
 {
@@ -569,6 +573,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
         }
 #endif
     }
+#if defined(WIN32) || defined(_MSC_VER) || defined(HAVE_GETIFADDRS)
     if (iface || ip) {
         int err = lo_server_set_iface(s, fam, iface, ip);
         if (err) return err;
@@ -578,6 +583,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
         //       how to specify group membership interface with IPv6?
     }
     else
+#endif // HAVE_GETIFADDRS
         mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
     if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,

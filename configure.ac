@@ -44,6 +44,7 @@ AC_SUBST(DOXYGEN)
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_SEARCH_LIBS([recvfrom], [socket])
 AC_CHECK_FUNC([log], [], [AC_CHECK_LIB([m],[log])])
+AC_CHECK_FUNCS([getifaddrs])
 
 # Checks for header files.
 AC_HEADER_STDC
