@@ -42,7 +42,7 @@ AC_SUBST(DOXYGEN)
 
 # Checks for libraries.
 AC_SEARCH_LIBS([pthread_create], [c pthread],
-  [AS_IF([! test "$ac_res" = "-lc"],
+  [AS_IF([! test "$ac_res" = "-lc" && ! test "$ac_res" = "none required"],
          [LIBPTHREAD="$ac_res"])])
 AC_SUBST(LIBPTHREAD)
 AC_SEARCH_LIBS([recvfrom], [socket])
