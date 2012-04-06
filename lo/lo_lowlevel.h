@@ -741,6 +741,26 @@ int lo_server_get_protocol(lo_server s);
 char *lo_server_get_url(lo_server s);
 
 /** 
+ * \brief Toggle event queue.
+ * If queueing is enabled, timetagged messages that are sent in
+ * advance of the current time will be put on an internal queue, and
+ * they will be dispatched at the indicated time.  By default,
+ * queueing is enabled.  Use this function to disable it, if it is
+ * desired to have a server process messages immediately.  In that
+ * case, use lo_message_get_timestamp() to get the message timestamp
+ * from within a method handler.
+ * \param s A liblo server
+ * \param queue_enabled Zero to disable queue, non-zero to enable.
+ * \param dispatch_remaining If non-zero, previously queued messages
+ *                           will be immediately dispatched when queue
+ *                           is disabled.
+ * \return The previous state of queue behaviour.  Zero if queueing
+ *         was previously disabled, non-zero otherwise.
+ */
+int lo_server_enable_queue(lo_server s, int queue_enabled,
+                           int dispatch_remaining);
+
+/** 
  * \brief Return true if there are scheduled events (eg. from bundles) 
  * waiting to be dispatched by the server
  */

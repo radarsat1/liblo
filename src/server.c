@@ -75,7 +75,7 @@ struct lo_cs lo_client_sockets = { -1, -1 };
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
 static void dispatch_method(lo_server s, const char *path, lo_message msg);
-static int dispatch_queued(lo_server s);
+static int dispatch_queued(lo_server s, int dispatch_all);
 static void queue_data(lo_server s, lo_timetag ts, const char *path,
                        lo_message msg);
 static lo_server lo_server_new_with_proto_internal(const char *group,
@@ -276,6 +276,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
+    s->queue_enabled = 1;
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
@@ -647,6 +648,18 @@ void lo_server_free(lo_server s)
     }
 }
 
+int lo_server_enable_queue(lo_server s, int queue_enabled,
+                           int dispatch_remaining)
+{
+    int prev = s->queue_enabled;
+    s->queue_enabled = queue_enabled;
+
+    if (!queue_enabled && dispatch_remaining && s->queued)
+        dispatch_queued(s, 1);
+
+    return prev;
+}
+
 void *lo_server_recv_raw(lo_server s, size_t * size)
 {
     char buffer[LO_MAX_MSG_SIZE];
@@ -990,7 +1003,7 @@ int lo_server_recv(lo_server s)
             if (sched_time > 0.01)
                 goto again;
 
-            return dispatch_queued(s);
+            return dispatch_queued(s, 0);
         }
 #else
 #ifdef HAVE_SELECT
@@ -1024,7 +1037,7 @@ int lo_server_recv(lo_server s)
 #endif
 #endif
     } else {
-        return dispatch_queued(s);
+        return dispatch_queued(s, 0);
     }
     if (s->protocol == LO_TCP) {
         data = lo_server_recv_raw_stream(s, &size);
@@ -1144,7 +1157,9 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
                 // test for immediate dispatch
                 if ((ts.sec == LO_TT_IMMEDIATE.sec
                      && ts.frac == LO_TT_IMMEDIATE.frac)
-                    || lo_timetag_diff(ts, now) <= 0.0) {
+                    || lo_timetag_diff(ts, now) <= 0.0
+                    || !s->queue_enabled)
+                {
                     dispatch_method(s, pos, msg);
                     lo_message_free(msg);
                 } else {
@@ -1427,7 +1442,7 @@ static void queue_data(lo_server s, lo_timetag ts, const char *path,
     ins->next = NULL;
 }
 
-static int dispatch_queued(lo_server s)
+static int dispatch_queued(lo_server s, int dispatch_all)
 {
     queued_msg_list *head = s->queued;
     queued_msg_list *tailhead;
@@ -1454,7 +1469,8 @@ static int dispatch_queued(lo_server s)
 
         s->queued = tailhead;
         head = tailhead;
-    } while (head && lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON);
+    } while ((head && lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON)
+             || dispatch_all);
 
     return 0;
 }

@@ -105,6 +105,7 @@ typedef struct _lo_server {
     char *path;
     int protocol;
     void *queued;
+    int queue_enabled;
     struct sockaddr_storage addr;
     socklen_t addr_len;
     int sockets_len;
