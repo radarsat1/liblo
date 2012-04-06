@@ -397,9 +397,12 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY,
                    &v6only_off, sizeof(v6only_off)) < 0) {
         err = geterror();
-        lo_throw(s, err, strerror(err), "setsockopt(IPV6_V6ONLY)");
-        lo_server_free(s);
-        return NULL;
+        /* Ignore the error if the option is simply not supported. */
+        if (err!=ENOPROTOOPT) {
+            lo_throw(s, err, strerror(err), "setsockopt(IPV6_V6ONLY)");
+            lo_server_free(s);
+            return NULL;
+        }
     }
 #endif
 
