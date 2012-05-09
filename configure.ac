@@ -117,5 +117,11 @@ AC_CONFIG_FILES([
 AC_OUTPUT()
 
 if ! test "x$have_threads" = "xyes"; then
-    echo Building without server threads.
+    echo "[[liblo]] Building with server threads disabled."
+fi
+
+if ! test "x$ac_cv_func_getifaddrs" = xyes && ! test x$is_windows = xyes; then
+    echo "[[liblo]] Warning: Building without interface selection for multicast."
+    echo "        This is unusual on Linux, Windows, and OS X, so make sure you"
+    echo "        know what you're doing!  May be needed e.g. on Android."
 fi
