@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+#include <sys/types.h>
 #ifdef _MSC_VER
 #define ssize_t SSIZE_T
 #define uint32_t unsigned __int32
