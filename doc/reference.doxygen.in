@@ -362,7 +362,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = @top_srcdir@/lo/lo.h @top_srcdir@/lo/lo_types.h @top_srcdir@/lo/lo_osc_types.h @top_srcdir@/lo/lo_lowlevel.h
+INPUT                  = @top_srcdir@/lo/lo.h @top_srcdir@/lo/lo_types.h @top_srcdir@/lo/lo_osc_types.h @top_srcdir@/lo/lo_lowlevel.h @top_srcdir@/lo/lo_serverthread.h
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

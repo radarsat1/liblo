@@ -63,6 +63,9 @@ fi
 
 AC_SUBST(LIBPTHREAD)
 AM_CONDITIONAL([ENABLE_THREADS], [test "x$have_threads" = xyes])
+AS_IF([test x"$have_threads" = xyes],
+      [AC_SUBST(ENABLE_THREADS,1)],
+      [AC_SUBST(ENABLE_THREADS,0)])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -104,6 +107,7 @@ AC_CONFIG_FILES([
 	src/tools/Makefile
 	examples/Makefile
 	lo/Makefile
+	lo/lo.h
 	lo/lo_endian.h
 	liblo.pc
 	doc/Makefile
