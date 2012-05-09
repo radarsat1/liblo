@@ -117,3 +117,4 @@ EXPORTS
     lo_message_add_internal                @114
     lo_address_set_iface                   @115
     lo_server_new_multicast_iface          @116
+    lo_address_get_iface                   @117
