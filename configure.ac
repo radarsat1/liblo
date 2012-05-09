@@ -40,14 +40,29 @@ AM_PROG_CC_C_O
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
 AC_SUBST(DOXYGEN)
 
+# Check if threads are wanted
+AC_ARG_ENABLE(threads,
+  [  --enable-threads        Enable server threads],
+  [want_threads=$enableval],
+  [want_threads=yes])
+
 # Checks for libraries.
-AC_SEARCH_LIBS([pthread_create], [c pthread],
-  [AS_IF([! test "$ac_res" = "-lc" && ! test "$ac_res" = "none required"],
-         [LIBPTHREAD="$ac_res"])])
-AC_SUBST(LIBPTHREAD)
 AC_SEARCH_LIBS([recvfrom], [socket])
 AC_CHECK_FUNC([log], [], [AC_CHECK_LIB([m],[log])])
 AC_CHECK_FUNCS([getifaddrs])
+
+# Check for whether threads are wanted, and if so, did we find libpthread.
+if test "x$want_threads" = "xyes"; then
+  AC_SEARCH_LIBS([pthread_create], [c pthread],
+    [AS_IF([! test "$ac_res" = "-lc" && ! test "$ac_res" = "none required"],
+           [LIBPTHREAD="$ac_res"])
+     have_threads=yes;
+     AC_DEFINE(ENABLE_THREADS, 1, [Define this to enable threads.])],
+    [AC_ERROR([pthread not found. Try option --disable-threads.])])
+fi
+
+AC_SUBST(LIBPTHREAD)
+AM_CONDITIONAL([ENABLE_THREADS], [test "x$have_threads" = xyes])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -96,3 +111,7 @@ AC_CONFIG_FILES([
 	build/Makefile
 ])
 AC_OUTPUT()
+
+if ! test "x$have_threads" = "xyes"; then
+    echo Building without server threads.
+fi

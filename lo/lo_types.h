@@ -32,8 +32,6 @@ extern "C" {
 #include <netdb.h>
 #endif
 
-#include <pthread.h>
-
 #include "lo/lo_osc_types.h"
 
 /**

@@ -31,7 +31,9 @@ typedef __int64 int64_t;
 typedef __int32 int32_t;
 #endif
 
+#ifdef ENABLE_THREADS
 #include <pthread.h>
+#endif
 
 #include "lo/lo_osc_types.h"
 
@@ -123,12 +125,16 @@ typedef struct _lo_server {
     struct _lo_inaddr addr_if;
 } *lo_server;
 
+#ifdef ENABLE_THREADS
 typedef struct _lo_server_thread {
     lo_server s;
     pthread_t thread;
     volatile int active;
     volatile int done;
 } *lo_server_thread;
+#else
+typedef void *lo_server_thread;
+#endif
 
 typedef struct _lo_bundle {
     size_t size;

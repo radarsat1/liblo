@@ -1,6 +1,13 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-noinst_PROGRAMS = example_server example_client nonblocking_server_example
+# Example server depends on server threads, so skip it if threads are
+# disabled.
+
+noinst_PROGRAMS = example_client nonblocking_server_example
+if ENABLE_THREADS
+noinst_PROGRAMS += example_server
+endif
+
 AM_CFLAGS = -Wall -I@top_srcdir@
 
 example_server_SOURCES = example_server.c

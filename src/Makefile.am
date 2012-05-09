@@ -7,7 +7,11 @@ EXTRA_DIST = liblo.def
 noinst_HEADERS = lo_types_internal.h lo_internal.h
 
 SOURCE_FILES = address.c send.c message.c server.c method.c \
-	server_thread.c blob.c bundle.c timetag.c pattern_match.c
+	blob.c bundle.c timetag.c pattern_match.c
+
+if ENABLE_THREADS
+SOURCE_FILES += server_thread.c
+endif
 
 lib_LTLIBRARIES = liblo.la
 
@@ -17,10 +21,13 @@ endif
 
 liblo_la_CFLAGS = -Wall -I$(top_srcdir)
 liblo_la_SOURCES = $(SOURCE_FILES)
-liblo_la_LIBADD = @LIBPTHREAD@
 liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 
+# Test programs depend on server threads, so skip them if threads are
+# disabled.
+if ENABLE_THREADS
 noinst_PROGRAMS = testlo subtest
+endif
 
 testlo_CFLAGS = -Wall -I$(top_srcdir)
 testlo_SOURCES = testlo.c
