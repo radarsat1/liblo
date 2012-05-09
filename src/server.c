@@ -1035,7 +1035,7 @@ int lo_server_recv(lo_server s)
             if (sched_time > 0.01)
                 goto again;
 
-            return dispatch_queued(s);
+            return dispatch_queued(s, 0);
         }
 #endif
 #endif
