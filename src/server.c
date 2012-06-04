@@ -67,6 +67,7 @@ typedef struct {
     lo_timetag ts;
     char *path;
     lo_message msg;
+    int sock;
     void *next;
 } queued_msg_list;
 
@@ -74,17 +75,19 @@ struct lo_cs lo_client_sockets = { -1, -1 };
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
-static void dispatch_method(lo_server s, const char *path, lo_message msg);
+static void dispatch_method(lo_server s, const char *path,
+                            lo_message msg, int sock);
+static int dispatch_data(lo_server s, void *data,
+                         size_t size, int sock);
 static int dispatch_queued(lo_server s, int dispatch_all);
 static void queue_data(lo_server s, lo_timetag ts, const char *path,
-                       lo_message msg);
+                       lo_message msg, int sock);
 static lo_server lo_server_new_with_proto_internal(const char *group,
                                                    const char *port,
                                                    const char *iface,
                                                    const char *ip,
                                                    int proto,
                                                    lo_err_handler err_h);
-static int lo_server_add_socket(lo_server s, int socket);
 static void lo_server_del_socket(lo_server s, int index, int socket);
 static int lo_server_join_multicast_group(lo_server s, const char *group,
                                           int family,
@@ -280,6 +283,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
+    s->sources = (lo_address*)calloc(2, sizeof(struct _lo_address));
+    s->sources_len = 2;
     s->bundle_start_handler = NULL;
     s->bundle_end_handler = NULL;
     s->bundle_handler_user_data = NULL;
@@ -646,7 +651,23 @@ void lo_server_free(lo_server s)
         }
         if (s->addr_if.iface)
             free(s->addr_if.iface);
+
+        for (i=0; i < s->sockets_len; i++) {
+            if (s->sockets[i].fd > -1) {
+#ifdef SHUT_WR
+                shutdown(s->sockets[i].fd, SHUT_WR);
+#endif
+                closesocket(s->sockets[i].fd);
+            }
+        }
         free(s->sockets);
+
+        for (i=0; i < s->sources_len; i++) {
+            if (s->sources[i].host)
+                lo_address_free_mem(&s->sources[i]);
+        }
+        free(s->sources);
+
         free(s);
     }
 }
@@ -690,7 +711,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
     return data;
 }
 
-void *lo_server_recv_raw_stream(lo_server s, size_t * size)
+void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
@@ -767,7 +788,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
             /* zeroeth socket is listening for new connections */
             if (sock == s->sockets[0].fd) {
                 sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
-                i = lo_server_add_socket(s, sock);
+                i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
 
                 /* after adding a new socket, call select()/poll()
                  * again, since we are supposed to block until a
@@ -812,6 +833,9 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size)
     if (size)
         *size = ret;
 
+    if (psock)
+        *psock = sock;
+
     return data;
 }
 
@@ -854,7 +878,7 @@ int lo_server_wait(lo_server s, int timeout)
             int sock = accept(s->sockets[0].fd,
                               (struct sockaddr *) &addr, &addr_len);
 
-            i = lo_server_add_socket(s, sock);
+            i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
             if (i < 0)
                 closesocket(sock);
 
@@ -969,6 +993,7 @@ int lo_server_recv(lo_server s)
     void *data;
     size_t size;
     double sched_time = lo_server_next_event_delay(s);
+    int sock = -1;
     int i;
 #ifdef HAVE_SELECT
 #ifndef HAVE_POLL
@@ -1043,7 +1068,7 @@ int lo_server_recv(lo_server s)
         return dispatch_queued(s, 0);
     }
     if (s->protocol == LO_TCP) {
-        data = lo_server_recv_raw_stream(s, &size);
+        data = lo_server_recv_raw_stream(s, &size, &sock);
     } else {
         data = lo_server_recv_raw(s, &size);
     }
@@ -1051,7 +1076,7 @@ int lo_server_recv(lo_server s)
     if (!data) {
         return 0;
     }
-    if (lo_server_dispatch_data(s, data, size) < 0) {
+    if (dispatch_data(s, data, size, sock) < 0) {
         free(data);
         return -1;
     }
@@ -1059,13 +1084,11 @@ int lo_server_recv(lo_server s)
     return size;
 }
 
-/** \internal \brief Add a socket to this server's list of sockets.
- *  \param s The lo_server
- *  \param socket The socket number to add.
- *  \return The index number of the added socket, or -1 on failure.
- */
-int lo_server_add_socket(lo_server s, int socket)
+int lo_server_add_socket(lo_server s, int socket, lo_address a,
+                         struct sockaddr_storage *addr,
+                         socklen_t addr_len)
 {
+    /* Update array of open sockets */
     if ((s->sockets_len + 1) > s->sockets_alloc) {
         void *sp = realloc(s->sockets,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
@@ -1077,6 +1100,23 @@ int lo_server_add_socket(lo_server s, int socket)
 
     s->sockets[s->sockets_len].fd = socket;
     s->sockets_len++;
+
+    /* Update socket-indexed array of sources */
+    if (socket >= s->sources_len) {
+        int L = socket * 2;
+        s->sources = realloc(s->sources,
+                             sizeof(struct _lo_address) * L);
+        memset(s->sources + s->sources_len, 0,
+               sizeof(struct _lo_address) * (L - s->sources_len));
+        s->sources_len = L;
+    }
+
+    if (a)
+        lo_address_copy(&s->sources[socket], a);
+    else
+        lo_address_init_with_sockaddr(&s->sources[socket],
+                                      addr, addr_len,
+                                      socket, LO_TCP);
 
     return s->sockets_len - 1;
 }
@@ -1105,7 +1145,8 @@ void lo_server_del_socket(lo_server s, int index, int socket)
     s->sockets_len--;
 }
 
-int lo_server_dispatch_data(lo_server s, void *data, size_t size)
+static int dispatch_data(lo_server s, void *data,
+                         size_t size, int sock)
 {
     int result = 0;
     char *path = data;
@@ -1146,7 +1187,7 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
             remain -= 4;
 
             if (!strcmp(pos, "#bundle")) {
-                lo_server_dispatch_data(s, pos, elem_len);
+                dispatch_data(s, pos, elem_len, sock);
             } else {
                 msg = lo_message_deserialise(pos, elem_len, &result);
                 if (!msg) {
@@ -1163,10 +1204,10 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
                     || lo_timetag_diff(ts, now) <= 0.0
                     || !s->queue_enabled)
                 {
-                    dispatch_method(s, pos, msg);
+                    dispatch_method(s, pos, msg, sock);
                     lo_message_free(msg);
                 } else {
-                    queue_data(s, ts, pos, msg);
+                    queue_data(s, ts, pos, msg, sock);
                 }
             }
 
@@ -1183,10 +1224,15 @@ int lo_server_dispatch_data(lo_server s, void *data, size_t size)
             lo_throw(s, result, "Invalid message received", path);
             return -result;
         }
-        dispatch_method(s, data, msg);
+        dispatch_method(s, data, msg, sock);
         lo_message_free(msg);
     }
     return size;
+}
+
+int lo_server_dispatch_data(lo_server s, void *data, size_t size)
+{
+    dispatch_data(s, data, size, -1);
 }
 
 /* returns the time in seconds until the next scheduled event */
@@ -1208,7 +1254,8 @@ double lo_server_next_event_delay(lo_server s)
     return 100.0;
 }
 
-static void dispatch_method(lo_server s, const char *path, lo_message msg)
+static void dispatch_method(lo_server s, const char *path,
+                            lo_message msg, int sock)
 {
     char *types = msg->types + 1;
     int argc = strlen(types);
@@ -1216,12 +1263,10 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
     int ret = 1;
     int err;
     int pattern = strpbrk(path, " #*,?[]{}") != NULL;
-    lo_address src = lo_address_new(NULL, NULL);
+    lo_address src = 0;
     char hostname[LO_HOST_SIZE];
     char portname[32];
     const char *pptr;
-
-    msg->source = src;
 
     //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
     if (s->protocol == LO_UDP && s->addr_len > 0) {
@@ -1268,13 +1313,20 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
 
 
     // Store the source information in the lo_address
-    if (src->host)
-        free(src->host);
-    if (src->host)
-        free(src->port);
-    src->host = strdup(hostname);
-    src->port = strdup(portname);
-    src->protocol = s->protocol;
+    if (s->protocol == LO_TCP && sock >= 0) {
+        msg->source = &s->sources[sock];
+    }
+    else {
+        src = lo_address_new(NULL, NULL);
+        msg->source = src;
+        if (src->host)
+            free(src->host);
+        if (src->host)
+            free(src->port);
+        src->host = strdup(hostname);
+        src->port = strdup(portname);
+        src->protocol = s->protocol;
+    }
 
     for (it = s->first; it; it = it->next) {
         /* If paths match or handler is wildcard */
@@ -1399,7 +1451,7 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
         }
     }
 
-    lo_address_free(src);
+    if (src) lo_address_free(src);
     msg->source = NULL;
 }
 
@@ -1409,7 +1461,7 @@ int lo_server_events_pending(lo_server s)
 }
 
 static void queue_data(lo_server s, lo_timetag ts, const char *path,
-                       lo_message msg)
+                       lo_message msg, int sock)
 {
     /* insert blob into future dispatch queue */
     queued_msg_list *it = s->queued;
@@ -1419,6 +1471,7 @@ static void queue_data(lo_server s, lo_timetag ts, const char *path,
     ins->ts = ts;
     ins->path = strdup(path);
     ins->msg = msg;
+    ins->sock = sock;
 
     while (it) {
         if (lo_timetag_diff(it->ts, ts) > 0.0) {
@@ -1462,10 +1515,12 @@ static int dispatch_queued(lo_server s, int dispatch_all)
     do {
         char *path;
         lo_message msg;
+        int sock;
         tailhead = head->next;
         path = ((queued_msg_list *) s->queued)->path;
         msg = ((queued_msg_list *) s->queued)->msg;
-        dispatch_method(s, path, msg);
+        sock = ((queued_msg_list *) s->queued)->sock;
+        dispatch_method(s, path, msg, sock);
         free(path);
         lo_message_free(msg);
         free((queued_msg_list *) s->queued);

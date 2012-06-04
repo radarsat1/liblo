@@ -208,6 +208,14 @@ void lo_address_free(lo_address a)
 #endif
             closesocket(a->socket);
         }
+        lo_address_free_mem(a);
+        free(a);
+    }
+}
+
+void lo_address_free_mem(lo_address a)
+{
+    if (a) {
         if (a->host)
             free(a->host);
         if (a->port)
@@ -216,7 +224,6 @@ void lo_address_free(lo_address a)
             freeaddrinfo(a->ai_first);
         if (a->addr.iface)
             free(a->addr.iface);
-        free(a);
     }
 }
 
@@ -371,6 +378,65 @@ static int is_dotted_ipv4_address (const char* address)
 {
     int a[4];
     return sscanf(address, "%u.%u.%u.%u", &a[0], &a[1], &a[2], &a[3]);
+}
+
+void lo_address_copy(lo_address to, lo_address from)
+{
+    /* Initialize all members that are not auto-initialized when the
+     * lo_address is used. (e.g. resolving addrinfo) */
+    memset(to, 0, sizeof(struct _lo_address));
+    to->socket = from->socket;
+    if (from->host) {
+        free(to->host);
+        to->host = strdup(from->host);
+    }
+    if (from->port) {
+        free(to->port);
+        to->port = strdup(from->port);
+    }
+    to->protocol = from->protocol;
+    to->ttl = from->ttl;
+    to->addr = from->addr;
+    if (from->addr.iface) {
+        free(from->addr.iface);
+        to->addr.iface = strdup(from->addr.iface);
+    }
+}
+
+void lo_address_init_with_sockaddr(lo_address a,
+                                   void *sa, size_t sa_len,
+                                   int sock, int prot)
+{
+    memset(a, 0, sizeof(struct _lo_address));
+    switch (sa_len) {
+    case sizeof(struct sockaddr_in):
+        free(a->host);
+        a->host = malloc(INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &((struct sockaddr_in*)sa)->sin_addr,
+                  a->host, INET_ADDRSTRLEN);
+        free(a->port);
+        a->port = malloc(8);
+        snprintf(a->port, 8, "%d",
+                 ((struct sockaddr_in*)sa)->sin_port);
+        break;
+    case sizeof(struct sockaddr_in6):
+        free(a->host);
+        a->host = malloc(INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &((struct sockaddr_in6*)sa)->sin6_addr,
+                  a->host, INET6_ADDRSTRLEN);
+        free(a->port);
+        a->port = malloc(8);
+        snprintf(a->port, 8, "%d",
+                 ((struct sockaddr_in6*)sa)->sin6_port);
+        break;
+    default:
+        /* Shouldn't ever get here */
+        printf(stderr, "[liblo] Unknown sa_len: %s, line %d", __FILE__, __LINE__);
+        abort();
+    }
+
+    a->socket = sock;
+    a->protocol = prot;
 }
 
 int lo_address_resolve(lo_address a)

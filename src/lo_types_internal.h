@@ -119,6 +119,8 @@ typedef struct _lo_server {
         int fd;
     } *sockets;
 #endif
+    struct _lo_address *sources;
+    int sources_len;
     lo_bundle_start_handler bundle_start_handler;
     lo_bundle_end_handler bundle_end_handler;
     void *bundle_handler_user_data;

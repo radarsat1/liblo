@@ -75,4 +75,26 @@ int lo_address_resolve(lo_address a);
 int lo_inaddr_find_iface(lo_inaddr t, int fam,
                          const char *iface, const char *ip);
 
+/** \internal \brief Add a socket to this server's list of sockets.
+ *  \param s The lo_server
+ *  \param socket The socket number to add.
+ *  \return The index number of the added socket, or -1 on failure.
+ */
+int lo_server_add_socket(lo_server s, int socket, lo_address a,
+                                struct sockaddr_storage *addr,
+                                socklen_t addr_len);
+
+/** \internal \brief Copy a lo_address into pre-allocated memory. */
+void lo_address_copy(lo_address to, lo_address from);
+
+/** \internal \brief Initialize a pre-allocated lo_address from a
+ * sockaddr. */
+void lo_address_init_with_sockaddr(lo_address a,
+                                   void *sa, size_t sa_len,
+                                   int sock, int prot);
+
+/** \internal \brief Free memory owned by an address, without freeing
+ * actual lo_address structure. */
+void lo_address_free_mem(lo_address a);
+
 #endif

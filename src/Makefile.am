@@ -26,7 +26,7 @@ liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 # Test programs depend on server threads, so skip them if threads are
 # disabled.
 if ENABLE_THREADS
-noinst_PROGRAMS = testlo subtest
+noinst_PROGRAMS = testlo subtest test_bidirectional_tcp
 endif
 
 testlo_CFLAGS = -Wall -I$(top_srcdir)
@@ -37,8 +37,13 @@ subtest_CFLAGS = -Wall -I$(top_srcdir)
 subtest_SOURCES = subtest.c
 subtest_LDADD = liblo.la
 
+test_bidirectional_tcp_CFLAGS = -Wall -I$(top_srcdir)
+test_bidirectional_tcp_SOURCES = test_bidirectional_tcp.c
+test_bidirectional_tcp_LDADD = liblo.la
+
 test: all
 	./testlo
+	./test_bidirectional_tcp
 
 memtest: all
 	LD_LIBRARY_PATH=.libs valgrind --tool=memcheck .libs/testlo

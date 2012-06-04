@@ -406,7 +406,7 @@ static int send_data(lo_address a, lo_server from, char *data,
             return ret;
     }
     // Re-use existing socket?
-    if (from) {
+    if (from && a->protocol == LO_UDP) {
         sock = from->sockets[0].fd;
     } else if (a->protocol == LO_UDP && lo_client_sockets.udp != -1) {
         sock = lo_client_sockets.udp;
@@ -415,6 +415,15 @@ static int send_data(lo_address a, lo_server from, char *data,
             ret = create_socket(a);
             if (ret)
                 return ret;
+
+            // If we are sending TCP, we may later receive on sending
+            // socket, so add it to the from server's socket list.
+            if (from && a->protocol == LO_TCP
+                && (a->socket >= from->sources_len
+                    || from->sources[a->socket].host == NULL))
+            {
+                lo_server_add_socket(from, a->socket, a, 0, 0);
+            }
         }
         sock = a->socket;
     }
