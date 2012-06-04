@@ -1225,7 +1225,7 @@ static void dispatch_method(lo_server s, const char *path, lo_message msg)
 
     //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
     if (s->protocol == LO_UDP && s->addr_len > 0) {
-        err = getnameinfo((struct sockaddr *) &s->addr, sizeof(s->addr),
+        err = getnameinfo((struct sockaddr *) &s->addr, s->addr_len,
                           hostname, sizeof(hostname), portname,
                           sizeof(portname),
                           NI_NUMERICHOST | NI_NUMERICSERV);
