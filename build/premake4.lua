@@ -26,6 +26,11 @@
     language "C"
     location ( _OPTIONS["to"] or _ACTION )
 
+    newoption {
+        trigger     = "without-threads",
+        description = "Disable lo_server_thread functions, no need for pthread."
+}
+
     includedirs {
       "../lo",
       "../src"
@@ -89,6 +94,23 @@
   io.close()
 
 ----------------------------------------------------------------------
+-- Write a custom <liblo.def> to ../src/
+----------------------------------------------------------------------
+
+  io.input("../src/liblo.def.in")
+  local text = io.read("*all")
+
+  if _OPTIONS["without-threads"] then
+    text = string.gsub(text, '@DEFTHREADS@', ';;')
+  else
+    text = string.gsub(text, '@DEFTHREADS@', '')
+  end
+
+  io.output("../src/liblo.def")
+  io.write(text)
+  io.close()
+
+----------------------------------------------------------------------
 -- Copy <lo_endian.h> to ../lo
 ----------------------------------------------------------------------
 
@@ -121,6 +143,7 @@
     excludes {
       "../src/testlo.c",
       "../src/subtest.c",
+      "../src/test_bidirectional_tcp.c",
       "../src/tools",
     }
 
@@ -129,9 +152,14 @@
                 "wsock32",
                 "ws2_32",
                 "iphlpapi",
-                "pthreadVC2",
               }
-            
+
+    configuration { "without-threads" }
+      excludes { "../src/server_thread.c" }
+
+    configuration { "not without-threads" }
+      links { "pthreadVC2" }
+
     configuration { "*Lib" }
       kind    "StaticLib"
       defines "LIBLO_LIB"
