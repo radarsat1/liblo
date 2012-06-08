@@ -225,6 +225,7 @@ void lo_address_free_mem(lo_address a)
             freeaddrinfo(a->ai_first);
         if (a->addr.iface)
             free(a->addr.iface);
+        a->socket = -1;
     }
 }
 

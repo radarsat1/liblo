@@ -84,6 +84,14 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
                                 struct sockaddr_storage *addr,
                                 socklen_t addr_len);
 
+/** \internal \brief Delete a socket from this server's list of sockets.
+ *  \param s The lo_server
+ *  \param index The index of the socket to delete, -1 if socket is provided.
+ *  \param socket The socket number to delete, -1 if index is provided.
+ *  \return The index number of the added socket.
+ */
+void lo_server_del_socket(lo_server s, int index, int socket);
+
 /** \internal \brief Copy a lo_address into pre-allocated memory. */
 void lo_address_copy(lo_address to, lo_address from);
 

@@ -484,6 +484,8 @@ static int send_data(lo_address a, lo_server from, char *data,
 
     if (ret == -1) {
         if (a->protocol == LO_TCP) {
+            if (from)
+                lo_server_del_socket(from, -1, a->socket);
             closesocket(a->socket);
             a->socket = -1;
         }

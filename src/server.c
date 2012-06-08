@@ -88,7 +88,6 @@ static lo_server lo_server_new_with_proto_internal(const char *group,
                                                    const char *ip,
                                                    int proto,
                                                    lo_err_handler err_h);
-static void lo_server_del_socket(lo_server s, int index, int socket);
 static int lo_server_join_multicast_group(lo_server s, const char *group,
                                           int family,
                                           const char *iface, const char *ip);
@@ -1143,12 +1142,6 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
     return s->sockets_len - 1;
 }
 
-/** \internal \brief Delete a socket from this server's list of sockets.
- *  \param s The lo_server
- *  \param index The index of the socket to delete, -1 if socket is provided.
- *  \param socket The socket number to delete, -1 if index is provided.
- *  \return The index number of the added socket.
- */
 void lo_server_del_socket(lo_server s, int index, int socket)
 {
     int i;
@@ -1165,6 +1158,8 @@ void lo_server_del_socket(lo_server s, int index, int socket)
     for (i = index + 1; i < s->sockets_len; i++)
         s->sockets[i - 1] = s->sockets[i];
     s->sockets_len--;
+
+    lo_address_free_mem(&s->sources[s->sockets[i].fd]);
 }
 
 static int dispatch_data(lo_server s, void *data,
