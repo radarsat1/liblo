@@ -56,6 +56,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     a->ai = NULL;
     a->ai_first = NULL;
     a->socket = -1;
+    a->ownsocket = 1;
     a->protocol = proto;
     switch (proto) {
     default:
@@ -202,7 +203,7 @@ char *lo_address_get_url(lo_address a)
 void lo_address_free(lo_address a)
 {
     if (a) {
-        if (a->socket != -1) {
+        if (a->socket != -1 && a->ownsocket) {
 #ifdef SHUT_WR
             shutdown(a->socket, SHUT_WR);
 #endif

@@ -423,6 +423,10 @@ static int send_data(lo_address a, lo_server from, char *data,
                     || from->sources[a->socket].host == NULL))
             {
                 lo_server_add_socket(from, a->socket, a, 0, 0);
+
+                // If a socket is added to the server, the server is
+                // now responsible for closing it.
+                a->ownsocket = 0;
             }
         }
         sock = a->socket;

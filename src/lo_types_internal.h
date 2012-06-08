@@ -54,6 +54,7 @@ typedef struct _lo_inaddr {
 typedef struct _lo_address {
     char *host;
     int socket;
+    int ownsocket;
     char *port;
     int protocol;
     struct addrinfo *ai;
