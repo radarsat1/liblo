@@ -62,10 +62,13 @@ if test "x$want_threads" = "xyes"; then
 fi
 
 AC_SUBST(LIBPTHREAD)
+AC_SUBST(DEFTHREADS)
 AM_CONDITIONAL([ENABLE_THREADS], [test "x$have_threads" = xyes])
 AS_IF([test x"$have_threads" = xyes],
-      [AC_SUBST(ENABLE_THREADS,1)],
-      [AC_SUBST(ENABLE_THREADS,0)])
+      [AC_SUBST(ENABLE_THREADS,1)
+       AC_SUBST(DEFTHREADS,)],
+      [AC_SUBST(ENABLE_THREADS,0)
+       AC_SUBST(DEFTHREADS,[';;'])])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -105,6 +108,7 @@ AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
 	src/tools/Makefile
+	src/liblo.def
 	examples/Makefile
 	lo/Makefile
 	lo/lo.h

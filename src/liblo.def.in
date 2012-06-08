@@ -88,19 +88,19 @@ EXPORTS
     lo_server_pp                           @85
     lo_server_recv                         @86
     lo_server_recv_noblock                 @87
-    lo_server_thread_add_method            @88
-    lo_server_thread_del_method            @89
-    lo_server_thread_events_pending        @90
-    lo_server_thread_free                  @91
-    lo_server_thread_get_port              @92
-    lo_server_thread_get_server            @93
-    lo_server_thread_get_url               @94
-    lo_server_thread_new                   @95
-    lo_server_thread_new_multicast         @96
-    lo_server_thread_new_with_proto        @97
-    lo_server_thread_pp                    @98
-    lo_server_thread_start                 @99
-    lo_server_thread_stop                  @100
+@DEFTHREADS@    lo_server_thread_add_method            @88
+@DEFTHREADS@    lo_server_thread_del_method            @89
+@DEFTHREADS@    lo_server_thread_events_pending        @90
+@DEFTHREADS@    lo_server_thread_free                  @91
+@DEFTHREADS@    lo_server_thread_get_port              @92
+@DEFTHREADS@    lo_server_thread_get_server            @93
+@DEFTHREADS@    lo_server_thread_get_url               @94
+@DEFTHREADS@    lo_server_thread_new                   @95
+@DEFTHREADS@    lo_server_thread_new_multicast         @96
+@DEFTHREADS@    lo_server_thread_new_with_proto        @97
+@DEFTHREADS@    lo_server_thread_pp                    @98
+@DEFTHREADS@    lo_server_thread_start                 @99
+@DEFTHREADS@    lo_server_thread_stop                  @100
     lo_server_wait                         @101
     lo_strsize                             @102
     lo_throw                               @103
