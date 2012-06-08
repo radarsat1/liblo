@@ -720,6 +720,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     int ret = 0, i;
     void *data = NULL;
     int sock = -1;
+    int bytesleft = 0;
 #ifdef HAVE_SELECT
 #ifndef HAVE_POLL
     fd_set ps;
@@ -801,7 +802,21 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 return NULL;
             }
 
-            ret = recv(sock, &read_size, sizeof(read_size), 0);
+            bytesleft = sizeof(read_size);
+            while (bytesleft > 0) {
+                ret = recv(sock,
+                           ((char*)&read_size)+sizeof(read_size)-bytesleft,
+                           bytesleft, 0);
+                if (ret <= 0) {
+                    closesocket(sock);
+                    lo_server_del_socket(s, i, sock);
+                    break;
+                } else
+                    bytesleft -= ret;
+            }
+            if (ret <= 0)
+                continue;
+
             read_size = ntohl(read_size);
             if (read_size > LO_MAX_MSG_SIZE || ret <= 0) {
                 closesocket(sock);
@@ -810,12 +825,19 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                     lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
                 continue;
             }
-            ret = recv(sock, buffer, read_size, 0);
-            if (ret <= 0) {
-                closesocket(sock);
-                lo_server_del_socket(s, i, sock);
-                continue;
+
+            bytesleft = read_size;
+            while (bytesleft > 0) {
+                ret = recv(sock, buffer+read_size-bytesleft, bytesleft, 0);
+                if (ret <= 0) {
+                    closesocket(sock);
+                    lo_server_del_socket(s, i, sock);
+                    break;
+                } else
+                    bytesleft -= ret;
             }
+            if (ret <= 0)
+                continue;
 
             /* end of loop over sockets: successfully read data */
             break;
