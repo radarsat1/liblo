@@ -962,7 +962,7 @@ int lo_server_wait(lo_server s, int timeout)
             int sock = accept(s->sockets[0].fd,
                               (struct sockaddr *) &addr, &addr_len);
 
-            i = lo_server_add_socket(s, sock);
+            i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
             if (i < 0)
                 closesocket(sock);
 
