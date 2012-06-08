@@ -440,6 +440,7 @@ static int send_data(lo_address a, lo_server from, char *data,
     // Send the data
     if (ret != -1) {
         if (a->protocol == LO_UDP) {
+            struct addrinfo* ai;
             if (a->addr.size == sizeof(struct in_addr)) {
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
                            &a->addr.a, a->addr.size);
@@ -456,7 +457,7 @@ static int send_data(lo_address a, lo_server from, char *data,
                            sizeof(ttl));
             }
 
-            struct addrinfo* ai = a->ai;
+            ai = a->ai;
             ret = -1;
 
             do {

@@ -961,6 +961,8 @@ int lo_server_wait(lo_server s, int timeout)
         if (FD_ISSET(s->sockets[0].fd, &ps)) {
             int sock = accept(s->sockets[0].fd,
                               (struct sockaddr *) &addr, &addr_len);
+            double diff;
+            struct timeval tvdiff;
 
             i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
             if (i < 0)
@@ -969,8 +971,7 @@ int lo_server_wait(lo_server s, int timeout)
             lo_timetag_now(&now);
 
             // Subtract time waited from total timeout
-            double diff = lo_timetag_diff(now, then);
-            struct timeval tvdiff;
+            diff = lo_timetag_diff(now, then);
             tvdiff.tv_sec = stimeout.tv_sec - (int)diff;
             tvdiff.tv_usec = stimeout.tv_usec - (diff*1000000
                                                  -(int)diff*1000000);
