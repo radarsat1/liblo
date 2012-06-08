@@ -1155,11 +1155,11 @@ void lo_server_del_socket(lo_server s, int index, int socket)
     if (index < 0 || index >= s->sockets_len)
         return;
 
+    lo_address_free_mem(&s->sources[s->sockets[index].fd]);
+
     for (i = index + 1; i < s->sockets_len; i++)
         s->sockets[i - 1] = s->sockets[i];
     s->sockets_len--;
-
-    lo_address_free_mem(&s->sources[s->sockets[i].fd]);
 }
 
 static int dispatch_data(lo_server s, void *data,
