@@ -411,33 +411,20 @@ void lo_address_init_with_sockaddr(lo_address a,
                                    void *sa, size_t sa_len,
                                    int sock, int prot)
 {
-    memset(a, 0, sizeof(struct _lo_address));
-    switch (sa_len) {
-    case sizeof(struct sockaddr_in):
-        free(a->host);
-        a->host = malloc(INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &((struct sockaddr_in*)sa)->sin_addr,
-                  a->host, INET_ADDRSTRLEN);
-        free(a->port);
-        a->port = malloc(8);
-        snprintf(a->port, 8, "%d",
-                 ((struct sockaddr_in*)sa)->sin_port);
-        break;
-    case sizeof(struct sockaddr_in6):
-        free(a->host);
-        a->host = malloc(INET6_ADDRSTRLEN);
-        inet_ntop(AF_INET6, &((struct sockaddr_in6*)sa)->sin6_addr,
-                  a->host, INET6_ADDRSTRLEN);
-        free(a->port);
-        a->port = malloc(8);
-        snprintf(a->port, 8, "%d",
-                 ((struct sockaddr_in6*)sa)->sin6_port);
-        break;
-    default:
-        /* Shouldn't ever get here */
-        printf(stderr, "[liblo] Unknown sa_len: %s, line %d", __FILE__, __LINE__);
-        abort();
-    }
+	int err = 0;
+	lo_address_free_mem(a);
+	a->host = malloc(INET_ADDRSTRLEN);
+	a->port = malloc(8);
+
+	err = getnameinfo((struct sockaddr *)sa, sa_len,
+					  a->host, INET_ADDRSTRLEN, a->port, 8,
+					  NI_NUMERICHOST | NI_NUMERICSERV);
+
+	if (err) {
+		free(a->host);
+		free(a->port);
+		a->host = a->port = 0;
+	}
 
     a->socket = sock;
     a->protocol = prot;
