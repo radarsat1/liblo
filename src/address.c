@@ -225,6 +225,8 @@ void lo_address_free_mem(lo_address a)
             freeaddrinfo(a->ai_first);
         if (a->addr.iface)
             free(a->addr.iface);
+
+        memset(a, 0, sizeof(struct _lo_address));
         a->socket = -1;
     }
 }
