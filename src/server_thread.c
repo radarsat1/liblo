@@ -17,7 +17,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_LIBPTHREAD
 #include <pthread.h>
+#endif
 #include <sys/types.h>
 
 #if defined(WIN32) || defined(_MSC_VER)
