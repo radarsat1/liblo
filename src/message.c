@@ -939,7 +939,7 @@ void lo_message_pp(lo_message m)
             printf(" ");
         }
 
-        lo_arg_pp_internal(m->types[i], d, 1);
+        lo_arg_pp_internal(m->types[i], d, 0);
         d = (char *) d + lo_arg_size(m->types[i], d);
     }
     putchar('\n');
