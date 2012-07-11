@@ -410,7 +410,9 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     }
 #endif
 
-        if (group != NULL) {
+        if (group != NULL
+            || proto == LO_TCP)
+        {
             err = lo_server_setsock_reuseaddr(s);
             if (err) {
                 lo_server_free(s);
