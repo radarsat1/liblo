@@ -398,7 +398,7 @@ int lo_message_add_midi(lo_message m, uint8_t a[4])
     if (lo_message_add_typechar(m, LO_MIDI))
         return -1;
 
-    memcpy(nptr, a, sizeof(a));
+    memcpy(nptr, a, 4 * sizeof(uint8_t));
     return 0;
 }
 
@@ -580,7 +580,7 @@ ssize_t lo_validate_bundle(void *data, ssize_t size)
 {
     ssize_t len = 0, remain = size;
     char *pos = data;
-    uint32_t elem_len;
+    ssize_t elem_len;
 
     len = lo_validate_string(data, size);
     if (len < 0) {

@@ -178,7 +178,7 @@ char *lo_address_get_url(lo_address a)
     char *buf;
     int ret = 0;
     int needquote = strchr(a->host, ':') ? 1 : 0;
-    char *fmt;
+    const char *fmt;
 
     if (needquote) {
         fmt = "osc.%s://[%s]:%s/";
@@ -378,11 +378,13 @@ int lo_address_get_ttl(lo_address t)
     return t->ttl;
 }
 
+#ifdef ENABLE_IPV6
 static int is_dotted_ipv4_address (const char* address)
 {
     int a[4];
     return sscanf(address, "%u.%u.%u.%u", &a[0], &a[1], &a[2], &a[3]);
 }
+#endif
 
 void lo_address_copy(lo_address to, lo_address from)
 {
@@ -438,7 +440,9 @@ int lo_address_resolve(lo_address a)
         struct addrinfo *ai;
         struct addrinfo hints;
         char* host = a->host;
+#ifdef ENABLE_IPV6
         char hosttmp[7+16+1]; // room for ipv6 prefix + a dotted quad
+#endif
 
         memset(&hints, 0, sizeof(hints));
 #ifdef ENABLE_IPV6

@@ -282,7 +282,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
-    s->sources = (lo_address*)calloc(2, sizeof(struct _lo_address));
+    s->sources = (lo_address)calloc(2, sizeof(struct _lo_address));
     s->sources_len = 2;
     s->bundle_start_handler = NULL;
     s->bundle_end_handler = NULL;
@@ -395,7 +395,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 	    }
         }
         if (s->sockets[0].fd == -1) {
-            int err = geterror();
+            err = geterror();
             used = NULL;
             lo_throw(s, err, strerror(err), "socket()");
 
@@ -423,7 +423,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             err = lo_server_setsock_reuseaddr(s);
             if (err) {
                 lo_server_free(s);
-                return err;
+                return NULL;
             }
         }
 
@@ -568,7 +568,6 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
                                    int fam, const char *iface, const char *ip)
 {
     struct ip_mreq mreq;
-    unsigned int yes = 1;
     memset(&mreq, 0, sizeof(mreq));
 
     // TODO ipv6 support here
@@ -1259,7 +1258,7 @@ static int dispatch_data(lo_server s, void *data,
 
 int lo_server_dispatch_data(lo_server s, void *data, size_t size)
 {
-    dispatch_data(s, data, size, -1);
+    return dispatch_data(s, data, size, -1);
 }
 
 /* returns the time in seconds until the next scheduled event */
@@ -1696,7 +1695,7 @@ char *lo_server_get_url(lo_server s)
     }
 
     if (s->protocol == LO_UDP || s->protocol == LO_TCP) {
-        char *proto = s->protocol == LO_UDP ? "udp" : "tcp";
+        const char *proto = s->protocol == LO_UDP ? "udp" : "tcp";
 
 #ifndef _MSC_VER
         ret =
