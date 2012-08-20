@@ -386,6 +386,13 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
             used = it;
             s->sockets[0].fd = socket(it->ai_family, hints.ai_socktype, 0);
+	    
+	    if (s->sockets[0].fd != -1 &&
+		it->ai_family == AF_INET && hints.ai_socktype == SOCK_DGRAM) {
+		int opt = 1;
+		setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_BROADCAST, &opt,
+			   sizeof(int));
+	    }
         }
         if (s->sockets[0].fd == -1) {
             int err = geterror();
