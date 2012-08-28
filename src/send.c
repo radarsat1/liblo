@@ -385,7 +385,7 @@ static int create_socket(lo_address a)
 static int send_data(lo_address a, lo_server from, char *data,
                      const size_t data_len)
 {
-    int ret = 0;
+    ssize_t ret = 0;
     int sock = -1;
 
 #if defined(WIN32) || defined(_MSC_VER)

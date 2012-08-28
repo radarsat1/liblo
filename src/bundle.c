@@ -57,7 +57,7 @@ int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m)
 size_t lo_bundle_length(lo_bundle b)
 {
     size_t size = 16;           /* "#bundle" and the timetag */
-    int i;
+    size_t i;
 
     if (!b) {
         return 0;
@@ -75,7 +75,7 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
 {
     size_t s, skip;
     int32_t *bes;
-    int i;
+    size_t i;
     char *pos;
     lo_pcast32 be;
 
@@ -105,12 +105,12 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
 
     for (i = 0; i < b->len; i++) {
         lo_message_serialise(b->msgs[i], b->paths[i], pos + 4, &skip);
-        bes = (int32_t *) pos;
+        bes = (int32_t *) (void *)pos;
         *bes = lo_htoo32(skip);
         pos += skip + 4;
 
         if (pos > (char *) to + s) {
-            fprintf(stderr, "liblo: data integrity error at message %d\n",
+            fprintf(stderr, "liblo: data integrity error at message %ld\n",
                     i);
 
             return NULL;
@@ -147,7 +147,7 @@ static int _lo_internal_compare_ptrs(const void *a, const void *b)
 
 void lo_bundle_free_messages(lo_bundle b)
 {
-    int i;
+    size_t i;
     lo_message tmp = 0;
 
     if (!b)
@@ -171,7 +171,7 @@ void lo_bundle_free_messages(lo_bundle b)
 
 void lo_bundle_pp(lo_bundle b)
 {
-    int i;
+    size_t i;
 
     if (!b)
         return;
