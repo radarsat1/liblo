@@ -58,6 +58,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     a->socket = -1;
     a->ownsocket = 1;
     a->protocol = proto;
+    a->flags = 0;
     switch (proto) {
     default:
     case LO_UDP:
@@ -376,6 +377,11 @@ void lo_address_set_ttl(lo_address t, int ttl)
 int lo_address_get_ttl(lo_address t)
 {
     return t->ttl;
+}
+
+void lo_address_set_flags(lo_address t, int flags)
+{
+    t->flags = flags;
 }
 
 #ifdef ENABLE_IPV6

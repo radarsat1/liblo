@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <float.h>
 #include <sys/types.h>
@@ -720,16 +721,85 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
     return data;
 }
 
+// From http://tools.ietf.org/html/rfc1055
+#define SLIP_END        0300    /* indicates end of packet */
+#define SLIP_ESC        0333    /* indicates byte stuffing */
+#define SLIP_ESC_END    0334    /* ESC ESC_END means END data byte */
+#define SLIP_ESC_ESC    0335    /* ESC ESC_ESC means ESC data byte */
+
+// buffer to write to
+// buffer to read from
+// size of buffer to read from
+// state variable needed to maintain between calls broken on ESC boundary
+// location to store count of bytes read from input buffer
+static int slip_decode(unsigned char *buffer, unsigned char *from,
+                       int size, int *state, int *bytesread)
+{
+    *bytesread = 0;
+    while (size--) {
+        (*bytesread)++;
+        switch (*state) {
+        case 0:
+            switch (*from) {
+            case SLIP_END:
+                return 0;
+            case SLIP_ESC:
+                *state = 1;
+                continue;
+            default:
+                *buffer++ = *from++;
+            }
+            break;
+
+        case 1:
+            switch (*from) {
+            case SLIP_ESC_END:
+                *buffer++ = SLIP_END;
+                break;
+            case SLIP_ESC_ESC:
+                *buffer++ = SLIP_ESC;
+                break;
+            }
+            *state = 0;
+            break;
+        }
+    };
+    return 1;
+}
+
+static int detect_slip(unsigned char *bytes)
+{
+    // If stream starts with SLIP_END or with a '/', assume we are
+    // looking at a SLIP stream, otherwise, first four bytes probably
+    // represent a message length and we are looking at a count-prefix
+    // stream.  Note that several SLIP_ENDs in a row are supposed to
+    // be ignored by the SLIP protocol, but here we only handle one
+    // extra one, since it may exist e.g. at the beginning of a
+    // stream.
+    if (bytes[0]==SLIP_END && bytes[1]=='/'
+        && (isprint(bytes[2])||bytes[2]==0)
+        && (isprint(bytes[3])||bytes[3]==0))
+        return 1;
+    if (bytes[0]=='/'
+        && (isprint(bytes[1])||bytes[1]==0)
+        && (isprint(bytes[2])||bytes[2]==0)
+        && (isprint(bytes[3])||bytes[3]==0))
+        return 1;
+    if (memcmp(bytes, "#bun", 4)==0)
+        return 1;
+    return 0;
+}
+
 void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
-    char buffer[LO_MAX_MSG_SIZE];
-    int32_t read_size;
     int ret = 0, i;
+    int32_t read_size = 0;
+    char buffer[LO_MAX_MSG_SIZE];
+    int bytesleft, bytesread = 0;
     void *data = NULL;
     int sock = -1;
-    int bytesleft = 0;
 #ifdef HAVE_SELECT
 #ifndef HAVE_POLL
     fd_set ps;
@@ -827,26 +897,70 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 continue;
 
             read_size = ntohl(read_size);
-            if (read_size > LO_MAX_MSG_SIZE || ret <= 0) {
-                closesocket(sock);
-                lo_server_del_socket(s, i, sock);
-                if (ret > 0)
-                    lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
-                continue;
-            }
 
-            bytesleft = read_size;
-            while (bytesleft > 0) {
-                ret = recv(sock, buffer+read_size-bytesleft, bytesleft, 0);
+            // detect SLIP based on first 4 bytes
+            int32_t sizebytes = lo_swap32(read_size);
+            int slip = detect_slip((unsigned char*)&sizebytes);
+
+            if (slip) {
+                int slipstate = 0;
+                unsigned char slipchar = 0, *buf=0;
+                if (!slip_decode((unsigned char*)buffer,
+                                 (unsigned char*)&sizebytes,
+                                 sizeof(int32_t), &slipstate, &bytesread))
+                {
+                    // returns zero for done, error?
+                    printf("error? message too short?\n");
+                    continue;
+                }
+
+                // TODO: Here we read one character at a time, so as
+                // not to keep a buffer between reads for each open
+                // socket.  It may be preferable to do so eventually,
+                // also to help handle partial recv() success.
+
+                ret = recv(sock, &slipchar, 1, 0);
+                buf = (unsigned char*)(buffer+bytesread);
+                while (ret==1 && slip_decode(buf, &slipchar, 1,
+                                             &slipstate, &bytesread)
+                       && (buf-(unsigned char*)buffer) < LO_MAX_MSG_SIZE)
+                {
+                    buf += bytesread;
+                    ret = recv(sock, &slipchar, 1, 0);
+                }
+
                 if (ret <= 0) {
                     closesocket(sock);
                     lo_server_del_socket(s, i, sock);
-                    break;
-                } else
-                    bytesleft -= ret;
+                    continue;
+                }
+
+                bytesread = buf-(unsigned char*)buffer;
+            } else {
+                int bytesleft = 0;
+
+                if (read_size > LO_MAX_MSG_SIZE || ret <= 0) {
+                    closesocket(sock);
+                    lo_server_del_socket(s, i, sock);
+                    if (ret > 0)
+                        lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
+                    continue;
+                }
+
+                bytesleft = read_size;
+                while (bytesleft > 0) {
+                    ret = recv(sock, buffer+read_size-bytesleft, bytesleft, 0);
+                    if (ret <= 0) {
+                        closesocket(sock);
+                        lo_server_del_socket(s, i, sock);
+                        break;
+                    } else
+                        bytesleft -= ret;
+                }
+                if (ret <= 0)
+                    continue;
+                bytesread = ret;
             }
-            if (ret <= 0)
-                continue;
 
             /* end of loop over sockets: successfully read data */
             break;
@@ -858,11 +972,11 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     if (ret <= 0)
         return NULL;
 
-    data = malloc(ret);
-    memcpy(data, buffer, ret);
+    data = malloc(bytesread);
+    memcpy(data, buffer, bytesread);
 
     if (size)
-        *size = ret;
+        *size = bytesread;
 
     if (psock)
         *psock = sock;

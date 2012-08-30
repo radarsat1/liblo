@@ -57,6 +57,7 @@ typedef struct _lo_address {
     int ownsocket;
     char *port;
     int protocol;
+    lo_proto_flags flags;
     struct addrinfo *ai;
     struct addrinfo *ai_first;
     int errnum;

@@ -382,6 +382,39 @@ static int create_socket(lo_address a)
     return 0;
 }
 
+
+// From http://tools.ietf.org/html/rfc1055
+#define SLIP_END        0300    /* indicates end of packet */
+#define SLIP_ESC        0333    /* indicates byte stuffing */
+#define SLIP_ESC_END    0334    /* ESC ESC_END means END data byte */
+#define SLIP_ESC_ESC    0335    /* ESC ESC_ESC means ESC data byte */
+
+static unsigned char *slip_encode(const unsigned char *data,
+                                  size_t *data_len)
+{
+    size_t i, j, len=*data_len;
+    unsigned char *slipdata = malloc(len*2);
+    for (i=0; i<len; i++) {
+        switch (data[i])
+        {
+        case SLIP_ESC:
+            slipdata[j++] = SLIP_ESC;
+            slipdata[j++] = SLIP_ESC_ESC;
+            break;
+        case SLIP_END:
+            slipdata[j++] = SLIP_ESC;
+            slipdata[j++] = SLIP_ESC_END;
+            break;
+        default:
+            slipdata[j++] = data[i];
+        }
+    }
+    slipdata[j++] = SLIP_END;
+    slipdata[j] = 0;
+    *data_len = j;
+    return slipdata;
+}
+
 static int send_data(lo_address a, lo_server from, char *data,
                      const size_t data_len)
 {
@@ -432,8 +465,8 @@ static int send_data(lo_address a, lo_server from, char *data,
         sock = a->socket;
     }
 
-    // For TCP only, send the length of the following data
-    if (a->protocol == LO_TCP) {
+    if (a->protocol == LO_TCP && !(a->flags & LO_SLIP)) {
+        // For TCP only, send the length of the following data
         int32_t size = htonl(data_len);
         ret = send(sock, &size, sizeof(size), MSG_NOSIGNAL);
     }
@@ -470,9 +503,13 @@ static int send_data(lo_address a, lo_server from, char *data,
         } else {
             struct addrinfo* ai = a->ai;
             ret = -1;
-            
+
+            size_t len = data_len;
+            if (a->flags & LO_SLIP)
+                data = (char*)slip_encode((unsigned char*)data, &len);
+
             do {
-                ret = send(sock, data, data_len, MSG_NOSIGNAL);
+                ret = send(sock, data, len, MSG_NOSIGNAL);
                 if (a->protocol == LO_TCP)
                     ai = ai->ai_next;
                 else
@@ -480,6 +517,9 @@ static int send_data(lo_address a, lo_server from, char *data,
             } while (ret == -1 && ai != NULL);
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
+
+            if (a->flags & LO_SLIP)
+                free(data);
         }
     }
 

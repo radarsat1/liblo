@@ -151,6 +151,12 @@ lo_timetag lo_get_tt_immediate();
 #define LO_TT_IMMEDIATE ((lo_timetag){0U,1U})
 #endif // USE_ANSI_C
 
+/** \brief Bitflags for optional protocol features, set by
+ *         lo_address_set_flags(). */
+typedef enum {
+    LO_SLIP=0x01,
+} lo_proto_flags;
+
 /** @} */
 
 #endif
