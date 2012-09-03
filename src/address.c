@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <netinet/tcp.h>
 
 #include "config.h"
 
@@ -391,6 +392,14 @@ int lo_address_get_ttl(lo_address t)
 
 void lo_address_set_flags(lo_address t, int flags)
 {
+    if (((t->flags & LO_NODELAY) != (flags & LO_NODELAY))
+        && t->socket > 0)
+    {
+        int option = (t->flags & LO_NODELAY)!=0;
+        setsockopt(t->socket, IPPROTO_TCP, TCP_NODELAY,
+                   &option, sizeof(option));
+    }
+
     t->flags = flags;
 }
 

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <netinet/tcp.h>
 
 #if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
@@ -376,6 +377,14 @@ static int create_socket(lo_address a)
         int option = 1; // yes, we don't want SIGPIPE
         setsockopt(a->socket, SOL_SOCKET, SO_NOSIGPIPE, &option,
                    sizeof(option));
+    }
+#endif
+
+#ifdef TCP_NODELAY
+    if (a->flags & LO_NODELAY) {
+        int option = 1;
+        setsockopt(a->socket, IPPROTO_TCP, TCP_NODELAY,
+        &option, sizeof(option));
     }
 #endif
     

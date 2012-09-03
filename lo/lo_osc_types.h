@@ -154,7 +154,8 @@ lo_timetag lo_get_tt_immediate();
 /** \brief Bitflags for optional protocol features, set by
  *         lo_address_set_flags(). */
 typedef enum {
-    LO_SLIP=0x01,
+    LO_SLIP=0x01,     /*!< SLIP decoding */
+    LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
 } lo_proto_flags;
 
 /** @} */
