@@ -198,6 +198,10 @@ char *lo_address_get_url(lo_address a)
     snprintf(buf, ret + 1, fmt,
              get_protocol_name(a->protocol), a->host, a->port);
 
+    if (a->protocol==LO_UNIX) {
+        buf[ret-1] = 0;
+    }
+
     return buf;
 }
 
@@ -355,10 +359,16 @@ char *lo_url_get_path(const char *url)
     if (sscanf(url, "osc.%*[^:]://%*[^:]:%*[0-9]%s", path) == 1) {
         return path;
     }
-    if (sscanf(url, "osc.unix://%*[^/]%s", path) == 1) {
+    if (sscanf(url, "osc.unix://%*[^/]%s", path)) {
+        int i = strlen(path)-1;
+        if (path[i]=='/') // remove trailing slash
+            path[i] = 0;
         return path;
     }
     if (sscanf(url, "osc.%*[^:]://%s", path)) {
+        int i = strlen(path)-1;
+        if (path[i]=='/') // remove trailing slash
+            path[i] = 0;
         return path;
     }
 
