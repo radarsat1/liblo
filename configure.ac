@@ -104,6 +104,20 @@ AC_SUBST(LO_BIGENDIAN)
 
 AC_SUBST(extralibs)
 
+# Enable debug compiler flags.  Treat all warnings as errors.
+# Necessary to do this here, since -Werror causes problems with some
+# autoconf tests used above.
+AC_ARG_ENABLE(debug, [  --enable-debug          Enable debug compiler flags])
+if test x"$enable_debug" = "xyes"; then
+    CF=""
+    for i in $CFLAGS; do
+        if ! ((test x"$i" = x-g) || (test x"$i" = x-O2)); then
+            CF="$CF $i"
+        fi
+    done
+	CFLAGS="$CF -O0 -g -Wall -Werror"
+fi
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
