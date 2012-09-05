@@ -361,6 +361,9 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 #endif
     hints.ai_flags = AI_PASSIVE;
 
+    if (group)
+        hints.ai_flags |= AI_CANONNAME;
+
     if (!port) {
         service = pnum;
     } else {
@@ -374,7 +377,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                                                time(NULL)) % 10000);
         }
 
-        ret = getaddrinfo(NULL, service, &hints, &ai);
+        ret = getaddrinfo(group, service, &hints, &ai);
         if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
             lo_server_free(s);
@@ -388,7 +391,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
         for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
             used = it;
-            s->sockets[0].fd = socket(it->ai_family, hints.ai_socktype, 0);
+            s->sockets[0].fd = socket(it->ai_family, it->ai_socktype, 0);
 
             if (s->sockets[0].fd != -1
                 && it->ai_family == AF_INET
@@ -409,17 +412,19 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         }
 
 #ifdef ENABLE_IPV6
-    unsigned int v6only_off = 0;
-    if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY,
-                   &v6only_off, sizeof(v6only_off)) < 0) {
-        err = geterror();
-        /* Ignore the error if the option is simply not supported. */
-        if (err!=ENOPROTOOPT) {
-            lo_throw(s, err, strerror(err), "setsockopt(IPV6_V6ONLY)");
-            lo_server_free(s);
-            return NULL;
+        if (used->ai_family==AF_INET6) {
+            unsigned int v6only_off = 0;
+            if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY,
+                           &v6only_off, sizeof(v6only_off)) < 0) {
+                err = geterror();
+                /* Ignore the error if the option is simply not supported. */
+                if (err!=ENOPROTOOPT) {
+                    lo_throw(s, err, strerror(err), "setsockopt(IPV6_V6ONLY)");
+                    lo_server_free(s);
+                    return NULL;
+                }
+            }
         }
-    }
 #endif
 
         if (group != NULL
@@ -483,55 +488,23 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         lo_client_sockets.tcp = s->sockets[0].fd;
     }
 
-    /* Set hostname to empty string */
-    hostname[0] = '\0';
-
-#ifdef ENABLE_IPV6
-    /* Try it the IPV6 friendly way first */
-    for (it = ai; it; it = it->ai_next) {
-        if (getnameinfo(it->ai_addr, it->ai_addrlen, hostname,
-                        sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0) {
-            break;
-        }
+    /* Get the hostname for URL */
+    if (used->ai_canonname)
+        s->hostname = strdup(used->ai_canonname);
+    else if (group)
+        s->hostname = strdup(group);
+    else {
+        if (gethostname(hostname, sizeof(hostname)) == -1)
+            strcpy(hostname, "localhost");
+        s->hostname = strdup(hostname);
     }
 
-    /* check to make sure getnameinfo() didn't just set the hostname to "::".
-       Needed on Darwin. */
-    if (hostname[0] == ':') {
-        hostname[0] = '\0';
-    }
-#endif
-
-
-    /* Fallback to the oldschool (i.e. more reliable) way */
-    if (!hostname[0]) {
-        struct hostent *he;
-
-        gethostname(hostname, sizeof(hostname));
-        he = gethostbyname(hostname);
-        if (he) {
-            strncpy(hostname, he->h_name, sizeof(hostname));
-        }
-    }
-
-    /* soethings gone really wrong, just hope its local only */
-    if (!hostname[0]) {
-        strcpy(hostname, "localhost");
-    }
-    s->hostname = strdup(hostname);
-
-    if (used->ai_family == PF_INET6) {
-        struct sockaddr_in6 *addr = (struct sockaddr_in6 *) used->ai_addr;
-
-        s->port = htons(addr->sin6_port);
-    } else if (used->ai_family == PF_INET) {
-        struct sockaddr_in *addr = (struct sockaddr_in *) used->ai_addr;
-
-        s->port = htons(addr->sin_port);
-    } else {
-        lo_throw(s, LO_UNKNOWNPROTO, "unknown protocol family", NULL);
-        s->port = atoi(port);
-    }
+    /* Resolve the "service" to a numerical port number */
+    if (getnameinfo(used->ai_addr, used->ai_addrlen, 0, 0,
+                    pnum, sizeof(pnum), NI_NUMERICSERV | NI_NUMERICHOST) == 0)
+        s->port = atoi(pnum);
+    else
+        s->port = atoi(service);
 
     return s;
 }
