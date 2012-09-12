@@ -139,6 +139,7 @@ int main()
     int count;
     int proto;
     char cmd[256];
+    const char *p;
 
     test_deserialise();
 
@@ -559,6 +560,9 @@ int main()
     lo_message_add_int32(m2, 24);
     lo_bundle_add_message(b, "/bundle", m2);
     lo_bundle_add_message(b, "/bundle", m1);
+    TEST(lo_bundle_count(b)==3);
+    TEST(lo_bundle_get_message(b,1,&p)==m2);
+    TEST(strcmp(p, "/bundle")==0);
 
 /* 
     lo_send_bundle(a, b);

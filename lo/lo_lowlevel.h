@@ -479,6 +479,24 @@ int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
 size_t lo_bundle_length(lo_bundle b);
 
 /**
+ * \brief  Return the number of messages in a bundle.
+ *
+ * \param b The bundle to be counted.
+ */
+unsigned int lo_bundle_count(lo_bundle b);
+
+/**
+ * \brief  Gets a message contained within a bundle.
+ *
+ * Returns a lo_message at a given index within a bundle, and
+ * optionally the path associated with that message.
+ *
+ * \return The requested lo_message if successful, otherwise 0.
+ */
+lo_message lo_bundle_get_message(lo_bundle b, int index,
+                                 const char **path);
+
+/**
  * \brief  Serialise the bundle object to an area of memory and return a
  * pointer to the serialised form.
  *

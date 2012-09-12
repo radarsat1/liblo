@@ -54,6 +54,22 @@ int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m)
     return 0;
 }
 
+lo_message lo_bundle_get_message(lo_bundle b, int index,
+                                 const char **path)
+{
+    if (index < b->len) {
+        if (path)
+            *path = b->paths[index];
+        return b->msgs[index];
+    }
+    return 0;
+}
+
+unsigned int lo_bundle_count(lo_bundle b)
+{
+    return b->len;
+}
+
 size_t lo_bundle_length(lo_bundle b)
 {
     size_t size = 16;           /* "#bundle" and the timetag */
