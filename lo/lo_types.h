@@ -92,10 +92,10 @@ typedef void *lo_server;
 typedef void *lo_server_thread;
 
 /**
- * \brief A callback function to receive notifcation of an error in a server or
+ * \brief A callback function to receive notification of an error in a server or
  * server thread.
  *
- * On callback the paramters will be set to the following values:
+ * On callback the parameters will be set to the following values:
  *
  * \param num An error number that can be used to identify this condition.
  * \param msg An error message describing the condidtion.
@@ -105,7 +105,7 @@ typedef void *lo_server_thread;
 typedef void (*lo_err_handler)(int num, const char *msg, const char *where);
 
 /**
- * \brief A callback function to receive notifcation of matching message
+ * \brief A callback function to receive notification of matching message
  * arriving in the server or server thread.
  *
  * The return value tells the method dispatcher whether this handler
