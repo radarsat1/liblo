@@ -79,6 +79,11 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
     return st;
 }
 
+void lo_server_thread_set_error_context(lo_server_thread st,
+                                        void *user_data)
+{
+    lo_server_set_error_context(st->s, user_data);
+}
 
 void lo_server_thread_free(lo_server_thread st)
 {

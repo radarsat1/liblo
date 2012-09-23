@@ -157,6 +157,8 @@ lo_server lo_server_thread_get_server(lo_server_thread st);
  * to be dispatched by the thread */
 int lo_server_thread_events_pending(lo_server_thread st);
 
+void lo_server_thread_set_error_context(lo_server_thread st, void *user_data);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1903,12 +1903,35 @@ static int lo_can_coerce(char a, char b)
             (lo_is_string_type(a) && lo_is_string_type(b)));
 }
 
+// Context for error handler
+void *lo_error_context;
+#ifdef ENABLE_THREADS
+pthread_mutex_t lo_error_context_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 void lo_throw(lo_server s, int errnum, const char *message,
               const char *path)
 {
     if (s->err_h) {
+        #ifdef ENABLE_THREADS
+        pthread_mutex_lock(&lo_error_context_mutex);
+        #endif
+        lo_error_context = s->error_user_data;
         (*s->err_h) (errnum, message, path);
+        #ifdef ENABLE_THREADS
+        pthread_mutex_unlock(&lo_error_context_mutex);
+        #endif
     }
+}
+
+void *lo_error_get_context()
+{
+    return lo_error_context;
+}
+
+void lo_server_set_error_context(lo_server s, void *user_data)
+{
+    s->error_user_data = user_data;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

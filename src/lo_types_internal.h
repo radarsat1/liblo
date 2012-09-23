@@ -127,6 +127,7 @@ typedef struct _lo_server {
     lo_bundle_end_handler bundle_end_handler;
     void *bundle_handler_user_data;
     struct _lo_inaddr addr_if;
+    void *error_user_data;
 } *lo_server;
 
 #ifdef ENABLE_THREADS
