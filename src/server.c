@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <float.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 #ifdef _MSC_VER
 #define _WINSOCKAPI_
@@ -284,6 +285,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
+    s->contexts = calloc(2, sizeof(*(s->contexts)));
     s->sources = (lo_address)calloc(2, sizeof(struct _lo_address));
     s->sources_len = 2;
     s->bundle_start_handler = NULL;
@@ -677,8 +679,11 @@ void lo_server_free(lo_server s)
 #endif
                 closesocket(s->sockets[i].fd);
             }
+            if (s->contexts[i].buffer)
+                free(s->contexts[i].buffer);
         }
         free(s->sockets);
+        free(s->contexts);
 
         for (i=0; i < s->sources_len; i++) {
             if (s->sources[i].host)
@@ -740,8 +745,8 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
 // size of buffer to read from
 // state variable needed to maintain between calls broken on ESC boundary
 // location to store count of bytes read from input buffer
-static int slip_decode(unsigned char *buffer, unsigned char *from,
-                       int size, int *state, int *bytesread)
+static int slip_decode(unsigned char **buffer, unsigned char *from,
+                       size_t size, int *state, size_t *bytesread)
 {
     *bytesread = 0;
     while (size--) {
@@ -755,17 +760,17 @@ static int slip_decode(unsigned char *buffer, unsigned char *from,
                 *state = 1;
                 continue;
             default:
-                *buffer++ = *from++;
+                *(*buffer)++ = *from++;
             }
             break;
 
         case 1:
             switch (*from) {
             case SLIP_ESC_END:
-                *buffer++ = SLIP_END;
+                *(*buffer)++ = SLIP_END;
                 break;
             case SLIP_ESC_ESC:
-                *buffer++ = SLIP_ESC;
+                *(*buffer)++ = SLIP_ESC;
                 break;
             }
             *state = 0;
@@ -798,14 +803,242 @@ static int detect_slip(unsigned char *bytes)
     return 0;
 }
 
+static
+void init_context(struct socket_context *sc)
+{
+    sc->is_slip = -1;
+    sc->buffer = 0;
+    sc->buffer_size = 0;
+    sc->buffer_msg_offset = 0;
+    sc->buffer_read_offset = 0;
+}
+
+static
+void cleanup_context(struct socket_context *sc)
+{
+    if (sc->buffer)
+        free(sc->buffer);
+    memset(sc, 0, sizeof(struct socket_context));
+}
+
+/*! \internal Return message length if a whole message is waiting in
+ *  the socket's buffer, or 0 otherwise. */
+static
+uint32_t lo_server_buffer_contains_msg(lo_server s, int isock)
+{
+    struct socket_context *sc = &s->contexts[isock];
+    if (sc->buffer_read_offset > sizeof(uint32_t))
+    {
+        uint32_t msg_len = ntohl(*(uint32_t*)sc->buffer);
+        return (msg_len + sizeof(uint32_t) <= sc->buffer_read_offset)
+            ? msg_len : 0;
+    }
+    return 0;
+}
+
+static
+void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
+{
+    struct socket_context *sc = &s->contexts[isock];
+    uint32_t msg_len = lo_server_buffer_contains_msg(s, isock);
+    if (msg_len == 0)
+        return NULL;
+
+    void *data = malloc(msg_len);
+    memcpy(data, sc->buffer + sizeof(uint32_t), msg_len);
+    *psize = msg_len;
+
+    sc->buffer_read_offset -= msg_len + sizeof(uint32_t);
+    sc->buffer_msg_offset -= msg_len + sizeof(uint32_t);
+
+    // Move any left-over data to the beginning of the buffer to
+    // make room for the next read.
+    if (sc->buffer_read_offset > 0)
+        memmove(sc->buffer,
+                sc->buffer + msg_len + sizeof(uint32_t),
+                sc->buffer_read_offset);
+
+    return data;
+}
+
+/*! \internal This is called when a socket in the list is ready for
+ *  recv'ing, previously checked by poll() or select(). */
+static
+int lo_server_recv_raw_stream_socket(lo_server s, int isock,
+                                     size_t *psize, void **pdata)
+{
+    struct socket_context *sc = &s->contexts[isock];
+    char *stack_buffer = 0;
+    *pdata = 0;
+    uint32_t msg_len;
+
+  again:
+
+    // Check if there is already a message waiting in the buffer.
+    if ((*pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize)))
+        // There could be more data, so return true.
+        return 1;
+
+    int buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
+
+    // If we need more than half the buffer, double the buffer size.
+    int size = sc->buffer_size;
+    if (size < 64)
+        size = 64;
+    while (buffer_bytes_left < size/2)
+    {
+        size *= 2;
+
+        // Strictly speaking this is an arbitrary limit and could be
+        // removed for TCP, since there is no upper limit on packet
+        // size as in UDP, however we leave it for security
+        // reasons--an unterminated SLIP stream would consume memory
+        // indefinitely.
+        if (size > LO_MAX_MSG_SIZE)
+            size = LO_MAX_MSG_SIZE;
+
+        buffer_bytes_left = size - sc->buffer_read_offset;
+    }
+
+    if (size > sc->buffer_size)
+    {
+        sc->buffer_size = size;
+        sc->buffer = realloc(sc->buffer, sc->buffer_size);
+        if (!sc->buffer)
+            // Out of memory
+            return 0;
+    }
+
+    // Read as much as we can into the remaining buffer memory.
+    buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
+
+    char *read_into = sc->buffer + sc->buffer_read_offset;
+
+    // In SLIP mode, we instead read into the local stack buffer
+    if (sc->is_slip == 1)
+    {
+        stack_buffer = alloca(buffer_bytes_left - sizeof(uint32_t));
+        read_into = stack_buffer;
+    }
+
+    int bytes_recv = recv(s->sockets[isock].fd,
+                          read_into,
+                          buffer_bytes_left, 0);
+
+    if (bytes_recv <= 0)
+    {
+        if (errno == EAGAIN)
+            return 0;
+
+        // Error, or socket was closed.
+        // Either way, we remove it from the server.
+        closesocket(s->sockets[isock].fd);
+        lo_server_del_socket(s, isock, s->sockets[isock].fd);
+        return 0;
+    }
+
+    // If unknown, check whether we are in a SLIP stream.
+    if (sc->is_slip == -1 && (sc->buffer_read_offset + bytes_recv) >= 4) {
+        sc->is_slip = detect_slip((unsigned char*)(sc->buffer
+												   + sc->buffer_msg_offset));
+        sc->slip_state = 0;
+
+        // Copy to stack if we just discovered we are in SLIP mode
+        if (sc->is_slip)
+        {
+            stack_buffer = alloca(bytes_recv);
+            memcpy(stack_buffer, read_into, bytes_recv);
+
+            // Make room for size header
+            *(uint32_t*)(sc->buffer + sc->buffer_read_offset) = 0;
+            sc->buffer_read_offset += sizeof(uint32_t);
+        }
+    }
+
+    if (sc->is_slip == 1)
+    {
+        // For SLIP, copy the read data into stack memory and decode
+        // it back to the buffer.  We will leave enough room to
+        // prepend a count prefix, and let the count-prefix code
+        // handle it below.
+
+        // Note for future: Actually we could dispatch it right here
+        // instead of allocating and copying it to a buffer, but the
+        // lo_server_recv() semantics require that we handle only 1
+        // message at a time, so we are forced to leave undispatched
+        // messages in the buffer for later.
+
+        size_t bytes_read = 0;
+
+        // Need to provide a mutable pointer to track how much memory
+        // was written to the buffer by the SLIP decoder.
+        char *buffer_after = sc->buffer + sc->buffer_read_offset;
+
+        // As long as we find whole messages, dispatch them.
+        while (slip_decode((unsigned char**)&buffer_after,
+						   (unsigned char*)stack_buffer, bytes_recv,
+                           &sc->slip_state, &bytes_read) == 0)
+        {
+            // We have a whole message in the buffer.
+            size_t bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
+
+            sc->buffer_read_offset += bytes_wrote;
+
+            msg_len = sc->buffer_read_offset - sc->buffer_msg_offset - sizeof(uint32_t);
+
+            // Store message length header
+            *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = htonl(msg_len);
+
+            // Advance to next message and zero the message length header
+            sc->buffer_msg_offset += msg_len + sizeof(uint32_t);
+            sc->buffer_read_offset += sizeof(uint32_t);
+            buffer_after += sizeof(uint32_t);
+            *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = 0;
+
+            // Update how much memory still needs decoding.
+            bytes_recv -= bytes_read;
+            stack_buffer += bytes_read;
+
+            // We could exceed buffer due to prepending the count
+            // prefix, so if we need more buffer room, allocate it.
+            if (bytes_recv + sizeof(uint32_t) > sc->buffer_size - sc->buffer_read_offset)
+            {
+                sc->buffer_size *= 2;
+                sc->buffer = realloc(sc->buffer, sc->buffer_size);
+            }
+        }
+
+        // Any data left over is left in the buffer, so update the
+        // read offset to indicate the end of it.
+        size_t bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
+        sc->buffer_read_offset += bytes_wrote;
+    }
+    else
+    {
+        sc->buffer_read_offset += bytes_recv;
+    }
+
+    *pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize);
+
+    if (!*pdata && bytes_recv == buffer_bytes_left)
+    {
+        // There could be more data, try recv() again.  This is okay
+        // because we set the O_NONBLOCK flag.
+        goto again;
+    }
+
+    // We need to inform the caller whether there may be data left
+    // to read, which is true if we read exactly as much as we
+    // asked for.
+    return bytes_recv == buffer_bytes_left;
+}
+
+static
 void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
-    int ret = 0, i;
-    int32_t read_size = 0;
-    char buffer[LO_MAX_MSG_SIZE];
-    int bytesleft, bytesread = 0;
+    int i;
     void *data = NULL;
     int sock = -1;
 #ifdef HAVE_SELECT
@@ -828,11 +1061,14 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     for (i = 0; i < s->sockets_len; i++) {
         s->sockets[i].events = POLLIN | POLLPRI;
         s->sockets[i].revents = 0;
+
+        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size)))
+            return data;
     }
 
     poll(s->sockets, s->sockets_len, -1);
 
-    for (i = (s->sockets_len - 1); i >= 0; --i) {
+    for (i = (s->sockets_len - 1) && !data; i >= 0; --i) {
         if (s->sockets[i].revents == POLLERR
             || s->sockets[i].revents == POLLHUP) {
             if (i > 0) {
@@ -858,12 +1094,15 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
         FD_SET(s->sockets[i].fd, &ps);
         if (s->sockets[i].fd > nfds)
             nfds = s->sockets[i].fd;
+
+        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size)))
+            return data;
     }
 
     if (select(nfds + 1, &ps, NULL, NULL, NULL) == SOCKET_ERROR)
         return NULL;
 
-    for (i = 0; i < s->sockets_len; i++) {
+    for (i = 0; i < s->sockets_len && !data; i++) {
         if (FD_ISSET(s->sockets[i].fd, &ps)) {
             sock = s->sockets[i].fd;
 
@@ -876,7 +1115,9 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
             /* zeroeth socket is listening for new connections */
             if (sock == s->sockets[0].fd) {
                 sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
-                lo_server_add_socket(s, sock, 0, &addr, addr_len);
+
+                i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
+                init_context(&s->contexts[i]);
 
                 /* after adding a new socket, call select()/poll()
                  * again, since we are supposed to block until a
@@ -889,105 +1130,15 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 return NULL;
             }
 
-            bytesleft = sizeof(read_size);
-            while (bytesleft > 0) {
-                ret = recv(sock,
-                           ((char*)&read_size)+sizeof(read_size)-bytesleft,
-                           bytesleft, 0);
-                if (ret <= 0) {
-                    closesocket(sock);
-                    lo_server_del_socket(s, i, sock);
-                    break;
-                } else
-                    bytesleft -= ret;
+            /* Handle incoming socket data */
+            if (lo_server_recv_raw_stream_socket(s, i, size, &data)
+                && !data)
+            {
+                // There could be more data waiting
+                //*more = 1;
             }
-            if (ret <= 0)
-                continue;
-
-            read_size = ntohl(read_size);
-
-            // detect SLIP based on first 4 bytes
-            int32_t sizebytes = lo_swap32(read_size);
-            int slip = detect_slip((unsigned char*)&sizebytes);
-
-            if (slip) {
-                int slipstate = 0;
-                unsigned char slipchar = 0, *buf=0;
-                if (!slip_decode((unsigned char*)buffer,
-                                 (unsigned char*)&sizebytes,
-                                 sizeof(int32_t), &slipstate, &bytesread))
-                {
-                    // returns zero for done, error?
-                    printf("error? message too short?\n");
-                    continue;
-                }
-
-                // TODO: Here we read one character at a time, so as
-                // not to keep a buffer between reads for each open
-                // socket.  It may be preferable to do so eventually,
-                // also to help handle partial recv() success.
-
-                ret = recv(sock, (void*)&slipchar, 1, 0);
-                buf = (unsigned char*)(buffer+bytesread);
-                while (ret==1 && slip_decode(buf, &slipchar, 1,
-                                             &slipstate, &bytesread)
-                       && (buf-(unsigned char*)buffer) < LO_MAX_MSG_SIZE)
-                {
-                    buf += bytesread;
-                    ret = recv(sock, (void*)&slipchar, 1, 0);
-                }
-
-                if (ret <= 0) {
-                    closesocket(sock);
-                    lo_server_del_socket(s, i, sock);
-                    continue;
-                }
-
-                bytesread = buf-(unsigned char*)buffer;
-            } else {
-                int bytesleft = 0;
-
-                if (read_size > LO_MAX_MSG_SIZE || ret <= 0) {
-                    closesocket(sock);
-                    lo_server_del_socket(s, i, sock);
-                    if (ret > 0)
-                        lo_throw(s, LO_TOOBIG, "Message too large", "recv()");
-                    continue;
-                }
-
-                bytesleft = read_size;
-                while (bytesleft > 0) {
-                    ret = recv(sock, buffer+read_size-bytesleft, bytesleft, 0);
-                    if (ret <= 0) {
-                        closesocket(sock);
-                        lo_server_del_socket(s, i, sock);
-                        break;
-                    } else
-                        bytesleft -= ret;
-                }
-                if (ret <= 0)
-                    continue;
-                bytesread = read_size;
-            }
-
-            /* end of loop over sockets: successfully read data */
-            break;
         }
     }
-
-    /* it's possible for ret==0, in the case that one of the
-     * connections has been closed */
-    if (ret <= 0)
-        return NULL;
-
-    data = malloc(read_size);
-    memcpy(data, buffer, read_size);
-
-    if (read_size)
-        *size = read_size;
-
-    if (psock)
-        *psock = sock;
 
     return data;
 }
@@ -1011,6 +1162,9 @@ int lo_server_wait(lo_server s, int timeout)
     for (i = 0; i < s->sockets_len; i++) {
         s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
         s->sockets[i].revents = 0;
+
+        if (lo_server_buffer_contains_msg(s, i))
+            return 1;
     }
 
     lo_timetag_now(&then);
@@ -1034,6 +1188,8 @@ int lo_server_wait(lo_server s, int timeout)
             i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
             if (i < 0)
                 closesocket(sock);
+
+            init_context(&s->contexts[i]);
 
             lo_timetag_now(&now);
 
@@ -1079,6 +1235,9 @@ int lo_server_wait(lo_server s, int timeout)
         FD_SET(s->sockets[i].fd, &ps);
         if (s->sockets[i].fd > nfds)
             nfds = s->sockets[i].fd;
+
+        if (lo_server_buffer_contains_msg(s, i))
+            return 1;
     }
 
     lo_timetag_now(&then);
@@ -1099,6 +1258,8 @@ int lo_server_wait(lo_server s, int timeout)
             i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
             if (i < 0)
                 closesocket(sock);
+
+            init_context(&s->contexts[i]);
 
             lo_timetag_now(&now);
 
@@ -1166,6 +1327,10 @@ int lo_server_recv(lo_server s)
         for (i = 0; i < s->sockets_len; i++) {
             s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
             s->sockets[i].revents = 0;
+
+            if (s->protocol == LO_TCP
+                && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
+                goto got_data;
         }
 
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
@@ -1199,6 +1364,10 @@ int lo_server_recv(lo_server s)
             FD_SET(s->sockets[i].fd, &ps);
             if (s->sockets[i].fd > nfds)
                 nfds = s->sockets[i].fd;
+
+            if (s->protocol == LO_TCP
+                && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
+                goto got_data;
         }
 
         stimeout.tv_sec = sched_time;
@@ -1230,6 +1399,7 @@ int lo_server_recv(lo_server s)
     if (!data) {
         return 0;
     }
+  got_data:
     if (dispatch_data(s, data, size, sock) < 0) {
         free(data);
         return -1;
@@ -1242,6 +1412,15 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
                          struct sockaddr_storage *addr,
                          socklen_t addr_len)
 {
+    /* We must ensure all stream sockets are non-blocking on recv()
+     * since we are doing our blocking via select()/poll(). */
+#ifdef WIN32
+	unsigned long on=1;
+	ioctlsocket(socket, FIONBIO, &on);
+#else
+    fcntl(socket, F_SETFL, O_NONBLOCK, 1);
+#endif
+
     /* Update array of open sockets */
     if ((s->sockets_len + 1) > s->sockets_alloc) {
         void *sp = realloc(s->sockets,
@@ -1251,6 +1430,15 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
         s->sockets = sp;
         memset(sp + s->sockets_alloc*sizeof(*s->sockets),
                0, s->sockets_alloc*sizeof(*s->sockets));
+
+        void *sc = realloc(s->contexts,
+                           sizeof(*(s->contexts))
+                           * (s->sockets_alloc * 2));
+        if (!sc)
+            return -1;
+        s->contexts = sc;
+        memset(sc + s->sockets_alloc*sizeof(*s->contexts),
+               0, s->sockets_alloc*sizeof(*s->contexts));
 
         s->sockets_alloc *= 2;
     }
@@ -1292,6 +1480,7 @@ void lo_server_del_socket(lo_server s, int index, int socket)
         return;
 
     lo_address_free_mem(&s->sources[s->sockets[index].fd]);
+    cleanup_context(&s->contexts[index]);
 
     for (i = index + 1; i < s->sockets_len; i++)
         s->sockets[i - 1] = s->sockets[i];

@@ -100,6 +100,15 @@ typedef struct _lo_method {
     struct _lo_method *next;
 } *lo_method;
 
+struct socket_context {
+    char *buffer;
+    size_t buffer_size;
+    unsigned int buffer_msg_offset;
+    unsigned int buffer_read_offset;
+    int is_slip;                        //<! 1 if slip mode, 0 otherwise, -1 for unknown
+    int slip_state;                     //<! state variable for slip decoding
+};
+
 typedef struct _lo_server {
     struct addrinfo *ai;
     lo_method first;
@@ -121,6 +130,12 @@ typedef struct _lo_server {
         int fd;
     } *sockets;
 #endif
+
+    // Some extra data needed per open socket.  Note that we don't put
+    // it in the socket struct, because that layout is needed for
+    // passing in the list of sockets to poll().
+    struct socket_context *contexts;
+
     struct _lo_address *sources;
     int sources_len;
     lo_bundle_start_handler bundle_start_handler;

@@ -122,6 +122,8 @@ int quit_handler(const char *path, const char *types, lo_arg ** argv,
 
 int test_varargs(lo_address a, const char *path, const char *types, ...);
 
+int test_tcp_nonblock();
+
 int main()
 {
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
@@ -745,6 +747,7 @@ int main()
     lo_server_thread_free(st);
     free(server_url);
 
+    TEST(test_tcp_nonblock()==0)
 
     return 0;
 }
@@ -1235,6 +1238,200 @@ void test_multicast(lo_server_thread st)
     TEST(lo_server_recv(ms) == 24);
     lo_server_free(ms);
     lo_address_free(ma);
+}
+
+int test_received = 0;
+int ok_received = 0;
+int recv_times = 0;
+
+int test_handler(const char *path, const char *types,
+                 lo_arg **argv, int argc, lo_message m,
+                 void *data)
+{
+    printf("/test, %d, %s\n", argv[0]->i, &argv[1]->s);
+    test_received += 1;
+    return 0;
+}
+
+int ok_handler(const char *path, const char *types,
+                 lo_arg **argv, int argc, lo_message m,
+                 void *data)
+{
+    printf("/ok\n");
+    ok_received += 1;
+    return 0;
+}
+
+void *test_tcp_thread(void *context)
+{
+    printf("Thread started.\n");
+
+    lo_server s = lo_server_new_with_proto("9000", LO_TCP, error);
+    if (!s) {
+        printf("Aborting thread, s=%p\n", s);
+        return (void*)1;
+    }
+
+    lo_server_add_method(s, "/test", "is", test_handler, 0);
+    lo_server_add_method(s, "/ok", "", ok_handler, 0);
+
+    while (!done) {
+        printf("lo_server_recv_noblock()\n");
+        recv_times += 1;
+        if (!lo_server_recv_noblock(s, 0))
+#if defined(WIN32) || defined(_MSC_VER)
+			Sleep(1000);
+#else
+            sleep(1);
+#endif
+    }
+
+    printf("Freeing.\n");
+    lo_server_free(s);
+    printf("Done. Thread ending.\n");
+    return 0;
+}
+
+#define SLIP_END        0300    /* indicates end of packet */
+
+void test_tcp_halfsend(int stream_type)
+{
+    struct sockaddr_in sa;
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        exit(1);
+    }
+    memset(&sa, 0, sizeof(struct sockaddr_in));
+	sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+    sa.sin_port = htons(9000);
+    sa.sin_family = AF_INET;
+    int rc = connect(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in));
+    if (rc) {
+        perror("Error connecting");
+        close(sock);
+        exit(1);
+    }
+
+    printf("Connected, sending...\n");
+
+    char prefixmsg[] = {0,0,0,0,
+                        '/','t','e','s','t',0,0,0,
+                        ',','i','s',0,
+                        0,0,0,4,
+                        'b','l','a','h',0,0,0,0,
+                        0,0,0,0,
+                        '/','o','k',0,
+                        ',',0,0,0};
+
+    char slipmsg[] = {'/','t','e','s','t',0,0,0,
+                      ',','i','s',0,
+                      0,0,0,4,
+                      'b','l','a','h',0,0,0,0,SLIP_END,
+                      '/','o','k',0,
+                      ',',0,0,0,SLIP_END};
+
+    char *msg;
+    int msglen;
+
+    switch (stream_type)
+    {
+    case 0:
+        printf("Testing a count-prefix stream.\n");
+        msg = prefixmsg;
+        msglen = sizeof(prefixmsg);
+
+        *(uint32_t*)msg = htonl(24);
+        *(uint32_t*)(msg+28) = htonl(8);
+        break;
+    case 1:
+        printf("Testing a SLIP stream.\n");
+        msg = slipmsg;
+        msglen = sizeof(slipmsg);
+        break;
+    }
+
+    if (0)
+    {
+        printf("Sending everything in one big chunk.\n");
+
+        rc = send(sock, msg, msglen, 0);
+        if (rc != msglen) printf("Error sending, rc = %d\n", rc);
+        else printf("Sent.\n");
+    }
+    else
+    {
+        rc = send(sock, msg, 13, 0);
+        if (rc != 13) printf("Error sending, rc = %d\n", rc);
+        else printf("Sent.\n");
+
+#if defined(WIN32) || defined(_MSC_VER)
+        Sleep(3000);
+#else
+        sleep(3);
+#endif
+
+        rc = send(sock, msg+13, 20, 0);
+        if (rc != 20) printf("Error sending2, rc = %d\n", rc);
+        else printf("Sent2.\n");
+
+#if defined(WIN32) || defined(_MSC_VER)
+        Sleep(3000);
+#else
+        sleep(3);
+#endif
+
+        rc = send(sock, msg+33, msglen-33, 0);
+        if (rc != (msglen-33)) printf("Error sending3, rc = %d\n", rc);
+        else printf("Sent3.\n");
+    }
+
+    close(sock);
+}
+
+int test_tcp_nonblock()
+{
+    printf("Testing TCP non-blocking behaviour.\n");
+
+    done = 0;
+    pthread_t thread;
+    if (pthread_create(&thread, 0, test_tcp_thread, 0))
+	{
+		perror("pthread_create");
+		return 1;
+	}
+
+#if defined(WIN32) || defined(_MSC_VER)
+        Sleep(1000);
+#else
+        sleep(1);
+#endif
+
+    test_tcp_halfsend(0);
+
+#if defined(WIN32) || defined(_MSC_VER)
+        Sleep(1000);
+#else
+        sleep(1);
+#endif
+
+    test_tcp_halfsend(1);
+
+#if defined(WIN32) || defined(_MSC_VER)
+        Sleep(1000);
+#else
+        sleep(1);
+#endif
+
+    done = 1;
+    void *retval;
+    pthread_join(thread, &retval);
+    printf("Thread joined, retval=%p\n", retval);
+
+    return (retval!=0
+            && test_received == 2
+            && ok_received == 2
+            && recv_times == 19);
 }
 
 /* vi:set ts=8 sts=4 sw=4: */
