@@ -1249,6 +1249,9 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
         if (!sp)
             return -1;
         s->sockets = sp;
+        memset(sp + s->sockets_alloc*sizeof(*s->sockets),
+               0, s->sockets_alloc*sizeof(*s->sockets));
+
         s->sockets_alloc *= 2;
     }
 
