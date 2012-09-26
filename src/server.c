@@ -967,7 +967,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 }
                 if (ret <= 0)
                     continue;
-                bytesread = ret;
+                bytesread = read_size;
             }
 
             /* end of loop over sockets: successfully read data */
