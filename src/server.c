@@ -972,11 +972,11 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     if (ret <= 0)
         return NULL;
 
-    data = malloc(bytesread);
-    memcpy(data, buffer, bytesread);
+    data = malloc(read_size);
+    memcpy(data, buffer, read_size);
 
-    if (size)
-        *size = bytesread;
+    if (read_size)
+        *size = read_size;
 
     if (psock)
         *psock = sock;
