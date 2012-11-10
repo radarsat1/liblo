@@ -401,7 +401,7 @@ static int create_socket(lo_address a)
 static unsigned char *slip_encode(const unsigned char *data,
                                   size_t *data_len)
 {
-    size_t i, j, len=*data_len;
+    size_t i, j = 0, len=*data_len;
     unsigned char *slipdata = malloc(len*2);
     for (i=0; i<len; i++) {
         switch (data[i])
