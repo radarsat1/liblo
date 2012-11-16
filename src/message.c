@@ -1004,7 +1004,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
         } else {
             printf("%db ", val32.i);
             for (i = 0; i < val32.i; i++) {
-                printf("0x%02x", *((char *) (data) + 4 + i));
+                printf("0x%02hhx", *((char *) (data) + 4 + i));
                 if (i + 1 < val32.i)
                     printf(" ");
             }
