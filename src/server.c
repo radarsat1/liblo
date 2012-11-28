@@ -1679,8 +1679,8 @@ static int dispatch_queued(lo_server s, int dispatch_all)
 
         s->queued = tailhead;
         head = tailhead;
-    } while ((head && lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON)
-             || dispatch_all);
+    } while (head &&
+             (lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON || dispatch_all));
 
     return 0;
 }
