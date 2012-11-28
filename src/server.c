@@ -874,7 +874,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
             /* zeroeth socket is listening for new connections */
             if (sock == s->sockets[0].fd) {
                 sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
-                i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
+                lo_server_add_socket(s, sock, 0, &addr, addr_len);
 
                 /* after adding a new socket, call select()/poll()
                  * again, since we are supposed to block until a
