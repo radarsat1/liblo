@@ -500,7 +500,6 @@ static int send_data(lo_address a, lo_server from, char *data,
             }
 
             ai = a->ai;
-            ret = -1;
 
             do {
                 ret = sendto(sock, data, data_len, MSG_NOSIGNAL,
@@ -511,7 +510,6 @@ static int send_data(lo_address a, lo_server from, char *data,
                 a->ai = ai;
         } else {
             struct addrinfo* ai = a->ai;
-            ret = -1;
 
             size_t len = data_len;
             if (a->flags & LO_SLIP)
