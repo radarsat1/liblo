@@ -134,7 +134,9 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
     }
     if (pos != (char *) to + s) {
         fprintf(stderr, "liblo: data integrity error\n");
-
+        if (to) {
+            free(to);
+        }
         return NULL;
     }
 
