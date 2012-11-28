@@ -374,8 +374,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         ret = getaddrinfo(NULL, service, &hints, &ai);
         if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
-            freeaddrinfo(ai);
-
+            lo_server_free(s);
             return NULL;
         }
 
