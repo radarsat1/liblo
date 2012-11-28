@@ -57,7 +57,7 @@ int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m)
 lo_message lo_bundle_get_message(lo_bundle b, int index,
                                  const char **path)
 {
-    if (index < b->len) {
+    if (index < (int)b->len) {
         if (path)
             *path = b->paths[index];
         return b->msgs[index];
