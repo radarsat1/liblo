@@ -1693,6 +1693,9 @@ lo_method lo_server_add_method(lo_server s, const char *path,
     lo_method it;
 
     if (path && strpbrk(path, " #*,?[]{}")) {
+        if (m) {
+            free(m);
+        }
         return NULL;
     }
 
