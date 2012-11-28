@@ -1492,29 +1492,35 @@ static void dispatch_method(lo_server s, const char *path,
                                   it->user_data);
 
             } else if (lo_can_coerce_spec(types, it->typespec)) {
-                int i;
-                int opsize = 0;
-                char *ptr = msg->data;
-                char *data_co = NULL, *data_co_ptr = NULL;
+                lo_arg **argv = NULL;
 
-                lo_arg **argv = calloc(argc, sizeof(lo_arg *));
-                for (i = 0; i < argc; i++) {
-                    opsize += lo_arg_size(it->typespec[i], ptr);
-                    ptr += lo_arg_size(types[i], ptr);
-                }
+                if (argc > 0) {
+                    int i;
+                    int opsize = 0;
+                    char *data_co = NULL, *data_co_ptr = NULL;
+                    char *ptr = msg->data;
 
-                if (opsize > 0) {
+                    argv = calloc(argc, sizeof(lo_arg *));
+                    for (i = 0; i < argc; i++) {
+                        opsize += lo_arg_size(it->typespec[i], ptr);
+                        ptr += lo_arg_size(types[i], ptr);
+                    }
+
                     data_co = malloc(opsize);
                     data_co_ptr = data_co;
                     ptr = msg->data;
-                }
-                for (i = 0; i < argc; i++) {
-                    argv[i] = (lo_arg *) data_co_ptr;
-                    lo_coerce(it->typespec[i], (lo_arg *) data_co_ptr,
-                              types[i], (lo_arg *) ptr);
-                    data_co_ptr +=
+                    for (i = 0; i < argc; i++) {
+                        argv[i] = (lo_arg *) data_co_ptr;
+                        lo_coerce(it->typespec[i], (lo_arg *) data_co_ptr,
+                                  types[i], (lo_arg *) ptr);
+                        data_co_ptr +=
                         lo_arg_size(it->typespec[i], data_co_ptr);
-                    ptr += lo_arg_size(types[i], ptr);
+                        ptr += lo_arg_size(types[i], ptr);
+                    }
+
+                    if (data_co) {
+                        free(data_co);
+                    }
                 }
 
                 /* Send wildcard path to generic handler, expanded path
@@ -1525,11 +1531,10 @@ static void dispatch_method(lo_server s, const char *path,
                     pptr = it->path;
                 ret = it->handler(pptr, it->typespec, argv, argc, msg,
                                   it->user_data);
-                if (data_co) {
-                    free(data_co);
+                if (argv) {
+                    free(argv);
+                    argv = NULL;
                 }
-                free(argv);
-                argv = NULL;
             }
 
             if (ret == 0 && !pattern) {
