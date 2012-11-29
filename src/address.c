@@ -14,6 +14,7 @@
  *  $Id$
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -438,20 +439,21 @@ void lo_address_init_with_sockaddr(lo_address a,
                                    void *sa, size_t sa_len,
                                    int sock, int prot)
 {
-	int err = 0;
-	lo_address_free_mem(a);
-	a->host = malloc(INET_ADDRSTRLEN);
-	a->port = malloc(8);
+    assert(a != NULL);
+    int err = 0;
+    lo_address_free_mem(a);
+    a->host = malloc(INET_ADDRSTRLEN);
+    a->port = malloc(8);
 
-	err = getnameinfo((struct sockaddr *)sa, sa_len,
-					  a->host, INET_ADDRSTRLEN, a->port, 8,
-					  NI_NUMERICHOST | NI_NUMERICSERV);
+    err = getnameinfo((struct sockaddr *)sa, sa_len,
+                      a->host, INET_ADDRSTRLEN, a->port, 8,
+                      NI_NUMERICHOST | NI_NUMERICSERV);
 
-	if (err) {
-		free(a->host);
-		free(a->port);
-		a->host = a->port = 0;
-	}
+    if (err) {
+        free(a->host);
+        free(a->port);
+        a->host = a->port = 0;
+    }
 
     a->socket = sock;
     a->protocol = prot;

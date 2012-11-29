@@ -374,8 +374,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         ret = getaddrinfo(NULL, service, &hints, &ai);
         if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
-            freeaddrinfo(ai);
-
+            lo_server_free(s);
             return NULL;
         }
 
@@ -875,7 +874,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
             /* zeroeth socket is listening for new connections */
             if (sock == s->sockets[0].fd) {
                 sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
-                i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
+                lo_server_add_socket(s, sock, 0, &addr, addr_len);
 
                 /* after adding a new socket, call select()/poll()
                  * again, since we are supposed to block until a
@@ -1493,27 +1492,35 @@ static void dispatch_method(lo_server s, const char *path,
                                   it->user_data);
 
             } else if (lo_can_coerce_spec(types, it->typespec)) {
-                int i;
-                int opsize = 0;
-                char *ptr = msg->data;
-                char *data_co, *data_co_ptr;
+                lo_arg **argv = NULL;
 
-                lo_arg **argv = calloc(argc, sizeof(lo_arg *));
-                for (i = 0; i < argc; i++) {
-                    opsize += lo_arg_size(it->typespec[i], ptr);
-                    ptr += lo_arg_size(types[i], ptr);
-                }
+                if (argc > 0) {
+                    int i;
+                    int opsize = 0;
+                    char *data_co = NULL, *data_co_ptr = NULL;
+                    char *ptr = msg->data;
 
-                data_co = malloc(opsize);
-                data_co_ptr = data_co;
-                ptr = msg->data;
-                for (i = 0; i < argc; i++) {
-                    argv[i] = (lo_arg *) data_co_ptr;
-                    lo_coerce(it->typespec[i], (lo_arg *) data_co_ptr,
-                              types[i], (lo_arg *) ptr);
-                    data_co_ptr +=
+                    argv = calloc(argc, sizeof(lo_arg *));
+                    for (i = 0; i < argc; i++) {
+                        opsize += lo_arg_size(it->typespec[i], ptr);
+                        ptr += lo_arg_size(types[i], ptr);
+                    }
+
+                    data_co = malloc(opsize);
+                    data_co_ptr = data_co;
+                    ptr = msg->data;
+                    for (i = 0; i < argc; i++) {
+                        argv[i] = (lo_arg *) data_co_ptr;
+                        lo_coerce(it->typespec[i], (lo_arg *) data_co_ptr,
+                                  types[i], (lo_arg *) ptr);
+                        data_co_ptr +=
                         lo_arg_size(it->typespec[i], data_co_ptr);
-                    ptr += lo_arg_size(types[i], ptr);
+                        ptr += lo_arg_size(types[i], ptr);
+                    }
+
+                    if (data_co) {
+                        free(data_co);
+                    }
                 }
 
                 /* Send wildcard path to generic handler, expanded path
@@ -1524,9 +1531,10 @@ static void dispatch_method(lo_server s, const char *path,
                     pptr = it->path;
                 ret = it->handler(pptr, it->typespec, argv, argc, msg,
                                   it->user_data);
-                free(argv);
-                free(data_co);
-                argv = NULL;
+                if (argv) {
+                    free(argv);
+                    argv = NULL;
+                }
             }
 
             if (ret == 0 && !pattern) {
@@ -1676,8 +1684,8 @@ static int dispatch_queued(lo_server s, int dispatch_all)
 
         s->queued = tailhead;
         head = tailhead;
-    } while ((head && lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON)
-             || dispatch_all);
+    } while (head &&
+             (lo_timetag_diff(head->ts, disp_time) < FLT_EPSILON || dispatch_all));
 
     return 0;
 }
@@ -1690,6 +1698,9 @@ lo_method lo_server_add_method(lo_server s, const char *path,
     lo_method it;
 
     if (path && strpbrk(path, " #*,?[]{}")) {
+        if (m) {
+            free(m);
+        }
         return NULL;
     }
 

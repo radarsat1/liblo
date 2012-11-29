@@ -115,7 +115,7 @@ int lo_server_thread_start(lo_server_thread st)
 
         // Create the server thread
         result =
-            pthread_create(&(st->thread), NULL, (void *) &thread_func, st);
+            pthread_create(&(st->thread), NULL, (void *(*)(void *)) &thread_func, st);
         if (result) {
             fprintf(stderr,
                     "Failed to create thread: pthread_create(), %s",
