@@ -24,7 +24,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <netinet/tcp.h>
 
 #if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
@@ -38,6 +37,7 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <netinet/tcp.h>
 #endif
 
 #include "lo_types_internal.h"

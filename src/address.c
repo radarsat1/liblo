@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <netinet/tcp.h>
 
 #include "config.h"
 
@@ -34,6 +33,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #ifdef HAVE_GETIFADDRS
 #include <ifaddrs.h>
 #endif
