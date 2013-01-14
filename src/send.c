@@ -336,8 +336,8 @@ static int create_socket(lo_address a)
             if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255
                 && ip[3] == 255) {
                 int opt = 1;
-                setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST, &opt,
-                           sizeof(int));
+                setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
+						   (const char*)&opt, sizeof(int));
             }
         }
 
@@ -384,7 +384,7 @@ static int create_socket(lo_address a)
     if (a->flags & LO_NODELAY) {
         int option = 1;
         setsockopt(a->socket, IPPROTO_TCP, TCP_NODELAY,
-        &option, sizeof(option));
+				   (const char*)&option, sizeof(option));
     }
 #endif
     
@@ -477,7 +477,7 @@ static int send_data(lo_address a, lo_server from, char *data,
     if (a->protocol == LO_TCP && !(a->flags & LO_SLIP)) {
         // For TCP only, send the length of the following data
         int32_t size = htonl(data_len);
-        ret = send(sock, &size, sizeof(size), MSG_NOSIGNAL);
+        ret = send(sock, (const void*)&size, sizeof(size), MSG_NOSIGNAL);
     }
     // Send the data
     if (ret != -1) {
@@ -485,18 +485,18 @@ static int send_data(lo_address a, lo_server from, char *data,
             struct addrinfo* ai;
             if (a->addr.size == sizeof(struct in_addr)) {
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
-                           &a->addr.a, a->addr.size);
+                           (const char*)&a->addr.a, a->addr.size);
             }
 #ifdef ENABLE_IPV6
             else if (a->addr.size == sizeof(struct in6_addr)) {
                 setsockopt(sock, IPPROTO_IP, IPV6_MULTICAST_IF,
-                           &a->addr.a, a->addr.size);
+                           (const char*)&a->addr.a, a->addr.size);
             }
 #endif
             if (a->ttl >= 0) {
                 unsigned char ttl = (unsigned char) a->ttl;
-                setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl,
-                           sizeof(ttl));
+                setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL,
+						   (const char*)&ttl, sizeof(ttl));
             }
 
             ai = a->ai;

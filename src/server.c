@@ -36,6 +36,7 @@
 #if defined(WIN32) || defined(_MSC_VER)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <malloc.h>
 #define EADDRINUSE WSAEADDRINUSE
 #else
 #include <netdb.h>
@@ -188,7 +189,7 @@ static int lo_server_setsock_reuseaddr(lo_server s)
 {
     unsigned int yes = 1;
     if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEADDR,
-                   &yes, sizeof(yes)) < 0) {
+                   (char*)&yes, sizeof(yes)) < 0) {
         int err = geterror();
         lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEADDR)");
         return err;
@@ -392,8 +393,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                 && hints.ai_socktype == SOCK_DGRAM)
             {
                 int opt = 1;
-                setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_BROADCAST, &opt,
-                           sizeof(int));
+                setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_BROADCAST,
+						   (char*)&opt, sizeof(int));
             }
         }
         if (s->sockets[0].fd == -1) {
@@ -543,7 +544,8 @@ static int lo_server_set_iface(lo_server s, int fam, const char *iface, const ch
 
     if (s->addr_if.size == sizeof(struct in_addr)) {
         if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_MULTICAST_IF,
-                       &s->addr_if.a.addr, s->addr_if.size) < 0) {
+                       (const char*)&s->addr_if.a.addr, s->addr_if.size) < 0)
+		{
             err = geterror();
             lo_throw(s, err, strerror(err), "setsockopt(IP_MULTICAST_IF)");
             lo_server_free(s);
@@ -607,7 +609,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
         mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
     if (setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                   &mreq, sizeof(mreq)) < 0) {
+                   (char*)&mreq, sizeof(mreq)) < 0) {
         int err = geterror();
         lo_throw(s, err, strerror(err), "setsockopt(IP_ADD_MEMBERSHIP)");
         lo_server_free(s);
@@ -925,14 +927,14 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 // socket.  It may be preferable to do so eventually,
                 // also to help handle partial recv() success.
 
-                ret = recv(sock, &slipchar, 1, 0);
+                ret = recv(sock, (void*)&slipchar, 1, 0);
                 buf = (unsigned char*)(buffer+bytesread);
                 while (ret==1 && slip_decode(buf, &slipchar, 1,
                                              &slipstate, &bytesread)
                        && (buf-(unsigned char*)buffer) < LO_MAX_MSG_SIZE)
                 {
                     buf += bytesread;
-                    ret = recv(sock, &slipchar, 1, 0);
+                    ret = recv(sock, (void*)&slipchar, 1, 0);
                 }
 
                 if (ret <= 0) {

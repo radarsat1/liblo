@@ -202,7 +202,7 @@ int main()
         et64.c[3] != 0x26 || et64.c[4] != 0x27 || et64.c[5] != 0x28 ||
         et64.c[6] != 0x29 || et64.c[7] != 0x2A) {
         fprintf(stderr, "failed 64bit endian conversion\n");
-        fprintf(stderr, "0x232425262728292A -> %llX\n",
+        fprintf(stderr, "0x232425262728292A -> %" PRINTF_LL "X\n",
                 (long long unsigned int) et64.i);
         exit(1);
     } else {
@@ -1202,7 +1202,7 @@ void test_validation(lo_address a)
     }
 
     error_okay = 1;
-    if (sendto(sock, &mem, sizeof(mem), MSG_NOSIGNAL,
+    if (sendto(sock, (void*)&mem, sizeof(mem), MSG_NOSIGNAL,
                a->ai->ai_addr, a->ai->ai_addrlen) == -1) {
         fprintf(stderr,
                 "Error sending packet in test_validation(), %s:%d\n",

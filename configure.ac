@@ -42,6 +42,23 @@ AM_PROG_CC_C_O
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
 AC_SUBST(DOXYGEN)
 
+# Since we don't require C99, format code for long long int can vary
+# in some compilers.  (In particular, MingW seems to require "I64"
+# instead of "ll")
+AC_MSG_CHECKING([how to print long long int])
+_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Werror -Wall"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([#include <stdio.h>],[printf("%lld", (long long int)0);])],
+    [printf_ll=\"ll\"],
+    [AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([#include <stdio.h>],[printf("%I64d", (long long int)0);])],
+        [printf_ll=\"I64\"],
+        [AC_MSG_ERROR([printf doesn't support long long int])])])
+AC_MSG_RESULT([$printf_ll])
+AC_DEFINE_UNQUOTED([PRINTF_LL],[$printf_ll],[printf code for type long long int])
+CFLAGS="$_CFLAGS"
+
 # Check if threads are wanted
 AC_ARG_ENABLE(threads,
   [  --enable-threads        Enable server threads],

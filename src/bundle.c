@@ -126,8 +126,8 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
         pos += skip + 4;
 
         if (pos > (char *) to + s) {
-            fprintf(stderr, "liblo: data integrity error at message %zu\n",
-                    i);
+            fprintf(stderr, "liblo: data integrity error at message %lu\n",
+                    (long unsigned int)i);
 
             return NULL;
         }

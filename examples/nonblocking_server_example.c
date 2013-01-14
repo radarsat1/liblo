@@ -47,7 +47,9 @@ int main()
 {
     int lo_fd;
     fd_set rfds;
+#ifndef WIN32
     struct timeval tv;
+#endif
     int retval;
 
     /* start a new server on port 7770 */

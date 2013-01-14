@@ -398,7 +398,7 @@ void lo_address_set_flags(lo_address t, int flags)
     {
         int option = (t->flags & LO_NODELAY)!=0;
         setsockopt(t->socket, IPPROTO_TCP, TCP_NODELAY,
-                   &option, sizeof(option));
+                   (const char*)&option, sizeof(option));
     }
 
     t->flags = flags;
@@ -566,8 +566,13 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
         if (iface) {
             if (strcmp(iface, aa->AdapterName)==0)
                 found = 1;
-            else if (lstrcmpW(iface, aa->FriendlyName)==0)
-                found = 1;
+            else {
+				WCHAR ifaceW[256];
+				MultiByteToWideChar(CP_ACP, 0, iface, strlen(iface),
+									ifaceW, 256);
+				if (lstrcmpW(ifaceW, aa->FriendlyName)==0)
+					found = 1;
+			}
         }
         if (ip) {
             PIP_ADAPTER_UNICAST_ADDRESS pua = aa->FirstUnicastAddress;
