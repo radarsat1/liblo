@@ -52,6 +52,18 @@ typedef struct {
 } lo_timetag;
 
 /**
+ * \brief An enumeration of bundle element types liblo can handle.
+ *
+ * The element of a bundle can either be a message or an other bundle.
+ */
+typedef enum {
+	/** bundle element is a message */
+	LO_ELEMENT_MESSAGE = 1,
+	/** bundle element is a bundle */
+	LO_ELEMENT_BUNDLE = 2
+} lo_element_type;
+
+/**
  * \brief An enumeration of the OSC types liblo can send and receive.
  *
  * The value of the enumeration is the typechar used to tag messages and to

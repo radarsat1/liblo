@@ -82,6 +82,7 @@ typedef struct _lo_message {
     lo_arg **argv;
     /* timestamp from bundle (LO_TT_IMMEDIATE for unbundled messages) */
     lo_timetag ts;
+		size_t refcount;
 } *lo_message;
 
 typedef int (*lo_method_handler) (const char *path, const char *types,
@@ -156,13 +157,26 @@ typedef struct _lo_server_thread {
 typedef void *lo_server_thread;
 #endif
 
-typedef struct _lo_bundle {
+typedef struct _lo_bundle *lo_bundle;
+
+typedef struct _lo_element {
+	lo_element_type type;
+	union {
+		lo_bundle bundle;
+		struct {
+			lo_message msg;
+			const char *path;
+		} message;
+	} content;
+} lo_element;
+
+struct _lo_bundle {
     size_t size;
     size_t len;
     lo_timetag ts;
-    lo_message *msgs;
-    char **paths;
-} *lo_bundle;
+		lo_element *elmnts;
+		size_t refcount;
+};
 
 typedef struct _lo_strlist {
     char *str;
