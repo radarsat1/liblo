@@ -20,7 +20,7 @@
 
 #include "lo/lo.h"
 
-const char testdata[5] = "ABCDE";
+const char testdata[6] = "ABCDE";
 
 int main(int argc, char *argv[])
 {
