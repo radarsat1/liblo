@@ -59,6 +59,28 @@ AC_MSG_RESULT([$printf_ll])
 AC_DEFINE_UNQUOTED([PRINTF_LL],[$printf_ll],[printf code for type long long int])
 CFLAGS="$_CFLAGS"
 
+# Check for C++11 features
+AC_PROG_CXX
+_CXXFLAGS="$CXXFLAGS"
+
+AC_MSG_CHECKING([whether C++11 lambdas are supported])
+AC_LANG(C++)
+CXXFLAGS="$_CXXFLAGS -std=c++11"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([#include <functional>],[[[]](std::function<void()> f){f();}([[]](){0;});])],
+    [AC_MSG_RESULT([yes])
+     HAVE_LAMBDA=yes],
+    [AC_MSG_RESULT([
+CXXFLAGS="$_CXXFLAGS -std=c++0x"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([#include <functional>],[[[]](std::function<void()> f){f();}([[]](){0;});])],
+    [AC_MSG_RESULT([yes])
+     HAVE_LAMBDA=yes],
+    [AC_MSG_RESULT([no])
+     CXXFLAGS="$_CXXFLAGS"])])])
+AC_LANG(C)
+AM_CONDITIONAL([HAVE_LAMBDA],[test x$HAVE_LAMBDA = xyes])
+
 # Check if threads are wanted
 AC_ARG_ENABLE(threads,
   [  --enable-threads        Enable server threads],
