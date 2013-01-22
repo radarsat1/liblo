@@ -204,6 +204,15 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
             lo_message_add_infinitum(msg);
             break;
 
+        case '$':
+            if (*types == '$') {
+                // type strings ending in '$$' indicate not to perform
+                // LO_MARKER checking
+                va_end(ap);
+                return 0;
+            }
+            // fall through to unknown type
+
         default:{
                 ret = -1;       // unknown type
                 fprintf(stderr,
