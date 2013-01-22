@@ -162,6 +162,9 @@ namespace lo {
         double next_event_delay()
             { return lo_server_next_event_delay(server); }
 
+        operator lo_server() const
+            { return server; }
+
       protected:
         lo_server server;
 
@@ -239,6 +242,9 @@ namespace lo {
 
         void start() { lo_server_thread_start(server_thread); }
         void stop() { lo_server_thread_stop(server_thread); }
+
+        operator lo_server_thread() const
+            { return server_thread; }
 
       protected:
         lo_server_thread server_thread;
@@ -356,6 +362,9 @@ namespace lo {
 
         void set_iface(const char *iface, const char *ip)
           { lo_address_set_iface(address, iface, ip); }
+
+        operator lo_address() const
+            { return address; }
 
       protected:
         lo_address address;

@@ -131,7 +131,7 @@ int main()
     a.set_iface(0, "127.0.0.1");
     printf("iface: %s\n", a.iface().c_str());
 
-    a.send("test1", "i", 20);
+    a.send_from(st, "test1", "i", 20);
     a.send("test2", "i", 40);
     a.send("test3", "i", 60);
     a.send("test4", "i", 80);
