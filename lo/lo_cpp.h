@@ -138,16 +138,16 @@ namespace lo {
             return lo_server_add_bundle_handlers(server, sh, eh, user_data);
         }
 
-        int get_socket_fd()
+        int socket_fd()
             { return lo_server_get_socket_fd(server); }
 
-        int get_port()
+        int port()
             { return lo_server_get_port(server); }
 
-        int get_protocol()
+        int protocol()
             { return lo_server_get_protocol(server); }
 
-        std::string get_url()
+        std::string url()
             { return std::string(lo_server_get_url(server)); }
 
         int enable_queue(int queue_enabled,
@@ -249,6 +249,116 @@ namespace lo {
         {
             lo_server_thread_add_method(server_thread, path, types, h, data);
         }
+    };
+
+    class Address
+    {
+      public:
+        Address(const char *host, const char *port, int proto=LO_UDP)
+          { address = lo_address_new_with_proto(proto, host, port); }
+
+        Address(const char *url)
+          { address = lo_address_new_from_url(url); }
+
+        ~Address()
+          { if (address)
+              lo_address_free(address); }
+
+        int ttl()
+          { return lo_address_get_ttl(address); }
+
+        void set_ttl(int ttl)
+          { lo_address_set_ttl(address, ttl); }
+
+        // In these functions we append "$$" to the type string, which
+        // simply instructs lo_message_add_varargs() not to use
+        // LO_MARKER checking at the end of the argument list.
+        int send(const char *path, const char *type, ...)
+        {
+            va_list q;
+            va_start(q, type);
+            lo_message m = lo_message_new();
+            std::string t = std::string(type) + "$$";
+            lo_message_add_varargs(m, t.c_str(), q);
+            int r = lo_send_message(address, path, m);
+            lo_message_free(m);
+            return r;
+        }
+
+        int send(lo_timetag ts, const char *path,
+                 const char *type, ...)
+        {
+            va_list q;
+            va_start(q, type);
+            lo_message m = lo_message_new();
+            std::string t = std::string(type) + "$$";
+            lo_message_add_varargs(m, t.c_str(), q);
+            lo_bundle b = lo_bundle_new(ts);
+            lo_bundle_add_message(b, path, m);
+            int r = lo_send_bundle(address, b);
+            lo_bundle_free_messages(m);
+            return r;
+        }
+
+        int send_from(lo_server from, const char *path,
+                      const char *type, ...)
+        {
+            va_list q;
+            va_start(q, type);
+            lo_message m = lo_message_new();
+            std::string t = std::string(type) + "$$";
+            lo_message_add_varargs(m, t.c_str(), q);
+            int r = lo_send_message_from(from, address, path, m);
+            lo_message_free(m);
+            return r;
+        }
+
+        int send_from(lo_server from, lo_timetag ts, 
+                      const char *path, const char *type, ...)
+        {
+            va_list q;
+            va_start(q, type);
+            lo_message m = lo_message_new();
+            std::string t = std::string(type) + "$$";
+            lo_message_add_varargs(m, t.c_str(), q);
+            lo_bundle b = lo_bundle_new(ts);
+            lo_bundle_add_message(b, path, m);
+            int r = lo_send_bundle_from(from, address, b);
+            lo_bundle_free_messages(b);
+        }
+
+        int get_errno()
+          { return lo_address_errno(address); }
+
+        std::string errstr()
+          { return std::string(lo_address_errstr(address)); }
+
+        std::string hostname()
+          { return std::string(lo_address_get_hostname(address)); }
+
+        std::string port()
+          { return std::string(lo_address_get_port(address)); }
+
+        int protocol()
+          { return lo_address_get_protocol(address); }
+
+        std::string url()
+          { return std::string(lo_address_get_url(address)); }
+
+        std::string iface()
+          { const char *s = lo_address_get_iface(address);
+            return std::string(s ? s : ""); }
+
+        void set_iface(const std::string &iface, const std::string &ip)
+          { lo_address_set_iface(address,
+                                 iface.empty() ? nullptr : iface.c_str(),
+                                 ip.empty() ? nullptr : ip.c_str()); }
+
+        void set_iface(const char *iface, const char *ip)
+          { lo_address_set_iface(address, iface, ip); }
+
+      protected:
+        lo_address address;
     };
 
 };

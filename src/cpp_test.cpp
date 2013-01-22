@@ -33,7 +33,7 @@ void init(lo::Server &s)
 {
     int j = 234;
 
-    std::cout << "URL: " << s.get_url() << std::endl;
+    std::cout << "URL: " << s.url() << std::endl;
 
     class test3
     {
@@ -117,25 +117,33 @@ int main()
         return 1;
     }
 
-    std::cout << "URL: " << st.get_url() << std::endl;
+    std::cout << "URL: " << st.url() << std::endl;
 
     init(st);
 
     st.start();
 
-    lo_address a = lo_address_new("localhost", "9000");
-    lo_send(a, "test1", "i", 20);
-    lo_send(a, "test2", "i", 40);
-    lo_send(a, "test3", "i", 60);
-    lo_send(a, "test4", "i", 80);
-    lo_send(a, "test5", "i", 100);
-    lo_send(a, "test6", "i", 120);
-    lo_send(a, "test7", "i", 140);
-    lo_send(a, "test8", "i", 160);
-    lo_send(a, "test9", "i", 180);
-    lo_send(a, "test10", "i", 200);
-    lo_send(a, "test11", "i", 220);
-    lo_address_free(a);
+    lo::Address a("localhost", "9000");
+
+    printf("address host %s, port %s\n", a.hostname().c_str(), a.port().c_str());
+    printf("iface: %s\n", a.iface().c_str());
+    a.set_iface(std::string(), std::string("127.0.0.1"));
+    a.set_iface(0, "127.0.0.1");
+    printf("iface: %s\n", a.iface().c_str());
+
+    a.send("test1", "i", 20);
+    a.send("test2", "i", 40);
+    a.send("test3", "i", 60);
+    a.send("test4", "i", 80);
+    a.send("test5", "i", 100);
+    a.send("test6", "i", 120);
+    a.send("test7", "i", 140);
+    a.send("test8", "i", 160);
+    a.send("test9", "i", 180);
+    a.send("test10", "i", 200);
+    a.send("test11", "i", 220);
+
+    printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 
     sleep(1);
 }
