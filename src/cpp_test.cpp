@@ -102,8 +102,8 @@ void init(lo::Server &s)
     s.add_method("test10", "i", [j](const char *types, lo_arg **argv, int argc)
                   {printf("test10: %d, %s, %d\n", j, types, argv[0]->i);});
     j*=2;
-    s.add_method("test11", "i", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
-                  {printf("test11: %d, %s, %d -- ", j, types, argv[0]->i); lo_message_pp(msg);});
+    s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
+                 {printf("test11: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
 }
 
 int main()
@@ -141,7 +141,11 @@ int main()
     a.send("test8", "i", 160);
     a.send("test9", "i", 180);
     a.send("test10", "i", 200);
-    a.send("test11", "i", 220);
+
+    lo::Message m;
+    m.add("i", 220);
+    m.add_string(std::string("blah"));
+    a.send("test11", m);
 
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 

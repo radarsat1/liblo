@@ -45,6 +45,8 @@
 
 namespace lo {
 
+    class Message;
+
     class Server
     {
       public:
@@ -266,6 +268,9 @@ namespace lo {
         Address(const char *url)
           { address = lo_address_new_from_url(url); }
 
+        Address(lo_address a)
+          { address = a; }
+
         ~Address()
           { if (address)
               lo_address_free(address); }
@@ -305,6 +310,9 @@ namespace lo {
             lo_bundle_free_messages(m);
             return r;
         }
+
+        int send(const char *path, lo_message m)
+            { return lo_send_message(address, path, m); }
 
         int send_from(lo_server from, const char *path,
                       const char *type, ...)
@@ -368,6 +376,153 @@ namespace lo {
 
       protected:
         lo_address address;
+    };
+
+    class Message
+    {
+      public:
+        Message()
+            { message = lo_message_new(); }
+
+        Message(lo_message m)
+            { message = m; }
+
+        ~Message()
+            { lo_message_free(message); }
+
+        int add(const char *types, ...)
+        {
+            va_list q;
+            va_start(q, types);
+            std::string t(std::string(types)+"$$");
+            add_varargs(t.c_str(), q);
+        }
+
+        int add_varargs(const char *types, va_list ap)
+            { return lo_message_add_varargs(message, types, ap); }
+
+        int add_int32(int32_t a)
+            { return lo_message_add_int32(message, a); }
+
+        int add_float(float a)
+            { return lo_message_add_float(message, a); }
+
+        int add_string(const char *a)
+            { return lo_message_add_string(message, a); }
+
+        int add_string(const std::string &a)
+            { return lo_message_add_string(message, a.c_str()); }
+
+        int add_blob(lo_blob a)
+            { return lo_message_add_blob(message, a); }
+
+        int add_int64(int64_t a)
+            { return lo_message_add_int64(message, a); }
+
+        int add_timetag(lo_timetag a)
+            { return lo_message_add_timetag(message, a); }
+
+        int add_double(double a)
+            { return lo_message_add_double(message, a); }
+
+        int add_symbol(const char *a)
+            { return lo_message_add_symbol(message, a); }
+
+        int add_symbol(const std::string &a)
+            { return lo_message_add_symbol(message, a.c_str()); }
+
+        int add_char(char a)
+            { return lo_message_add_char(message, a); }
+
+        int add_midi(uint8_t a[4])
+            { return lo_message_add_midi(message, a); }
+
+        int add_bool(bool b)
+            { if (b)
+                return lo_message_add_true(message);
+              else
+                return lo_message_add_false(message); }
+
+        int add_true()
+            { return lo_message_add_true(message); }
+
+        int add_false()
+            { return lo_message_add_false(message); }
+
+        int add_nil()
+            { return lo_message_add_nil(message); }
+
+        int add_infinitum()
+            { return lo_message_add_infinitum(message); }
+
+        // Note, for polymorphic versions of "add", below, we can't do
+        // this for "string" or "symbol" types, since it is ambiguous
+        // with "add(types, ...)" above.
+
+        int add(int32_t a)
+            { return lo_message_add_int32(message, a); }
+
+        int add(float a)
+            { return lo_message_add_float(message, a); }
+
+        int add(lo_blob a)
+            { return lo_message_add_blob(message, a); }
+
+        int add(int64_t a)
+            { return lo_message_add_int64(message, a); }
+
+        int add(lo_timetag a)
+            { return lo_message_add_timetag(message, a); }
+
+        int add(double a)
+            { return lo_message_add_double(message, a); }
+
+        int add(char a)
+            { return lo_message_add_char(message, a); }
+
+        int add(uint8_t a[4])
+            { return lo_message_add_midi(message, a); }
+
+        int add(bool b)
+            { if (b)
+                return lo_message_add_true(message);
+              else
+                return lo_message_add_false(message); }
+
+        Address source()
+            { return Address(lo_message_get_source(message)); }
+
+        lo_timetag timestamp()
+            { return lo_message_get_timestamp(message); }
+
+        std::string types()
+            { return std::string(lo_message_get_types(message)); }
+
+        int argc()
+            { return lo_message_get_argc(message); }
+
+        lo_arg **argv()
+            { return lo_message_get_argv(message); }
+
+        size_t length(const char *path)
+            { return lo_message_length(message, path); }
+
+        size_t length(const std::string &path)
+            { return lo_message_length(message, path.c_str()); }
+
+        void *serialise(const char *path, void *to, size_t *size)
+            { return lo_message_serialise(message, path, to, size); }
+
+        static
+        Message *deserialise(void *data, size_t size, int *result=0)
+            { lo_message m = lo_message_deserialise(data, size, result);
+              return new Message(m); }
+
+        operator lo_message() const
+            { return message; }
+
+      protected:
+        lo_message message;
     };
 
 };
