@@ -532,6 +532,9 @@ namespace lo {
             { lo_message m = lo_message_deserialise(data, size, result);
               return new Message(m); }
 
+        void print() const
+            { lo_message_pp(message); }
+
         operator lo_message() const
             { return message; }
 
