@@ -272,6 +272,9 @@ namespace lo {
         void set_ttl(int ttl)
           { lo_address_set_ttl(address, ttl); }
 
+        int send(const char *path)
+          { return lo_send(address, path, ""); }
+
         // In these functions we append "$$" to the type string, which
         // simply instructs lo_message_add_varargs() not to use
         // LO_MARKER checking at the end of the argument list.
