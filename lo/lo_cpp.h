@@ -519,6 +519,35 @@ namespace lo {
         lo_message message;
     };
 
+    class Blob
+    {
+      public:
+        Blob(int32_t size, const void *data=0)
+            : blob(lo_blob_new(size, data)) {}
+
+        template <typename T>
+        Blob(const T &t)
+            : blob(lo_blob_new(t.size()*sizeof(t[0]), &t[0])) {}
+
+        virtual ~Blob()
+            { lo_blob_free(blob); }
+
+        uint32_t datasize()
+            { return lo_blob_datasize(blob); }
+
+        void *dataptr()
+            { return lo_blob_dataptr(blob); }
+
+        uint32_t size()
+            { return lo_blobsize(blob); }
+
+        operator lo_blob()
+            { return blob; };
+
+      protected:
+        lo_blob blob;
+    };
+
 };
 
 #endif // _LO_CPP_H_

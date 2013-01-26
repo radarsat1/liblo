@@ -3,6 +3,9 @@
 #include <string>
 #include <iostream>
 
+#include <array>
+#include <vector>
+
 #include <unistd.h>
 
 #include <lo/lo.h>
@@ -148,6 +151,11 @@ int main()
     m.add("i", 220);
     m.add_string(std::string("blah"));
     a.send("test11", m);
+
+    m.add(lo::Blob(4,"asdf"));
+    m.add(lo::Blob(std::vector<char>(5, 'a')));
+    m.add(lo::Blob(std::array<char,5>{"asdf"}));
+    a.send("blobtest", m);
 
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 
