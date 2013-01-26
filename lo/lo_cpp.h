@@ -99,18 +99,18 @@ namespace lo {
             ((char*)0, (lo_arg**)0, (int)0),
             (types, argv, argc), typesargs)
         LO_ADD_METHOD(server,
-            ((char*)0, (lo_arg**)0, (int)0, (lo_message)0),
-            (types, argv, argc, msg), typesargsmsg)
+            ((char*)0, (lo_arg**)0, (int)0, Message((lo_message)0,false)),
+            (types, argv, argc, Message(msg,false)), typesargsmsg)
         LO_ADD_METHOD(server,
-            ((char*)0, (lo_message)0),
-            (path, msg), pathmsg)
+            ((char*)0, Message((lo_message)0,false)),
+            (path, Message(msg,false)), pathmsg)
         LO_ADD_METHOD(server,
             ((lo_arg**)0, (int)0), (argv, argc), args)
         LO_ADD_METHOD(server,
-            ((lo_arg**)0, (int)0, (lo_message)0),
-            (argv, argc, msg), argsmsg)
+            ((lo_arg**)0, (int)0, Message((lo_message)0,false)),
+            (argv, argc, Message(msg,false)), argsmsg)
         LO_ADD_METHOD(server,
-            ((lo_message)0), (msg), msg)
+            (Message((lo_message)0,false)), (Message(msg,false)), msg)
         LO_ADD_METHOD(server, (), (),)
 
         void del_method(const char *path, const char *typespec)
@@ -179,19 +179,19 @@ namespace lo {
 
         typedef handler_type<int(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_int;
         typedef handler_type<int(const char *,lo_arg**,int)> handler_typesargs_int;
-        typedef handler_type<int(const char *,lo_arg**,int,lo_message)> handler_typesargsmsg_int;
-        typedef handler_type<int(const char *,lo_message)> handler_pathmsg_int;
-        typedef handler_type<int(lo_arg**,int,lo_message)> handler_argsmsg_int;
+        typedef handler_type<int(const char *,lo_arg**,int,const Message&)> handler_typesargsmsg_int;
+        typedef handler_type<int(const char *,const Message&)> handler_pathmsg_int;
+        typedef handler_type<int(lo_arg**,int,const Message&)> handler_argsmsg_int;
         typedef handler_type<int(lo_arg**,int)> handler_args_int;
-        typedef handler_type<int(lo_message)> handler_msg_int;
+        typedef handler_type<int(const Message&)> handler_msg_int;
 
         typedef handler_type<void(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_void;
         typedef handler_type<void(const char *,lo_arg**,int)> handler_typesargs_void;
-        typedef handler_type<void(const char *,lo_arg**,int,lo_message)> handler_typesargsmsg_void;
-        typedef handler_type<void(const char *,lo_message)> handler_pathmsg_void;
-        typedef handler_type<void(lo_arg**,int,lo_message)> handler_argsmsg_void;
+        typedef handler_type<void(const char *,lo_arg**,int,const Message&)> handler_typesargsmsg_void;
+        typedef handler_type<void(const char *,const Message&)> handler_pathmsg_void;
+        typedef handler_type<void(lo_arg**,int,const Message&)> handler_argsmsg_void;
         typedef handler_type<void(lo_arg**,int)> handler_args_void;
-        typedef handler_type<void(lo_message)> handler_msg_void;
+        typedef handler_type<void(const Message&)> handler_msg_void;
 
         // Keep std::functions here so they are freed correctly
         std::vector<std::unique_ptr<handler>> m_handlers;
