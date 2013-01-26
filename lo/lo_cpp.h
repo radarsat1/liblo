@@ -341,6 +341,9 @@ namespace lo {
             lo_bundle_free_messages(b);
         }
 
+        int send_from(lo_server from, const char *path, lo_message m)
+            { return lo_send_message_from(address, from, path, m); }
+
         int get_errno()
           { return lo_address_errno(address); }
 
