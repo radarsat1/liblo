@@ -50,11 +50,7 @@ namespace lo {
     class Server
     {
       public:
-        Server() {}
-
-        Server(lo_server s) : server(s) {
-            lo_throw(server, LO_UNKNOWNPROTO, "test", "testhandler");
-        }
+        Server(lo_server s) : server(s) {}
 
         Server(const char *port, lo_err_handler err_h)
             : Server(lo_server_new(port, err_h)) {}
@@ -84,8 +80,7 @@ namespace lo {
                      : lo_server_new_multicast(group, port, err_h)) {}
 
         virtual ~Server()
-            { printf("~Server()\n");
-                if (server) lo_server_free(server); }
+            { if (server) lo_server_free(server); }
 
         bool is_valid() { return server!=nullptr; }
 
@@ -170,10 +165,7 @@ namespace lo {
       protected:
         lo_server server;
 
-        class handler {
-          public:
-            virtual ~handler() { printf("handler::~handler\n"); };
-        };
+        class handler {};
         template <typename T>
         class handler_type : public handler, public std::function<T> {
           public: template<typename H>handler_type(H&& h) : std::function<T>(h) {}
@@ -210,36 +202,30 @@ namespace lo {
     {
       public:
         ServerThread(const char *port, lo_err_handler err_h)
-            { server_thread = lo_server_thread_new(port, err_h); 
-                printf("here1\n");
-                lo_throw(lo_server_thread_get_server(server_thread), LO_UNKNOWNPROTO, "test2", "testhandler2");
-                Server(lo_server_thread_get_server(server_thread));
-            }
+            : Server(lo_server_thread_get_server(
+                  server_thread = lo_server_thread_new(port, err_h))) {}
 
         template <typename E>
         ServerThread(const char *port, E&& e)
-        {
-          server_thread = lo_server_thread_new(port,
-             [](int num, const char *msg, const char *where){
-                 printf("wrapper: %d, %s, %s\n", num, msg, where);
-                 auto h = static_cast<handler_error*>(lo_error_get_context());
-                 (*h)(num, msg, where);
-             });
-          if (server_thread) {
-              auto h = new handler_error(e);
-              m_handlers.push_back(std::unique_ptr<handler>(h));
-              lo_server_thread_set_error_context(server_thread, h);
-              server = lo_server_thread_get_server(server_thread);
-          }
-          lo_throw(lo_server_thread_get_server(server_thread), LO_UNKNOWNPROTO, "test", "testhandler");
-        }
+            : Server(lo_server_thread_get_server(
+                  server_thread = lo_server_thread_new(port,
+                  [](int num, const char *msg, const char *where){
+                      auto h = static_cast<handler_error*>(lo_error_get_context());
+                      (*h)(num, msg, where);})))
+            {
+                if (server_thread) {
+                    auto h = new handler_error(e);
+                    m_handlers.push_back(std::unique_ptr<handler>(h));
+                    lo_server_thread_set_error_context(server_thread, h);
+                }
+            }
 
         ServerThread(const char *port, int proto, lo_err_handler err_h)
-            { server_thread = lo_server_thread_new_with_proto(port, proto, err_h); }
+            : Server(lo_server_thread_get_server(
+                  server_thread = lo_server_thread_new_with_proto(port, proto, err_h))) {}
 
         virtual ~ServerThread()
-            { printf("~ServerThread()\n");
-              server = 0;
+            { server = 0;
               if (server_thread) lo_server_thread_free(server_thread); }
 
         void start() { lo_server_thread_start(server_thread); }
