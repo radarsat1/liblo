@@ -104,6 +104,8 @@ void init(lo::Server &s)
     j*=2;
     s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
                  {printf("test11: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
+
+    s.add_method(0, 0, [](const char *path, lo_message m){printf("%s ", path); lo_message_pp(m);});
 }
 
 int main()

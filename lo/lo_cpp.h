@@ -102,6 +102,9 @@ namespace lo {
             ((char*)0, (lo_arg**)0, (int)0, (lo_message)0),
             (types, argv, argc, msg), typesargsmsg)
         LO_ADD_METHOD(server,
+            ((char*)0, (lo_message)0),
+            (path, msg), pathmsg)
+        LO_ADD_METHOD(server,
             ((lo_arg**)0, (int)0), (argv, argc), args)
         LO_ADD_METHOD(server,
             ((lo_arg**)0, (int)0, (lo_message)0),
@@ -177,6 +180,7 @@ namespace lo {
         typedef handler_type<int(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_int;
         typedef handler_type<int(const char *,lo_arg**,int)> handler_typesargs_int;
         typedef handler_type<int(const char *,lo_arg**,int,lo_message)> handler_typesargsmsg_int;
+        typedef handler_type<int(const char *,lo_message)> handler_pathmsg_int;
         typedef handler_type<int(lo_arg**,int,lo_message)> handler_argsmsg_int;
         typedef handler_type<int(lo_arg**,int)> handler_args_int;
         typedef handler_type<int(lo_message)> handler_msg_int;
@@ -184,6 +188,7 @@ namespace lo {
         typedef handler_type<void(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_void;
         typedef handler_type<void(const char *,lo_arg**,int)> handler_typesargs_void;
         typedef handler_type<void(const char *,lo_arg**,int,lo_message)> handler_typesargsmsg_void;
+        typedef handler_type<void(const char *,lo_message)> handler_pathmsg_void;
         typedef handler_type<void(lo_arg**,int,lo_message)> handler_argsmsg_void;
         typedef handler_type<void(lo_arg**,int)> handler_args_void;
         typedef handler_type<void(lo_message)> handler_msg_void;
