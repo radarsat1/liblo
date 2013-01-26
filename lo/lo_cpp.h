@@ -381,15 +381,17 @@ namespace lo {
     class Message
     {
       public:
-        Message()
-            { message = lo_message_new(); }
+        Message(bool is_owner = true)
+            : message(lo_message_new()),
+              _is_owner(is_owner) {}
 
-        Message(lo_message m)
-            { message = m; }
+        Message(lo_message m, bool is_owner = true)
+            : message(m), _is_owner(is_owner) {}
 
         Message(const char *types, ...)
         {
             message = lo_message_new();
+            _is_owner = true;
             va_list q;
             va_start(q, types);
             std::string t(std::string(types)+"$$");
@@ -397,7 +399,7 @@ namespace lo {
         }
 
         ~Message()
-            { lo_message_free(message); }
+            { if (_is_owner) lo_message_free(message); }
 
         int add(const char *types, ...)
         {
@@ -530,8 +532,12 @@ namespace lo {
         operator lo_message() const
             { return message; }
 
+        void set_ownership(bool is_owner)
+            { _is_owner = is_owner; }
+
       protected:
         lo_message message;
+        bool _is_owner;
     };
 
     class Blob
