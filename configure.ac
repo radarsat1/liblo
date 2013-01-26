@@ -157,6 +157,13 @@ if test x"$enable_debug" = "xyes"; then
         fi
     done
 	CFLAGS="$CF -O0 -g -Wall -Werror"
+    CF=""
+    for i in $CXXFLAGS; do
+        if ! ((test x"$i" = x-g) || (test x"$i" = x-O2)); then
+            CF="$CF $i"
+        fi
+    done
+	CXXFLAGS="$CF -O0 -g -Wall -Werror"
 fi
 
 AC_CONFIG_FILES([

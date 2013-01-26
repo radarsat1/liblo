@@ -28,7 +28,7 @@
     }
 
 #define RT_INT(argtypes) \
-    typename std::enable_if<std::is_same<decltype(h argtypes), int>::value, int>::type
+    typename std::enable_if<std::is_same<decltype(h argtypes), int>::value, void>::type
 #define RT_VOID(argtypes) \
     typename std::enable_if<std::is_same<decltype(h argtypes), void>::value, void>::type
 
@@ -325,6 +325,7 @@ namespace lo {
             lo_bundle_add_message(b, path, m);
             int r = lo_send_bundle_from(from, address, b);
             lo_bundle_free_messages(b);
+            return r;
         }
 
         int send_from(lo_server from, const char *path, lo_message m)
@@ -383,7 +384,7 @@ namespace lo {
             va_list q;
             va_start(q, types);
             std::string t(std::string(types)+"$$");
-            add_varargs(t.c_str(), q);
+            return add_varargs(t.c_str(), q);
         }
 
         int add_varargs(const char *types, va_list ap)
