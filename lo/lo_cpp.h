@@ -381,6 +381,15 @@ namespace lo {
         Message(lo_message m)
             { message = m; }
 
+        Message(const char *types, ...)
+        {
+            message = lo_message_new();
+            va_list q;
+            va_start(q, types);
+            std::string t(std::string(types)+"$$");
+            add_varargs(t.c_str(), q);
+        }
+
         ~Message()
             { lo_message_free(message); }
 
