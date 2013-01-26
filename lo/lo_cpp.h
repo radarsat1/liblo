@@ -305,6 +305,9 @@ namespace lo {
         int send(const char *path, lo_message m)
             { return lo_send_message(address, path, m); }
 
+        int send(lo_bundle b)
+            { return lo_send_bundle(address, b); }
+
         int send_from(lo_server from, const char *path,
                       const char *type, ...)
         {
@@ -335,6 +338,9 @@ namespace lo {
 
         int send_from(lo_server from, const char *path, lo_message m)
             { return lo_send_message_from(address, from, path, m); }
+
+        int send(lo_server from, lo_bundle b)
+            { return lo_send_bundle_from(address, from, b); }
 
         int get_errno()
           { return lo_address_errno(address); }
@@ -555,6 +561,63 @@ namespace lo {
 
       protected:
         lo_blob blob;
+    };
+
+    class Bundle
+    {
+      public:
+        Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE); }
+
+        Bundle(lo_timetag tt, bool is_owner = false)
+            : bundle(lo_bundle_new(tt)),
+              _is_owner(is_owner) {}
+
+        Bundle(lo_bundle b, bool is_owner = false)
+            : bundle(b),
+              _is_owner(is_owner) {}
+
+        Bundle(const char *path, lo_message m, bool is_owner = false)
+            : bundle(lo_bundle_new(LO_TT_IMMEDIATE)),
+              _is_owner(is_owner)
+        {
+            lo_bundle_add_message(bundle, path, m);
+        }
+
+        Bundle(lo_timetag tt, const char *path, lo_message m,
+               bool is_owner = false)
+            : bundle(lo_bundle_new(tt)),
+              _is_owner(is_owner)
+        {
+            lo_bundle_add_message(bundle, path, m);
+        }
+
+        virtual ~Bundle()
+            { if (_is_owner)
+                  lo_bundle_free_messages(bundle);
+              else
+                  lo_bundle_free(bundle); }
+
+        int add(const char *path, lo_message m, bool is_owner = false)
+            { return lo_bundle_add_message(bundle, path, m); }
+
+        size_t length()
+            { return lo_bundle_length(bundle); }
+
+        unsigned int count()
+            { return lo_bundle_count(bundle); }
+
+        lo_message get_message(int index, const char **path)
+            { return lo_bundle_get_message(bundle, index, path); }
+
+        void *serialise(void *to, size_t *size)
+            { return lo_bundle_serialise(bundle, to, size); }
+
+        operator lo_bundle()
+            { return bundle; }
+
+      protected:
+        lo_bundle bundle;
+        bool _is_owner;
     };
 
 };

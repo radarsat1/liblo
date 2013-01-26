@@ -157,6 +157,8 @@ int main()
     m.add(lo::Blob(std::array<char,5>{"asdf"}));
     a.send("blobtest", m);
 
+    a.send(lo::Bundle("test11", lo::Message("is", 260, "oneliner")));
+
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 
     sleep(1);
