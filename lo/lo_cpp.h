@@ -150,7 +150,7 @@ namespace lo {
             { return lo_server_get_protocol(server); }
 
         std::string url()
-            { return std::string(lo_server_get_url(server)); }
+            { return std::string(lo_server_get_url(server)?:""); }
 
         int enable_queue(int queue_enabled,
                          int dispatch_remaining=1)
@@ -348,23 +348,22 @@ namespace lo {
           { return lo_address_errno(address); }
 
         std::string errstr()
-          { return std::string(lo_address_errstr(address)); }
+          { return std::string(lo_address_errstr(address)?:""); }
 
         std::string hostname()
-          { return std::string(lo_address_get_hostname(address)); }
+          { return std::string(lo_address_get_hostname(address)?:""); }
 
         std::string port()
-          { return std::string(lo_address_get_port(address)); }
+          { return std::string(lo_address_get_port(address)?:""); }
 
         int protocol()
           { return lo_address_get_protocol(address); }
 
         std::string url()
-          { return std::string(lo_address_get_url(address)); }
+          { return std::string(lo_address_get_url(address)?:""); }
 
         std::string iface()
-          { const char *s = lo_address_get_iface(address);
-            return std::string(s ? s : ""); }
+          { return std::string(lo_address_get_iface(address)?:""); }
 
         void set_iface(const std::string &iface, const std::string &ip)
           { lo_address_set_iface(address,
@@ -499,7 +498,7 @@ namespace lo {
             { return lo_message_get_timestamp(message); }
 
         std::string types()
-            { return std::string(lo_message_get_types(message)); }
+            { return std::string(lo_message_get_types(message)?:""); }
 
         int argc()
             { return lo_message_get_argc(message); }
