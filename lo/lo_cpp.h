@@ -179,6 +179,7 @@ namespace lo {
         typedef handler_type<void()> handler__void;
         typedef handler_type<int()> handler__int;
         typedef handler_type<void(int, const char *, const char *)> handler_error;
+        typedef handler_type<void(int, const std::string&, const std::string&)> handler_error_s;
 
         typedef handler_type<int(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_int;
         typedef handler_type<int(const char *,lo_arg**,int)> handler_typesargs_int;
