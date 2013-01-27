@@ -6,16 +6,17 @@
 #include <lo/lo_throw.h>
 
 #include <functional>
-#include <vector>
 #include <memory>
-
+#include <list>
+#include <unordered_map>
 
 #define LO_ADD_METHOD_RT(s, argtypes, args, ht, rt, r, r1, r2)       \
     template <typename H>                                               \
     auto add_method(const char *path, const char *types, H&& h)         \
     -> rt const                                                         \
     {                                                                   \
-        m_handlers.push_back(                                           \
+        std::string key = std::string(path?:"") + "," + (types?:"");    \
+        _handlers[key].push_front(                                      \
             std::unique_ptr<handler>(new handler_##ht##_##r(h)));       \
         _add_method(path, types,                                        \
             [](const char *path, const char *types,                     \
@@ -24,7 +25,7 @@
             {                                                           \
                 r1 (*static_cast<handler_##ht##_##r*>(data)) args;      \
                 r2;                                                     \
-            }, m_handlers.back().get());                                \
+            }, _handlers[key].front().get());                           \
     }
 
 #define RT_INT(argtypes) \
@@ -65,7 +66,7 @@ namespace lo {
         {
             if (server) {
                 auto h = new handler_error(e);
-                m_handlers.push_back(std::unique_ptr<handler>(h));
+                _error_handler = std::unique_ptr<handler>(h);
                 lo_server_set_error_context(server, h);
             }
         }
@@ -115,7 +116,8 @@ namespace lo {
 
         void del_method(const char *path, const char *typespec)
         {
-            // TODO
+            _handlers.erase(std::string(path?:"") + "," + (typespec?:""));
+            lo_server_del_method(server, path, typespec);
         }
 
         int dispatch_data(void *data, size_t size)
@@ -194,7 +196,9 @@ namespace lo {
         typedef handler_type<void(const Message&)> handler_msg_void;
 
         // Keep std::functions here so they are freed correctly
-        std::vector<std::unique_ptr<handler>> m_handlers;
+        std::unordered_map<std::string,
+            std::list<std::unique_ptr<handler>>> _handlers;
+        std::unique_ptr<handler> _error_handler;
 
         virtual void _add_method(const char *path, const char *types,
                         lo_method_handler h, void *data) const
@@ -220,7 +224,7 @@ namespace lo {
             {
                 if (server_thread) {
                     auto h = new handler_error(e);
-                    m_handlers.push_back(std::unique_ptr<handler>(h));
+                    _error_handler.reset(h);
                     lo_server_thread_set_error_context(server_thread, h);
                 }
             }

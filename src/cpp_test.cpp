@@ -52,6 +52,9 @@ void init(lo::Server &s)
         int _j;
     };
 
+    s.add_method("test0", "i", test3(j,"test0"));
+    s.del_method("test0", "i");
+
     s.add_method("test1", "i", test1, 0);
     s.add_method("test2", "i", test2);
     s.add_method("test3", "i", test3(j, "test3"));
