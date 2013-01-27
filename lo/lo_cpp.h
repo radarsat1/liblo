@@ -46,6 +46,7 @@
 
 namespace lo {
 
+    template <bool is_owner>
     class Message;
 
     class Server
@@ -100,18 +101,18 @@ namespace lo {
             ((char*)0, (lo_arg**)0, (int)0),
             (types, argv, argc), typesargs)
         LO_ADD_METHOD(server,
-            ((char*)0, (lo_arg**)0, (int)0, Message((lo_message)0,false)),
-            (types, argv, argc, Message(msg,false)), typesargsmsg)
+            ((char*)0, (lo_arg**)0, (int)0, Message<false>((lo_message)0)),
+            (types, argv, argc, Message<false>(msg)), typesargsmsg)
         LO_ADD_METHOD(server,
-            ((char*)0, Message((lo_message)0,false)),
-            (path, Message(msg,false)), pathmsg)
+            ((char*)0, Message<false>((lo_message)0)),
+            (path, Message<false>(msg)), pathmsg)
         LO_ADD_METHOD(server,
             ((lo_arg**)0, (int)0), (argv, argc), args)
         LO_ADD_METHOD(server,
-            ((lo_arg**)0, (int)0, Message((lo_message)0,false)),
-            (argv, argc, Message(msg,false)), argsmsg)
+            ((lo_arg**)0, (int)0, Message<false>((lo_message)0)),
+            (argv, argc, Message<false>(msg)), argsmsg)
         LO_ADD_METHOD(server,
-            (Message((lo_message)0,false)), (Message(msg,false)), msg)
+            (Message<false>((lo_message)0)), (Message<false>(msg)), msg)
         LO_ADD_METHOD(server, (), (),)
 
         void del_method(const char *path, const char *typespec)
@@ -181,19 +182,19 @@ namespace lo {
 
         typedef handler_type<int(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_int;
         typedef handler_type<int(const char *,lo_arg**,int)> handler_typesargs_int;
-        typedef handler_type<int(const char *,lo_arg**,int,const Message&)> handler_typesargsmsg_int;
-        typedef handler_type<int(const char *,const Message&)> handler_pathmsg_int;
-        typedef handler_type<int(lo_arg**,int,const Message&)> handler_argsmsg_int;
+        typedef handler_type<int(const char *,lo_arg**,int,const Message<false>&)> handler_typesargsmsg_int;
+        typedef handler_type<int(const char *,const Message<false>&)> handler_pathmsg_int;
+        typedef handler_type<int(lo_arg**,int,const Message<false>&)> handler_argsmsg_int;
         typedef handler_type<int(lo_arg**,int)> handler_args_int;
-        typedef handler_type<int(const Message&)> handler_msg_int;
+        typedef handler_type<int(const Message<false>&)> handler_msg_int;
 
         typedef handler_type<void(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_void;
         typedef handler_type<void(const char *,lo_arg**,int)> handler_typesargs_void;
-        typedef handler_type<void(const char *,lo_arg**,int,const Message&)> handler_typesargsmsg_void;
-        typedef handler_type<void(const char *,const Message&)> handler_pathmsg_void;
-        typedef handler_type<void(lo_arg**,int,const Message&)> handler_argsmsg_void;
+        typedef handler_type<void(const char *,lo_arg**,int,const Message<false>&)> handler_typesargsmsg_void;
+        typedef handler_type<void(const char *,const Message<false>&)> handler_pathmsg_void;
+        typedef handler_type<void(lo_arg**,int,const Message<false>&)> handler_argsmsg_void;
         typedef handler_type<void(lo_arg**,int)> handler_args_void;
-        typedef handler_type<void(const Message&)> handler_msg_void;
+        typedef handler_type<void(const Message<false>&)> handler_msg_void;
 
         // Keep std::functions here so they are freed correctly
         std::unordered_map<std::string,
@@ -385,28 +386,29 @@ namespace lo {
         lo_address address;
     };
 
+    template <bool is_owner>
     class Message
     {
       public:
-        Message(bool is_owner = true)
-            : message(lo_message_new()),
-              _is_owner(is_owner) {}
+        Message()
+            : message(lo_message_new()) {}
 
-        Message(lo_message m, bool is_owner = true)
-            : message(m), _is_owner(is_owner) {}
+        Message(lo_message m)
+            : message(m) {}
+
+        Message(const Message &m)
+            : message(m.message) {}
 
         Message(const char *types, ...)
         {
             message = lo_message_new();
-            _is_owner = true;
             va_list q;
             va_start(q, types);
             std::string t(std::string(types)+"$$");
             add_varargs(t.c_str(), q);
         }
 
-        ~Message()
-            { if (_is_owner) lo_message_free(message); }
+        virtual ~Message() {};
 
         int add(const char *types, ...)
         {
@@ -542,13 +544,13 @@ namespace lo {
         operator lo_message() const
             { return message; }
 
-        void set_ownership(bool is_owner)
-            { _is_owner = is_owner; }
-
       protected:
         lo_message message;
-        bool _is_owner;
     };
+
+    template<>
+    Message<true>::~Message()
+        { lo_message_free(message); }
 
     class Blob
     {
@@ -579,41 +581,37 @@ namespace lo {
         lo_blob blob;
     };
 
+    template <bool is_owner>
+    struct PathMsg
+    {
+        const char *path;
+        Message<is_owner> msg;
+    };
+
+    template <bool is_owner>
     class Bundle
     {
       public:
         Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE); }
 
-        Bundle(lo_timetag tt, bool is_owner = false)
-            : bundle(lo_bundle_new(tt)),
-              _is_owner(is_owner) {}
+        Bundle(lo_timetag tt)
+            : bundle(lo_bundle_new(tt)) {}
 
-        Bundle(lo_bundle b, bool is_owner = false)
-            : bundle(b),
-              _is_owner(is_owner) {}
+        Bundle(lo_bundle b)
+            : bundle(b) {}
 
-        Bundle(const char *path, lo_message m, bool is_owner = false)
-            : bundle(lo_bundle_new(LO_TT_IMMEDIATE)),
-              _is_owner(is_owner)
+        Bundle(lo_timetag tt, const char *path, lo_message m)
+            : bundle(lo_bundle_new(tt))
         {
             lo_bundle_add_message(bundle, path, m);
         }
 
-        Bundle(lo_timetag tt, const char *path, lo_message m,
-               bool is_owner = false)
-            : bundle(lo_bundle_new(tt)),
-              _is_owner(is_owner)
-        {
-            lo_bundle_add_message(bundle, path, m);
-        }
+        Bundle(const std::vector<PathMsg<true>> &msgs);
+        Bundle(const std::vector<PathMsg<false>> &msgs);
 
-        virtual ~Bundle()
-            { if (_is_owner)
-                  lo_bundle_free_messages(bundle);
-              else
-                  lo_bundle_free(bundle); }
+        virtual ~Bundle() {}
 
-        int add(const char *path, lo_message m, bool is_owner = false)
+        int add(const char *path, lo_message m)
             { return lo_bundle_add_message(bundle, path, m); }
 
         size_t length()
@@ -633,9 +631,37 @@ namespace lo {
 
       protected:
         lo_bundle bundle;
-        bool _is_owner;
     };
 
+    template<>
+    Bundle<true>::Bundle(const std::vector<PathMsg<false>> &msgs)
+        : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
+    {
+        for (auto m : msgs) {
+            lo_bundle_add_message(bundle, m.path, m.msg);
+        }
+    }
+
+    template<>
+    Bundle<false>::Bundle(const std::vector<PathMsg<true>> &msgs)
+        : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
+    {
+        for (auto m : msgs) {
+            lo_bundle_add_message(bundle, m.path, m.msg);
+        }
+    }
+
+    template<>
+    Bundle<false>::Bundle(const std::vector<PathMsg<false>> &msgs)
+        : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
+    {
+        for (auto m : msgs) {
+            lo_bundle_add_message(bundle, m.path, m.msg);
+        }
+    }
+
+    template<> Bundle<true>::~Bundle()
+        { lo_bundle_free_messages(bundle); }
 };
 
 #endif // _LO_CPP_H_

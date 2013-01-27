@@ -150,7 +150,7 @@ int main()
     a.send("test9", "i", 180);
     a.send("test10", "i", 200);
 
-    lo::Message m;
+    lo::Message<true> m;
     m.add("i", 220);
     m.add_string(std::string("blah"));
     a.send("test11", m);
@@ -160,7 +160,10 @@ int main()
     m.add(lo::Blob(std::array<char,5>{"asdf"}));
     a.send("blobtest", m);
 
-    a.send(lo::Bundle("test11", lo::Message("is", 260, "oneliner")));
+    a.send(lo::Bundle<true>({
+                {"test11", lo::Message<false>("is",20,"first in bundle")},
+                {"test11", lo::Message<false>("is",30,"second in bundle")}
+            }));
 
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 
