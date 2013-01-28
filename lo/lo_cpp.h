@@ -137,8 +137,29 @@ namespace lo {
                                 lo_bundle_end_handler eh,
                                 void *user_data)
         {
-            // TODO, lambda versions
             return lo_server_add_bundle_handlers(server, sh, eh, user_data);
+        }
+
+        template <typename S, typename E>
+        int add_bundle_handlers(S&& s, E&& e)
+        {
+            _bundle_handlers.reset(new std::pair<handler_bundle_start,
+                                                 handler_bundle_end>(
+                                       handler_bundle_start(s),
+                                       handler_bundle_end(e)));
+            return lo_server_add_bundle_handlers(
+                server,
+                [](lo_timetag time, void *user_data)->int{
+                    auto h = (std::pair<handler_bundle_start,
+                                        handler_bundle_end>*) user_data;
+                    return h->first(time);
+                },
+                [](void *user_data)->int{
+                    auto h = (std::pair<handler_bundle_start,
+                                        handler_bundle_end>*) user_data;
+                    return h->second();
+                },
+                _bundle_handlers.get());
         }
 
         int socket_fd()
@@ -180,6 +201,8 @@ namespace lo {
         typedef handler_type<int()> handler__int;
         typedef handler_type<void(int, const char *, const char *)> handler_error;
         typedef handler_type<void(int, const std::string&, const std::string&)> handler_error_s;
+        typedef handler_type<int(lo_timetag)> handler_bundle_start;
+        typedef handler_type<int()> handler_bundle_end;
 
         typedef handler_type<int(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_int;
         typedef handler_type<int(const char *,lo_arg**,int)> handler_typesargs_int;
@@ -201,6 +224,8 @@ namespace lo {
         std::unordered_map<std::string,
             std::list<std::unique_ptr<handler>>> _handlers;
         std::unique_ptr<handler> _error_handler;
+        std::unique_ptr<std::pair<handler_bundle_start,
+                                  handler_bundle_end>> _bundle_handlers;
 
         virtual void _add_method(const char *path, const char *types,
                         lo_method_handler h, void *data) const

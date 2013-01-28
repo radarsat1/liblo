@@ -112,6 +112,17 @@ void init(lo::Server &s)
                  {printf("test11: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
 
     s.add_method(0, 0, [](const char *path, lo_message m){printf("%s ", path); lo_message_pp(m);});
+
+    j*=2;
+    s.add_bundle_handlers(
+        [j](lo_timetag time)->int{
+            printf("Bundle start handler! (j=%d)\n", j);
+            return 0;
+        },
+        [j]()->int{
+            printf("Bundle end handler! (j=%d)\n", j);
+            return 0;
+        });
 }
 
 int main()
