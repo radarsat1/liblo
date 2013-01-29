@@ -128,7 +128,7 @@ void init(lo::Server &s)
 int main()
 {
     int context = 999;
-    lo::ServerThread st("9000",
+    lo::ServerThread st(9000,
                         [=](int num, const char *msg, const char *where)
                         {printf("error handler: %d\n", context);});
     if (!st.is_valid()) {
