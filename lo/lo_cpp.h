@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <string>
 #include <sstream>
+#include <initializer_list>
 
 #define LO_ADD_METHOD_RT(s, argtypes, args, ht, rt, r, r1, r2)       \
     template <typename H>                                               \
@@ -683,8 +684,8 @@ namespace lo {
             lo_bundle_add_message(bundle, path, m);
         }
 
-        Bundle(const std::vector<PathMsg<true>> &msgs);
-        Bundle(const std::vector<PathMsg<false>> &msgs);
+        Bundle(const std::initializer_list<PathMsg<true>> &msgs);
+        Bundle(const std::initializer_list<PathMsg<false>> &msgs);
 
         virtual ~Bundle() {}
 
@@ -717,7 +718,7 @@ namespace lo {
     };
 
     template<>
-    Bundle<true>::Bundle(const std::vector<PathMsg<false>> &msgs)
+    Bundle<true>::Bundle(const std::initializer_list<PathMsg<false>> &msgs)
         : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
     {
         for (auto m : msgs) {
@@ -726,7 +727,7 @@ namespace lo {
     }
 
     template<>
-    Bundle<false>::Bundle(const std::vector<PathMsg<true>> &msgs)
+    Bundle<false>::Bundle(const std::initializer_list<PathMsg<true>> &msgs)
         : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
     {
         for (auto m : msgs) {
@@ -735,7 +736,7 @@ namespace lo {
     }
 
     template<>
-    Bundle<false>::Bundle(const std::vector<PathMsg<false>> &msgs)
+    Bundle<false>::Bundle(const std::initializer_list<PathMsg<false>> &msgs)
         : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
     {
         for (auto m : msgs) {
