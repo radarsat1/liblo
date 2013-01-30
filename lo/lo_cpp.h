@@ -92,7 +92,7 @@ namespace lo {
         }
 
         template <typename E>
-        Server(const num_string_type &port, int proto=LO_UDP, E&& e=0)
+        Server(const num_string_type &port, int proto, E&& e=0)
             : Server(lo_server_new_with_proto(port, proto,
               [](int num, const char *msg, const char *where){
                 auto h = static_cast<handler_error*>(lo_error_get_context());
@@ -131,7 +131,7 @@ namespace lo {
         Server(const num_string_type &port, lo_err_handler err_h=0)
             : Server(lo_server_new(port, err_h)) {}
 
-        Server(const num_string_type &port, int proto=LO_UDP, lo_err_handler err_h=0)
+        Server(const num_string_type &port, int proto, lo_err_handler err_h=0)
             : Server(lo_server_new_with_proto(port, proto, err_h)) {}
 
         Server(const string_type &group, const num_string_type &port,
@@ -297,7 +297,7 @@ namespace lo {
     class ServerThread : public Server
     {
       public:
-        ServerThread(const num_string_type &port, lo_err_handler err_h)
+        ServerThread(const num_string_type &port, lo_err_handler err_h=0)
             : Server(lo_server_thread_get_server(
                   server_thread = lo_server_thread_new(port, err_h))) {}
 
