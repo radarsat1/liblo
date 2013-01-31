@@ -170,6 +170,17 @@ int main()
                 {"test11", lo::Message<false>("is",30,"second in bundle")}
             }));
 
+    char oscmsg[] = "/ok\x00,\x00\x00";
+    int result = 0;
+    std::unique_ptr<lo::Message<true>> m2(
+        lo::Message<true>::deserialise(oscmsg, sizeof(oscmsg), &result));
+    if (m2 != nullptr) {
+        printf("deserialise: ");
+        m2->print();
+    }
+    else
+        printf("Unexpected failure in deserialise(): %d\n", result);
+
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 
     sleep(1);
