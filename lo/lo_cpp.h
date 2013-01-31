@@ -13,20 +13,20 @@
 #include <sstream>
 #include <initializer_list>
 
-#define LO_ADD_METHOD_RT(s, argtypes, args, ht, rt, r, r1, r2)       \
+#define LO_ADD_METHOD_RT(ht, argtypes, args, rt, r, r1, r2)             \
     template <typename H>                                               \
     auto add_method(const string_type path, const string_type types, H&& h) \
     -> rt const                                                         \
     {                                                                   \
         std::string key = std::string(path._s?:"") + "," + (types._s?:""); \
         _handlers[key].push_front(                                      \
-            std::unique_ptr<handler>(new handler_##ht##_##r(h)));       \
+            std::unique_ptr<handler>(new handler_type<r ht>(h)));       \
         _add_method(path, types,                                        \
             [](const char *path, const char *types,                     \
                lo_arg **argv, int argc, void *msg,                      \
                void *data)->int                                         \
             {                                                           \
-                r1 (*static_cast<handler_##ht##_##r*>(data)) args;      \
+                r1 (*static_cast<handler_type<r ht>*>(data)) args; \
                 r2;                                                     \
             }, _handlers[key].front().get());                           \
     }
@@ -36,16 +36,11 @@
 #define RT_VOID(argtypes) \
     typename std::enable_if<std::is_same<decltype(h argtypes), void>::value, void>::type
 
-#define LO_ADD_METHOD_RT_INT(s, argtypes, args, ht)                  \
-    LO_ADD_METHOD_RT(s, argtypes, args, ht,                          \
-                        RT_INT(argtypes), int, return,)
-#define LO_ADD_METHOD_RT_VOID(s, argtypes, args, ht)                 \
-    LO_ADD_METHOD_RT(s, argtypes, args, ht,                          \
-                        RT_VOID(argtypes), void, , return 1)
-
-#define LO_ADD_METHOD(s, argtypes, args, ht)                         \
-    LO_ADD_METHOD_RT_INT(s, argtypes, args, ht)                      \
-    LO_ADD_METHOD_RT_VOID(s, argtypes, args, ht)
+#define LO_ADD_METHOD(ht, argtypes, args)                         \
+    LO_ADD_METHOD_RT(ht, argtypes, args,                          \
+                     RT_INT(argtypes), int, return,);             \
+    LO_ADD_METHOD_RT(ht, argtypes, args,                          \
+                     RT_VOID(argtypes), void, , return 1)
 
 namespace lo {
 
@@ -153,26 +148,26 @@ namespace lo {
             { _add_method(path, types, h, data); }
 
         // Alternative callback prototypes
-        LO_ADD_METHOD(server,
-            ((char*)0, (char*)0, (lo_arg**)0, (int)0),
-            (path, types, argv, argc), pathtypesargs)
-        LO_ADD_METHOD(server,
-            ((char*)0, (lo_arg**)0, (int)0),
-            (types, argv, argc), typesargs)
-        LO_ADD_METHOD(server,
-            ((char*)0, (lo_arg**)0, (int)0, Message<false>((lo_message)0)),
-            (types, argv, argc, Message<false>(msg)), typesargsmsg)
-        LO_ADD_METHOD(server,
-            ((char*)0, Message<false>((lo_message)0)),
-            (path, Message<false>(msg)), pathmsg)
-        LO_ADD_METHOD(server,
-            ((lo_arg**)0, (int)0), (argv, argc), args)
-        LO_ADD_METHOD(server,
-            ((lo_arg**)0, (int)0, Message<false>((lo_message)0)),
-            (argv, argc, Message<false>(msg)), argsmsg)
-        LO_ADD_METHOD(server,
-            (Message<false>((lo_message)0)), (Message<false>(msg)), msg)
-        LO_ADD_METHOD(server, (), (),)
+        LO_ADD_METHOD( (const char*, const char*, lo_arg**, int),
+                       ((char*)0, (char*)0, (lo_arg**)0, (int)0),
+                       (path, types, argv, argc) );
+        LO_ADD_METHOD( (const char*, lo_arg**, int),
+                       ((char*)0, (lo_arg**)0, (int)0),
+                       (types, argv, argc) );
+        LO_ADD_METHOD( (const char*, lo_arg**, int, const Message<false>&),
+                       ((char*)0, (lo_arg**)0, (int)0, Message<false>((lo_message)0)),
+                       (types, argv, argc, Message<false>(msg)) );
+        LO_ADD_METHOD( (const char*, const Message<false>&),
+                       ((char*)0, Message<false>((lo_message)0)),
+                       (path, Message<false>(msg)) );
+        LO_ADD_METHOD( (lo_arg**, int), ((lo_arg**)0, (int)0), (argv, argc) )
+        LO_ADD_METHOD( (lo_arg**, int, const Message<false>& ),
+                       ((lo_arg**)0, (int)0, Message<false>((lo_message)0) ),
+                       (argv, argc, Message<false>(msg)) );
+        LO_ADD_METHOD( (const Message<false>&),
+                       (Message<false>((lo_message)0)),
+                       (Message<false>(msg)) );
+        LO_ADD_METHOD( (), (), () );
 
         void del_method(const string_type &path, const string_type &typespec)
         {
@@ -257,28 +252,10 @@ namespace lo {
         class handler_type : public handler, public std::function<T> {
           public: template<typename H>handler_type(H&& h) : std::function<T>(h) {}
         };
-        typedef handler_type<void()> handler__void;
-        typedef handler_type<int()> handler__int;
         typedef handler_type<void(int, const char *, const char *)> handler_error;
         typedef handler_type<void(int, const std::string&, const std::string&)> handler_error_s;
         typedef handler_type<int(lo_timetag)> handler_bundle_start;
         typedef handler_type<int()> handler_bundle_end;
-
-        typedef handler_type<int(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_int;
-        typedef handler_type<int(const char *,lo_arg**,int)> handler_typesargs_int;
-        typedef handler_type<int(const char *,lo_arg**,int,const Message<false>&)> handler_typesargsmsg_int;
-        typedef handler_type<int(const char *,const Message<false>&)> handler_pathmsg_int;
-        typedef handler_type<int(lo_arg**,int,const Message<false>&)> handler_argsmsg_int;
-        typedef handler_type<int(lo_arg**,int)> handler_args_int;
-        typedef handler_type<int(const Message<false>&)> handler_msg_int;
-
-        typedef handler_type<void(const char *,const char *,lo_arg**,int)> handler_pathtypesargs_void;
-        typedef handler_type<void(const char *,lo_arg**,int)> handler_typesargs_void;
-        typedef handler_type<void(const char *,lo_arg**,int,const Message<false>&)> handler_typesargsmsg_void;
-        typedef handler_type<void(const char *,const Message<false>&)> handler_pathmsg_void;
-        typedef handler_type<void(lo_arg**,int,const Message<false>&)> handler_argsmsg_void;
-        typedef handler_type<void(lo_arg**,int)> handler_args_void;
-        typedef handler_type<void(const Message<false>&)> handler_msg_void;
 
         // Keep std::functions here so they are freed correctly
         std::unordered_map<std::string,
