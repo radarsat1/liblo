@@ -115,14 +115,8 @@ void init(lo::Server &s)
 
     j*=2;
     s.add_bundle_handlers(
-        [j](lo_timetag time)->int{
-            printf("Bundle start handler! (j=%d)\n", j);
-            return 0;
-        },
-        [j]()->int{
-            printf("Bundle end handler! (j=%d)\n", j);
-            return 0;
-        });
+        [j](lo_timetag time){ printf("Bundle start handler! (j=%d)\n", j); },
+        [j](){ printf("Bundle end handler! (j=%d)\n", j); } );
 }
 
 int main()
