@@ -140,7 +140,7 @@ namespace lo {
         virtual ~Server()
             { if (server) lo_server_free(server); }
 
-        bool is_valid() { return server!=nullptr; }
+        bool is_valid() const { return server!=nullptr; }
 
         // Regular old liblo method handlers
         void add_method(const string_type &path, const string_type &types,
@@ -219,16 +219,16 @@ namespace lo {
                 _bundle_handlers.get());
         }
 
-        int socket_fd()
+        int socket_fd() const
             { return lo_server_get_socket_fd(server); }
 
-        int port()
+        int port() const
             { return lo_server_get_port(server); }
 
-        int protocol()
+        int protocol() const
             { return lo_server_get_protocol(server); }
 
-        std::string url()
+        std::string url() const
             { return std::string(lo_server_get_url(server)?:""); }
 
         int enable_queue(int queue_enabled,
@@ -237,10 +237,10 @@ namespace lo {
                                             queue_enabled,
                                             dispatch_remaining); }
 
-        int events_pending()
+        int events_pending() const
             { return lo_server_events_pending(server); }
 
-        double next_event_delay()
+        double next_event_delay() const
             { return lo_server_next_event_delay(server); }
 
         operator lo_server() const
@@ -338,19 +338,19 @@ namespace lo {
           { if (address)
               lo_address_free(address); }
 
-        int ttl()
+        int ttl() const
           { return lo_address_get_ttl(address); }
 
         void set_ttl(int ttl)
           { lo_address_set_ttl(address, ttl); }
 
-        int send(const string_type &path)
+        int send(const string_type &path) const
           { return lo_send(address, path, ""); }
 
         // In these functions we append "$$" to the type string, which
         // simply instructs lo_message_add_varargs() not to use
         // LO_MARKER checking at the end of the argument list.
-        int send(const string_type &path, const string_type &type, ...)
+        int send(const string_type &path, const string_type &type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -363,7 +363,7 @@ namespace lo {
         }
 
         int send(lo_timetag ts, const string_type &path,
-                 const string_type &type, ...)
+                 const string_type &type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -377,14 +377,14 @@ namespace lo {
             return r;
         }
 
-        int send(const string_type &path, lo_message m)
+        int send(const string_type &path, lo_message m) const
             { return lo_send_message(address, path, m); }
 
         int send(lo_bundle b)
             { return lo_send_bundle(address, b); }
 
         int send_from(lo_server from, const string_type &path,
-                      const string_type &type, ...)
+                      const string_type &type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -398,7 +398,7 @@ namespace lo {
 
         int send_from(lo_server from, lo_timetag ts, 
                       const string_type &path,
-                      const string_type &type, ...)
+                      const string_type &type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -412,31 +412,31 @@ namespace lo {
             return r;
         }
 
-        int send_from(lo_server from, const string_type &path, lo_message m)
+        int send_from(lo_server from, const string_type &path, lo_message m) const
             { return lo_send_message_from(address, from, path, m); }
 
-        int send(lo_server from, lo_bundle b)
+        int send(lo_server from, lo_bundle b) const
             { return lo_send_bundle_from(address, from, b); }
 
-        int get_errno()
+        int get_errno() const
           { return lo_address_errno(address); }
 
-        std::string errstr()
+        std::string errstr() const
           { return std::string(lo_address_errstr(address)?:""); }
 
-        std::string hostname()
+        std::string hostname() const
           { return std::string(lo_address_get_hostname(address)?:""); }
 
-        std::string port()
+        std::string port() const
           { return std::string(lo_address_get_port(address)?:""); }
 
-        int protocol()
+        int protocol() const
           { return lo_address_get_protocol(address); }
 
-        std::string url()
+        std::string url() const
           { return std::string(lo_address_get_url(address)?:""); }
 
-        std::string iface()
+        std::string iface() const
           { return std::string(lo_address_get_iface(address)?:""); }
 
         void set_iface(const string_type &iface, const string_type &ip)
@@ -566,25 +566,25 @@ namespace lo {
               else
                 return lo_message_add_false(message); }
 
-        Address source()
+        Address source() const
             { return Address(lo_message_get_source(message)); }
 
-        lo_timetag timestamp()
+        lo_timetag timestamp() const
             { return lo_message_get_timestamp(message); }
 
-        std::string types()
+        std::string types() const
             { return std::string(lo_message_get_types(message)?:""); }
 
-        int argc()
+        int argc() const
             { return lo_message_get_argc(message); }
 
-        lo_arg **argv()
+        lo_arg **argv() const
             { return lo_message_get_argv(message); }
 
-        size_t length(const string_type &path)
+        size_t length(const string_type &path) const
             { return lo_message_length(message, path); }
 
-        void *serialise(const string_type &path, void *to, size_t *size)
+        void *serialise(const string_type &path, void *to, size_t *size) const
             { return lo_message_serialise(message, path, to, size); }
 
         static
@@ -619,16 +619,16 @@ namespace lo {
         virtual ~Blob()
             { lo_blob_free(blob); }
 
-        uint32_t datasize()
+        uint32_t datasize() const
             { return lo_blob_datasize(blob); }
 
-        void *dataptr()
+        void *dataptr() const
             { return lo_blob_dataptr(blob); }
 
-        uint32_t size()
+        uint32_t size() const
             { return lo_blobsize(blob); }
 
-        operator lo_blob()
+        operator lo_blob() const
             { return blob; };
 
       protected:
@@ -668,25 +668,25 @@ namespace lo {
         int add(const string_type &path, lo_message m)
             { return lo_bundle_add_message(bundle, path, m); }
 
-        size_t length()
+        size_t length() const
             { return lo_bundle_length(bundle); }
 
-        unsigned int count()
+        unsigned int count() const
             { return lo_bundle_count(bundle); }
 
-        lo_message get_message(int index, const char **path=0)
+        lo_message get_message(int index, const char **path=0) const
             { return lo_bundle_get_message(bundle, index, path); }
 
-        lo_message get_message(int index, std::string &path)
+        lo_message get_message(int index, std::string &path) const
             { const char *p;
               int r=lo_bundle_get_message(bundle, index, &p);
               path = p?:0;
               return r; }
 
-        void *serialise(void *to, size_t *size)
+        void *serialise(void *to, size_t *size) const
             { return lo_bundle_serialise(bundle, to, size); }
 
-        operator lo_bundle()
+        operator lo_bundle() const
             { return bundle; }
 
       protected:
