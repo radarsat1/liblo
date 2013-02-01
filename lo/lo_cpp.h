@@ -677,7 +677,7 @@ namespace lo {
         unsigned int count()
             { return lo_bundle_count(bundle); }
 
-        lo_message get_message(int index, const char **path)
+        lo_message get_message(int index, const char **path=0)
             { return lo_bundle_get_message(bundle, index, path); }
 
         lo_message get_message(int index, std::string &path)
