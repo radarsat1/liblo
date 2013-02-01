@@ -581,11 +581,8 @@ namespace lo {
         lo_arg **argv()
             { return lo_message_get_argv(message); }
 
-        size_t length(const char *path)
+        size_t length(const string_type &path)
             { return lo_message_length(message, path); }
-
-        size_t length(const std::string &path)
-            { return lo_message_length(message, path.c_str()); }
 
         void *serialise(const string_type &path, void *to, size_t *size)
             { return lo_message_serialise(message, path, to, size); }
