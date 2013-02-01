@@ -111,6 +111,10 @@ void init(lo::Server &s)
     s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
                  {printf("test11: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
 
+    j*=2;
+    s.add_method("test12", "i", [j](const lo::Message<false> m)
+                 {printf("test12 source: %s\n", m.source().url().c_str());});
+
     s.add_method(0, 0, [](const char *path, lo_message m){printf("%s ", path); lo_message_pp(m);});
 
     j*=2;
@@ -136,7 +140,7 @@ int main()
 
     st.start();
 
-    lo::Address a("localhost", "9000");
+    lo::Address<true> a("localhost", "9000");
 
     printf("address host %s, port %s\n", a.hostname().c_str(), a.port().c_str());
     printf("iface: %s\n", a.iface().c_str());
@@ -180,6 +184,8 @@ int main()
     }
     else
         printf("Unexpected failure in deserialise(): %d\n", result);
+
+    a.send("test12", "i", 240);
 
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 

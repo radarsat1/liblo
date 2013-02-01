@@ -321,6 +321,7 @@ namespace lo {
         }
     };
 
+    template <bool is_owned>
     class Address
     {
       public:
@@ -334,9 +335,7 @@ namespace lo {
         Address(lo_address a)
           { address = a; }
 
-        ~Address()
-          { if (address)
-              lo_address_free(address); }
+        ~Address() {}
 
         int ttl() const
           { return lo_address_get_ttl(address); }
@@ -448,6 +447,10 @@ namespace lo {
       protected:
         lo_address address;
     };
+
+    template <>
+    Address<true>::~Address()
+        { if (address) lo_address_free(address); }
 
     template <bool is_owner>
     class Message
@@ -566,8 +569,8 @@ namespace lo {
               else
                 return lo_message_add_false(message); }
 
-        Address source() const
-            { return Address(lo_message_get_source(message)); }
+        Address<false> source() const
+            { return Address<false>(lo_message_get_source(message)); }
 
         lo_timetag timestamp() const
             { return lo_message_get_timestamp(message); }
