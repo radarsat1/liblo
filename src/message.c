@@ -85,6 +85,32 @@ lo_message lo_message_new()
     return m;
 }
 
+lo_message lo_message_clone(lo_message m)
+{
+    if (!m) {
+	return NULL;
+    }
+
+    lo_message c = malloc(sizeof(struct _lo_message));
+    if (!c) {
+	return NULL;
+    }
+
+    c->types = calloc(m->typesize, sizeof(char));
+    strcpy (c->types, m->types);
+    c->typelen = m->typelen;
+    c->typesize = m->typesize;
+    c->data = calloc(m->datasize, sizeof(uint8_t));
+    memcpy(c->data, m->data, m->datalen);
+    c->datalen = m->datalen;
+    c->datasize = m->datasize;
+    c->source = NULL;
+    c->argv = NULL;
+    c->ts = LO_TT_IMMEDIATE;
+    
+    return c;
+}
+
 void lo_message_free(lo_message m)
 {
     if (m) {
