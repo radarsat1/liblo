@@ -282,6 +282,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->path = NULL;
     s->queued = NULL;
     s->queue_enabled = 1;
+    s->udp_resolve_enabled = 1;
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
@@ -703,6 +704,14 @@ int lo_server_enable_queue(lo_server s, int queue_enabled,
 
     if (!queue_enabled && dispatch_remaining && s->queued)
         dispatch_queued(s, 1);
+
+    return prev;
+}
+
+int lo_server_enable_udp_resolve(lo_server s, int udp_resolve_enabled)
+{
+    int prev = s->udp_resolve_enabled;
+    s->udp_resolve_enabled = udp_resolve_enabled;
 
     return prev;
 }
@@ -1611,7 +1620,7 @@ static void dispatch_method(lo_server s, const char *path,
     const char *pptr;
 
     //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
-    if (s->protocol == LO_UDP && s->addr_len > 0) {
+    if ( (s->protocol == LO_UDP) && (s->udp_resolve_enabled) && (s->addr_len > 0) ) {
         err = getnameinfo((struct sockaddr *) &s->addr, s->addr_len,
                           hostname, sizeof(hostname), portname,
                           sizeof(portname),
