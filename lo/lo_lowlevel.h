@@ -110,6 +110,11 @@ int lo_send_bundle_from(lo_address targ, lo_server serv, lo_bundle b);
 lo_message lo_message_new();
 
 /**
+ * \brief Create a new lo_message object by cloning an already existing one
+ */
+lo_message lo_message_clone(lo_message m);
+
+/**
  * \brief Free memory allocated by lo_message_new() and any subsequent
  * \ref lo_message_add_int32 lo_message_add*() calls.
  */
