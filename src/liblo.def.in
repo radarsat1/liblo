@@ -1,4 +1,4 @@
-
+LIBRARY liblo-7.dll
 DESCRIPTION 'Lightweight OSC implementation'
 EXPORTS
     lo_address_errno                       @1
