@@ -964,8 +964,9 @@ void lo_method_pp_prefix(lo_method m, const char *p);
 #ifdef ENABLE_THREADS
 /** \brief Pretty-print a lo_server_thread object. */
 void lo_server_thread_pp(lo_server_thread st);
-/** @} */
 #endif
+
+/** @} */
 
 #ifdef __cplusplus
 }
