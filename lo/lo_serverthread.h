@@ -159,6 +159,9 @@ int lo_server_thread_events_pending(lo_server_thread st);
 
 void lo_server_thread_set_error_context(lo_server_thread st, void *user_data);
 
+/** \brief Pretty-print a lo_server_thread object. */
+void lo_server_thread_pp(lo_server_thread st);
+
 #ifdef __cplusplus
 }
 #endif
