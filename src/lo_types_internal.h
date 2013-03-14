@@ -37,6 +37,8 @@ typedef __int32 int32_t;
 
 #include "lo/lo_osc_types.h"
 
+#define LO_HOST_SIZE 1024
+
 typedef void (*lo_err_handler) (int num, const char *msg,
                                 const char *path);
 
@@ -64,6 +66,10 @@ typedef struct _lo_address {
     const char *errstr;
     int ttl;
     struct _lo_inaddr addr;
+    struct _lo_server *source_server;
+    const char *source_path; /* does not need to be freed since it
+                              * will always point to stack memory in
+                              * dispatch_method() */
 } *lo_address;
 
 typedef struct _lo_blob {
@@ -119,7 +125,6 @@ typedef struct _lo_server {
     int protocol;
     void *queued;
     int queue_enabled;
-		int udp_resolve_enabled;
     struct sockaddr_storage addr;
     socklen_t addr_len;
     int sockets_len;

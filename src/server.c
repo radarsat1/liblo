@@ -64,8 +64,6 @@
 #include "lo/lo.h"
 #include "lo/lo_throw.h"
 
-#define LO_HOST_SIZE 1024
-
 typedef struct {
     lo_timetag ts;
     char *path;
@@ -282,7 +280,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->path = NULL;
     s->queued = NULL;
     s->queue_enabled = 1;
-    s->udp_resolve_enabled = 1;
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
@@ -704,14 +701,6 @@ int lo_server_enable_queue(lo_server s, int queue_enabled,
 
     if (!queue_enabled && dispatch_remaining && s->queued)
         dispatch_queued(s, 1);
-
-    return prev;
-}
-
-int lo_server_enable_udp_resolve(lo_server s, int udp_resolve_enabled)
-{
-    int prev = s->udp_resolve_enabled;
-    s->udp_resolve_enabled = udp_resolve_enabled;
 
     return prev;
 }
@@ -1612,56 +1601,9 @@ static void dispatch_method(lo_server s, const char *path,
     int argc = strlen(types);
     lo_method it;
     int ret = 1;
-    int err;
     int pattern = strpbrk(path, " #*,?[]{}") != NULL;
     lo_address src = 0;
-    char hostname[LO_HOST_SIZE];
-    char portname[32];
     const char *pptr;
-
-    //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
-    if ( (s->protocol == LO_UDP) && (s->udp_resolve_enabled) && (s->addr_len > 0) ) {
-        err = getnameinfo((struct sockaddr *) &s->addr, s->addr_len,
-                          hostname, sizeof(hostname), portname,
-                          sizeof(portname),
-                          NI_NUMERICHOST | NI_NUMERICSERV);
-        if (err) {
-            switch (err) {
-            case EAI_AGAIN:
-                lo_throw(s, err, "Try again", path);
-                break;
-            case EAI_BADFLAGS:
-                lo_throw(s, err, "Bad flags", path);
-                break;
-            case EAI_FAIL:
-                lo_throw(s, err, "Failed", path);
-                break;
-            case EAI_FAMILY:
-                lo_throw(s, err, "Cannot resolve address family", path);
-                break;
-            case EAI_MEMORY:
-                lo_throw(s, err, "Out of memory", path);
-                break;
-            case EAI_NONAME:
-                lo_throw(s, err, "Cannot resolve", path);
-                break;
-#if !defined(WIN32) && !defined(_MSC_VER)
-            case EAI_SYSTEM:
-                lo_throw(s, err, strerror(err), path);
-                break;
-#endif
-            default:
-                lo_throw(s, err, "Unknown error", path);
-                break;
-            }
-
-            return;
-        }
-    } else {
-        hostname[0] = '\0';
-        portname[0] = '\0';
-    }
-
 
     // Store the source information in the lo_address
     if (s->protocol == LO_TCP && sock >= 0) {
@@ -1669,14 +1611,21 @@ static void dispatch_method(lo_server s, const char *path,
     }
     else {
         src = lo_address_new(NULL, NULL);
-        msg->source = src;
-        if (src->host)
+
+        // free up default host/port strings so they can be resolved
+        // properly if requested
+        if (src->host) {
             free(src->host);
-        if (src->host)
+            src->host = 0;
+        }
+        if (src->port) {
             free(src->port);
-        src->host = strdup(hostname);
-        src->port = strdup(portname);
+            src->port = 0;
+        }
+        src->source_server = s;
+        src->source_path = path;
         src->protocol = s->protocol;
+        msg->source = src;
     }
 
     for (it = s->first; it; it = it->next) {

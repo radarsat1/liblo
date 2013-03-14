@@ -784,21 +784,6 @@ char *lo_server_get_url(lo_server s);
 int lo_server_enable_queue(lo_server s, int queue_enabled,
                            int dispatch_remaining);
 
-/**
- * \brief Toggle UDP resolve upon reception.
- * If resolve is enabled, the source socket address of each message received via UDP
- * is translated individually to a location and service name which adds some
- * computation time to dispatching. This source address of a message then can be
- * accessed by lo_message_get_source(). If you don't care where your message come
- * from, you can disable the resolution step but won't be able to access the source
- * address by lo_message_get_source() anymore.
- * \param s a liblo server
- * \param resolve_enabled Zero to disable resolve, non-zero to enable.
- * \return The previous state of resolve behaviour. Zero if resolve
- *         was previously disabled, non-zero otherwiese.
- */
-int lo_server_enable_udp_resolve(lo_server s, int udp_resolve_enabled);
-
 /** 
  * \brief Return true if there are scheduled events (eg. from bundles) 
  * waiting to be dispatched by the server
