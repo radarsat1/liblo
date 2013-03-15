@@ -42,6 +42,7 @@
 #include "lo_types_internal.h"
 #include "lo_internal.h"
 #include "lo/lo.h"
+#include "lo/lo_throw.h"
 
 lo_address lo_address_new_with_proto(int proto, const char *host,
                                      const char *port)
@@ -84,6 +85,8 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     a->ttl = -1;
     a->addr.size = 0;
     a->addr.iface = 0;
+    a->source_server = 0;
+    a->source_path = 0;
 
     return a;
 }
@@ -133,11 +136,69 @@ lo_address lo_address_new_from_url(const char *url)
     return a;
 }
 
+static void lo_address_resolve_source(lo_address a)
+{
+    char hostname[LO_HOST_SIZE];
+    char portname[32];
+    int err;
+    lo_server s = a->source_server;
+
+    if (a->protocol == LO_UDP && s && s->addr_len > 0)
+    {
+        err = getnameinfo((struct sockaddr *) &s->addr, s->addr_len,
+                          hostname, sizeof(hostname),
+                          portname, sizeof(portname),
+                          NI_NUMERICHOST | NI_NUMERICSERV);
+        if (err) {
+            switch (err) {
+            case EAI_AGAIN:
+                lo_throw(s, err, "Try again", a->source_path);
+                break;
+            case EAI_BADFLAGS:
+                lo_throw(s, err, "Bad flags", a->source_path);
+                break;
+            case EAI_FAIL:
+                lo_throw(s, err, "Failed", a->source_path);
+                break;
+            case EAI_FAMILY:
+                lo_throw(s, err, "Cannot resolve address family",
+                         a->source_path);
+                break;
+            case EAI_MEMORY:
+                lo_throw(s, err, "Out of memory", a->source_path);
+                break;
+            case EAI_NONAME:
+                lo_throw(s, err, "Cannot resolve", a->source_path);
+                break;
+#if !defined(WIN32) && !defined(_MSC_VER)
+            case EAI_SYSTEM:
+                lo_throw(s, err, strerror(err), a->source_path);
+                break;
+#endif
+            default:
+                lo_throw(s, err, "Unknown error", a->source_path);
+                break;
+            }
+
+            return;
+        }
+
+        a->host = strdup(hostname);
+        a->port = strdup(portname);
+    } else {
+        a->host = strdup("");
+        a->port = strdup("");
+    }
+}
+
 const char *lo_address_get_hostname(lo_address a)
 {
     if (!a) {
         return NULL;
     }
+
+    if (!a->host)
+        lo_address_resolve_source(a);
 
     return a->host;
 }
@@ -156,6 +217,9 @@ const char *lo_address_get_port(lo_address a)
     if (!a) {
         return NULL;
     }
+
+    if (!a->host)
+        lo_address_resolve_source(a);
 
     return a->port;
 }
@@ -180,8 +244,13 @@ char *lo_address_get_url(lo_address a)
 {
     char *buf;
     int ret = 0;
-    int needquote = strchr(a->host, ':') ? 1 : 0;
+    int needquote = 0;
     const char *fmt;
+
+    if (!a->host)
+        lo_address_resolve_source(a);
+
+    needquote = strchr(a->host, ':') ? 1 : 0;
 
     if (needquote) {
         fmt = "osc.%s://[%s]:%s/";
