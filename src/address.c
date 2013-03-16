@@ -535,7 +535,7 @@ int lo_address_resolve(lo_address a)
     if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
         struct addrinfo *ai;
         struct addrinfo hints;
-        char* host = a->host;
+        const char* host = lo_address_get_hostname(a);
 #ifdef ENABLE_IPV6
         char hosttmp[7+16+1]; // room for ipv6 prefix + a dotted quad
 #endif
@@ -544,10 +544,10 @@ int lo_address_resolve(lo_address a)
 #ifdef ENABLE_IPV6
         hints.ai_family = PF_UNSPEC;
 
-        if (is_dotted_ipv4_address(a->host)) {
+        if (is_dotted_ipv4_address(host)) {
             host = hosttmp;
-            strcpy(host, "::FFFF:");
-            strncpy(host + 7, a->host, 16);
+            strcpy(hosttmp, "::FFFF:");
+            strncpy(hosttmp + 7, lo_address_get_hostname(a), 16);
         }
 #else
         hints.ai_family = PF_INET;
@@ -555,7 +555,7 @@ int lo_address_resolve(lo_address a)
         hints.ai_socktype =
             a->protocol == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
 
-        if ((ret = getaddrinfo(host, a->port, &hints, &ai))) {
+        if ((ret = getaddrinfo(host, lo_address_get_port(a), &hints, &ai))) {
             a->errnum = ret;
             a->errstr = gai_strerror(ret);
             a->ai = NULL;
