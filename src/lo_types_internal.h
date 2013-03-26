@@ -123,6 +123,7 @@ typedef struct _lo_server {
     char *hostname;
     char *path;
     int protocol;
+    lo_server_flags flags;
     void *queued;
     int queue_enabled;
     struct sockaddr_storage addr;

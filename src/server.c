@@ -276,6 +276,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->ai = NULL;
     s->hostname = NULL;
     s->protocol = proto;
+    s->flags = LO_SERVER_NO_FLAG;
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
@@ -617,6 +618,16 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
     }
 
     return 0;
+}
+
+void lo_server_set_flags(lo_server s, lo_server_flags flags)
+{
+    s->flags = flags;
+}
+
+int lo_server_should_coerce_args(lo_server s)
+{
+    return (s->flags & LO_SERVER_DISABLE_COERCION) == 0;
 }
 
 void lo_server_free(lo_server s)
@@ -1643,7 +1654,7 @@ static void dispatch_method(lo_server s, const char *path,
                 ret = it->handler(pptr, types, msg->argv, argc, msg,
                                   it->user_data);
 
-            } else if (lo_can_coerce_spec(types, it->typespec)) {
+            } else if (lo_server_should_coerce_args(s) && lo_can_coerce_spec(types, it->typespec)) {
                 lo_arg **argv = NULL;
 
                 if (argc > 0) {

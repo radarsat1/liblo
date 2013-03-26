@@ -645,6 +645,11 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
                                         lo_err_handler err_h);
 
 /**
+ * \brief Sets the server's options.
+ */
+void lo_server_set_flags(lo_server server, lo_server_flags flag);
+
+/**
  * \brief Free up memory used by the lo_server object
  */
 void lo_server_free(lo_server s);
