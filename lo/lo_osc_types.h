@@ -158,6 +158,13 @@ typedef enum {
     LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
 } lo_proto_flags;
 
+/** \brief Bitflags for optional server features, set by
+ *         lo_server_set_flags(). */
+typedef enum {
+    LO_SERVER_NO_FLAG=0x00,              /*!< default value */
+    LO_SERVER_DISABLE_COERCION=0x01 /*!< default value */
+} lo_server_flags;
+
 /** @} */
 
 #endif
