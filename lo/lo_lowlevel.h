@@ -110,6 +110,16 @@ int lo_send_bundle_from(lo_address targ, lo_server serv, lo_bundle b);
 lo_message lo_message_new();
 
 /**
+ * \brief  Add one to a message's reference count.
+ *
+ * Messages are reference counted. If a message is multiply referenced,
+ * the message's counter should be incremented. It is automatically
+ * decremented by lo_message_free lo_message_free_recursive, with
+ * lo_message_free_recursive being the preferable method.
+ */
+void lo_message_incref(lo_message m);
+
+/**
  * \brief Create a new lo_message object by cloning an already existing one
  */
 lo_message lo_message_clone(lo_message m);
@@ -463,6 +473,16 @@ const char* lo_address_get_iface(lo_address t);
  *           the bundle as soon as it receives it.
  */
 lo_bundle lo_bundle_new(lo_timetag tt);
+
+/**
+ * \brief  Add one to a bundle's reference count.
+ *
+ * Bundles are reference counted. If a bundle is multiply referenced,
+ * the bundle's counter should be incremented. It is automatically
+ * decremented by lo_bundle_free lo_bundle_free_recursive, with
+ * lo_bundle_free_recursive being the preferable method.
+ */
+void lo_bundle_incref(lo_bundle b);
 
 /**
  * \brief  Adds an OSC message to an existing bundle.

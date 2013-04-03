@@ -86,6 +86,11 @@ lo_message lo_message_new()
     return m;
 }
 
+void lo_message_incref(lo_message m)
+{
+    m->refcount ++;
+}
+
 lo_message lo_message_clone(lo_message m)
 {
     if (!m) {
@@ -114,12 +119,13 @@ lo_message lo_message_clone(lo_message m)
 
 void lo_message_free(lo_message m)
 {
-    if (m) {
+    if (m && (--m->refcount) <= 0)
+    {
         free(m->types);
         free(m->data);
         free(m->argv);
+        free(m);
     }
-    free(m);
 }
 
 /* Don't call lo_message_add_varargs_internal directly, use

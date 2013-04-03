@@ -34,6 +34,17 @@ lo_bundle lo_bundle_new(lo_timetag tt)
     return b;
 }
 
+void lo_bundle_incref(lo_bundle b)
+{
+    b->refcount ++;
+}
+
+static
+void lo_bundle_decref(lo_bundle b)
+{
+    b->refcount --;
+}
+
 static lo_bundle *push_to_list(lo_bundle *list, lo_bundle ptr, size_t *len, size_t *size)
 {
     if (*len >= *size) {
@@ -123,7 +134,7 @@ static int lo_bundle_add_element(lo_bundle b, int type, const char *path, void *
     switch (type) {
 	case LO_ELEMENT_MESSAGE: {
 	    lo_message msg = elmnt;
-	    (msg->refcount)++;
+        lo_message_incref(msg);
 	    b->elmnts[b->len].content.message.msg = msg;
 	    b->elmnts[b->len].content.message.path = path;
 	    (b->len)++;
@@ -131,15 +142,21 @@ static int lo_bundle_add_element(lo_bundle b, int type, const char *path, void *
 	}
 	case LO_ELEMENT_BUNDLE: {
 	    lo_bundle bndl = elmnt;
-	    (bndl->refcount)++;
+        lo_bundle_incref(bndl);
 	    b->elmnts[b->len].content.bundle = bndl;
 	    (b->len)++;
 
 	    // do not add bundle if a circular reference is found
-	    if (lo_bundle_circular(b)) {
-		(bndl->refcount)--;
-		(b->len)--;
-		return -1;
+	    if (lo_bundle_circular(b))
+        {
+            // note that this is a special case where we _know_ that
+            // decrement should not result in a free, therefore we
+            // avoid it explicitly.  otherwise double-free might
+            // happen if calling code still has a reference to the
+            // added bundle, since it's possible that refcount==0.
+            lo_bundle_decref(bndl);
+            (b->len)--;
+            return -1;
 	    }
 	    break;
 	}
@@ -289,33 +306,26 @@ void lo_bundle_free(lo_bundle b)
         return;
     }
 
+    lo_bundle_decref(b);
+    if (b->refcount > 0)
+        return;
+
     free(b->elmnts);
     free(b);
 }
 
 static void collect_element(lo_element *elmnt)
 {
-    size_t i;
-
     switch (elmnt->type) {
 	case LO_ELEMENT_MESSAGE: {
 	    lo_message msg = elmnt->content.message.msg;
-	    (msg->refcount)--;
-	    if (msg->refcount == 0)
 		lo_message_free(msg);
 	    break;
 	}
 
 	case LO_ELEMENT_BUNDLE: {
 	    lo_bundle bndl = elmnt->content.bundle;
-	    (bndl->refcount)--;
-	    if (bndl->refcount == 0) {
-		for (i = 0; i < bndl->len; i++)
-		    collect_element(&bndl->elmnts[i]);
-
-		free(bndl->elmnts);
-		free(bndl);
-	    }
+        lo_bundle_free_recursive(bndl);
 	    break;
 	}
     }
@@ -331,6 +341,10 @@ void lo_bundle_free_recursive(lo_bundle b)
     size_t i;
 
     if (!b)
+        return;
+
+    lo_bundle_decref(b);
+    if (b->refcount > 0)
         return;
 
     for (i = 0; i < b->len; i++)

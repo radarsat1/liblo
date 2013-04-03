@@ -124,3 +124,5 @@ EXPORTS
     lo_bundle_get_type                     @121
     lo_bundle_add_bundle                   @122
     lo_bundle_free_recursive               @123
+    lo_bundle_incref                       @124
+    lo_message_incref                      @125
