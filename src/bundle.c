@@ -321,6 +321,11 @@ static void collect_element(lo_element *elmnt)
     }
 }
 
+void lo_bundle_free_messages(lo_bundle b)
+{
+    lo_bundle_free_recursive(b);
+}
+
 void lo_bundle_free_recursive(lo_bundle b)
 {
     size_t i;

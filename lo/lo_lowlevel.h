@@ -557,7 +557,13 @@ void lo_bundle_free(lo_bundle b);
  * \param b The bundle, which may contain messages and nested bundles, to be freed.
 */
 void lo_bundle_free_recursive(lo_bundle b);
-#define lo_bundle_free_messages lo_bundle_free_recursive
+
+/**
+ * \brief  Obsolete, use lo_bundle_free_recursive instead.
+ *
+ * \param b The bundle, which may contain messages and nested bundles, to be freed.
+*/
+void lo_bundle_free_messages(lo_bundle b);
 
 /**
  * \brief Return true if the type specified has a numerical value, such as
