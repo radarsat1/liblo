@@ -494,7 +494,7 @@ int lo_bundle_add_bundle(lo_bundle b, lo_bundle n);
 size_t lo_bundle_length(lo_bundle b);
 
 /**
- * \brief  Return the number of messages in a bundle.
+ * \brief  Return the number of top-level elements in a bundle.
  *
  * \param b The bundle to be counted.
  */
