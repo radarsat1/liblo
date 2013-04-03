@@ -120,3 +120,7 @@ EXPORTS
     lo_address_get_iface                   @117
     lo_bundle_count                        @118
     lo_bundle_get_message                  @119
+    lo_bundle_get_bundle                   @120
+    lo_bundle_get_type                     @121
+    lo_bundle_add_bundle                   @122
+    lo_bundle_free_recursive               @123
