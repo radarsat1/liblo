@@ -407,6 +407,7 @@ int lo_message_add_char(lo_message m, char a)
     if (!nptr)
         return -1;
 
+    b.i = 0; // zero the 32 bits before writing the char
     b.c = a;
 
     if (lo_message_add_typechar(m, LO_CHAR))
