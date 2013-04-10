@@ -376,7 +376,15 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                                                time(NULL)) % 10000);
         }
 
+        if (ai)
+            freeaddrinfo(ai);
+
         ret = getaddrinfo(NULL, service, &hints, &ai);
+
+        s->ai = ai;
+        s->sockets[0].fd = -1;
+        s->port = 0;
+
         if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
             lo_server_free(s);
@@ -384,9 +392,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         }
 
         used = NULL;
-        s->ai = ai;
-        s->sockets[0].fd = -1;
-        s->port = 0;
 
         for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
             used = it;
