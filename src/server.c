@@ -1664,12 +1664,12 @@ static void dispatch_method(lo_server s, const char *path,
 
             } else if (lo_server_should_coerce_args(s) && lo_can_coerce_spec(types, it->typespec)) {
                 lo_arg **argv = NULL;
+                char *data_co = NULL;
 
                 if (argc > 0) {
                     int i;
                     int opsize = 0;
-                    char *data_co = NULL, *data_co_ptr = NULL;
-                    char *ptr = msg->data;
+                    char *ptr = msg->data, *data_co_ptr = NULL;
 
                     argv = calloc(argc, sizeof(lo_arg *));
                     for (i = 0; i < argc; i++) {
@@ -1688,10 +1688,6 @@ static void dispatch_method(lo_server s, const char *path,
                         lo_arg_size(it->typespec[i], data_co_ptr);
                         ptr += lo_arg_size(types[i], ptr);
                     }
-
-                    if (data_co) {
-                        free(data_co);
-                    }
                 }
 
                 /* Send wildcard path to generic handler, expanded path
@@ -1702,10 +1698,9 @@ static void dispatch_method(lo_server s, const char *path,
                     pptr = it->path;
                 ret = it->handler(pptr, it->typespec, argv, argc, msg,
                                   it->user_data);
-                if (argv) {
-                    free(argv);
-                    argv = NULL;
-                }
+                free(argv);
+                free(data_co);
+                argv = NULL;
             }
 
             if (ret == 0 && !pattern) {
