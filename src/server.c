@@ -293,7 +293,10 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->addr_if.iface = 0;
     s->addr_if.size = 0;
 
-    if (!s->sockets) {
+    if (!(s->sockets && s->contexts && s->sources)) {
+        free(s->sockets);
+        free(s->contexts);
+        free(s->sources);
         free(s);
         return 0;
     }
