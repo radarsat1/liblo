@@ -381,7 +381,7 @@ static int create_socket(lo_address a)
 #endif
 
 #ifdef TCP_NODELAY
-    if (a->flags & LO_NODELAY) {
+    if (a->flags & LO_ADDRESS_NODELAY) {
         int option = 1;
         setsockopt(a->socket, IPPROTO_TCP, TCP_NODELAY,
 				   (const char*)&option, sizeof(option));
@@ -474,7 +474,7 @@ static int send_data(lo_address a, lo_server from, char *data,
         sock = a->socket;
     }
 
-    if (a->protocol == LO_TCP && !(a->flags & LO_SLIP)) {
+    if (a->protocol == LO_TCP && !(a->flags & LO_ADDRESS_SLIP)) {
         // For TCP only, send the length of the following data
         int32_t size = htonl(data_len);
         ret = send(sock, (const void*)&size, sizeof(size), MSG_NOSIGNAL);
@@ -512,7 +512,7 @@ static int send_data(lo_address a, lo_server from, char *data,
             struct addrinfo* ai = a->ai;
 
             size_t len = data_len;
-            if (a->flags & LO_SLIP)
+            if (a->flags & LO_ADDRESS_SLIP)
                 data = (char*)slip_encode((unsigned char*)data, &len);
 
             do {
@@ -525,7 +525,7 @@ static int send_data(lo_address a, lo_server from, char *data,
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
 
-            if (a->flags & LO_SLIP)
+            if (a->flags & LO_ADDRESS_SLIP)
                 free(data);
         }
     }

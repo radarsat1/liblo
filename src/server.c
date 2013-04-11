@@ -276,7 +276,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->ai = NULL;
     s->hostname = NULL;
     s->protocol = proto;
-    s->flags = LO_SERVER_NO_FLAG;
+    s->flags = LO_SERVER_COERCION;
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
@@ -628,14 +628,29 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
     return 0;
 }
 
-void lo_server_set_flags(lo_server s, lo_server_flags flags)
+int lo_server_set_option(lo_server s,
+                         lo_server_option option,
+                         void *value)
 {
-    s->flags = flags;
+    int newflags = 0;
+    if (value)
+        newflags = s->flags | option;
+    else
+        newflags = s->flags & ~option;
+
+    switch (option)
+    {
+    case LO_SERVER_COERCION:
+        break;
+    }
+
+    s->flags = newflags;
+    return 0;
 }
 
 int lo_server_should_coerce_args(lo_server s)
 {
-    return (s->flags & LO_SERVER_DISABLE_COERCION) == 0;
+    return (s->flags & LO_SERVER_COERCION) != 0;
 }
 
 void lo_server_free(lo_server s)

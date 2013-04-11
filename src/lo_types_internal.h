@@ -59,7 +59,7 @@ typedef struct _lo_address {
     int ownsocket;
     char *port;
     int protocol;
-    lo_proto_flags flags;
+    lo_address_option flags;
     struct addrinfo *ai;
     struct addrinfo *ai_first;
     int errnum;
@@ -123,7 +123,7 @@ typedef struct _lo_server {
     char *hostname;
     char *path;
     int protocol;
-    lo_server_flags flags;
+    lo_server_option flags;
     void *queued;
     int queue_enabled;
     struct sockaddr_storage addr;

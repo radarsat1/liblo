@@ -460,17 +460,37 @@ int lo_address_get_ttl(lo_address t)
     return t->ttl;
 }
 
-void lo_address_set_flags(lo_address t, int flags)
+int lo_address_set_option(lo_address a,
+                          lo_address_option option,
+                          void *value)
 {
-    if (((t->flags & LO_NODELAY) != (flags & LO_NODELAY))
-        && t->socket > 0)
+    int newflags = 0;
+    if (value)
+        newflags = a->flags | option;
+    else
+        newflags = a->flags & ~option;
+
+    switch (option)
     {
-        int option = (t->flags & LO_NODELAY)!=0;
-        setsockopt(t->socket, IPPROTO_TCP, TCP_NODELAY,
-                   (const char*)&option, sizeof(option));
+    case LO_ADDRESS_SLIP:
+        break;
+    case LO_ADDRESS_NODELAY:
+#ifdef TCP_NODELAY
+        if ((a->flags & LO_ADDRESS_NODELAY)
+            != (newflags & LO_ADDRESS_NODELAY)
+            && a->socket > 0)
+        {
+            int option = (a->flags & LO_ADDRESS_NODELAY)!=0;
+            if (setsockopt(a->socket, IPPROTO_TCP, TCP_NODELAY,
+                           (const char*)&option, sizeof(option)) < 0)
+                return -1;
+        }
+#endif
+        break;
     }
 
-    t->flags = flags;
+    a->flags = newflags;
+    return 0;
 }
 
 #ifdef ENABLE_IPV6

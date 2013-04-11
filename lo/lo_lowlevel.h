@@ -453,6 +453,19 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip);
 const char* lo_address_get_iface(lo_address t);
 
 /**
+ * \brief Sets a address option.
+ * \param a The address whose option is to be changed.
+ * \param option The option to change, should be only one bit in the
+ *               lo_address_option bitflags.
+ * \param value A value for the option; 0 (false/disable) or 1
+ *              (true/enable) for boolean options, otherwise see
+ *              per-option instructions.
+ */
+int lo_address_set_option(lo_address a,
+                          lo_address_option option,
+                          void *value);
+
+/**
  * \brief  Create a new bundle object.
  *
  * OSC Bundles encapsulate one or more OSC messages and may include a timestamp
@@ -645,9 +658,17 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
                                         lo_err_handler err_h);
 
 /**
- * \brief Sets the server's options.
+ * \brief Sets a server option.
+ * \param s The server whose option is to be changed.
+ * \param option The option to change, should be only one bit in the
+ *               lo_server_option bitflags.
+ * \param value A value for the option; 0 (false/disable) or 1
+ *              (true/enable) for boolean options, otherwise see
+ *              per-option instructions.
  */
-void lo_server_set_flags(lo_server server, lo_server_flags flag);
+int lo_server_set_option(lo_server s,
+                         lo_server_option option,
+                         void *value);
 
 /**
  * \brief Free up memory used by the lo_server object
