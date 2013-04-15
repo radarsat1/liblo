@@ -111,6 +111,13 @@ do
   fi
 done
 
+# Create README file for the benefit of automake
+if test -e `which ln`; then
+    ln -v README.md README
+else
+    cp -v README.md README
+fi
+
 conf_flags="--enable-maintainer-mode --enable-debug --disable-silent-rules"
 
 if test x$NOCONFIGURE = x; then
