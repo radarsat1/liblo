@@ -475,6 +475,16 @@ lo_bundle lo_bundle_new(lo_timetag tt);
 int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
 
 /**
+ * \brief  Adds an OSC bundle to an existing bundle.
+ *
+ * The child bundle passed is appended to the list of child bundles|messages in the parent bundle to be
+ * dispatched.
+ *
+ * \return 0 if successful, less than 0 otherwise.
+ */
+int lo_bundle_add_bundle(lo_bundle b, lo_bundle n);
+
+/**
  * \brief  Return the length of a bundle in bytes.
  *
  * Includes the marker and typetage length.
@@ -489,6 +499,24 @@ size_t lo_bundle_length(lo_bundle b);
  * \param b The bundle to be counted.
  */
 unsigned int lo_bundle_count(lo_bundle b);
+
+/**
+ * \brief  Gets the element type contained within a bundle.
+ *
+ * Returns a lo_element_type at a given index within a bundle.
+
+ * \return The requested lo_element_type if successful, otherwise 0.
+ */
+lo_element_type lo_bundle_get_type(lo_bundle b, int index);
+
+/**
+ * \brief  Gets a nested bundle contained within a bundle.
+ *
+ * Returns a lo_bundle at a given index within a bundle.
+ *
+ * \return The requested lo_bundle if successful, otherwise 0.
+ */
+lo_bundle lo_bundle_get_bundle(lo_bundle b, int index);
 
 /**
  * \brief  Gets a message contained within a bundle.
@@ -524,11 +552,12 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size);
 void lo_bundle_free(lo_bundle b);
 
 /**
- * \brief  Frees the memory taken by a bundle object and messages in the bundle.
+ * \brief  Frees the memory taken by a bundle object and its messages and nested bundles recursively.
  *
- * \param b The bundle, which may contain messages, to be freed.
+ * \param b The bundle, which may contain messages and nested bundles, to be freed.
 */
-void lo_bundle_free_messages(lo_bundle b);
+void lo_bundle_free_recursive(lo_bundle b);
+#define lo_bundle_free_messages lo_bundle_free_recursive
 
 /**
  * \brief Return true if the type specified has a numerical value, such as

@@ -81,6 +81,7 @@ lo_message lo_message_new()
     m->source = NULL;
     m->argv = NULL;
     m->ts = LO_TT_IMMEDIATE;
+    m->refcount = 0;
 
     return m;
 }
