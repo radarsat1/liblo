@@ -51,6 +51,9 @@ test -n "$NO_AUTOMAKE" || (aclocal --version) < /dev/null > /dev/null 2>&1 || {
   DIE=1
 }
 
+# Create README file for the benefit of automake
+test -e README || ln -v README.md README || cp -v README.md README || DIE=1
+
 if test "$DIE" -eq 1; then
   exit 1
 fi
@@ -110,13 +113,6 @@ do
     )
   fi
 done
-
-# Create README file for the benefit of automake
-if test -e `which ln`; then
-    ln -v README.md README
-else
-    cp -v README.md README
-fi
 
 conf_flags="--enable-maintainer-mode --enable-debug --disable-silent-rules"
 
