@@ -121,3 +121,9 @@ EXPORTS
     lo_bundle_count                        @118
     lo_bundle_get_message                  @119
     lo_server_set_flags                    @120
+    lo_bundle_get_bundle                   @121
+    lo_bundle_get_type                     @122
+    lo_bundle_add_bundle                   @123
+    lo_bundle_free_recursive               @124
+    lo_bundle_incref                       @125
+    lo_message_incref                      @126

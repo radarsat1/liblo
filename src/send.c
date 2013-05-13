@@ -585,8 +585,8 @@ int lo_send_bundle(lo_address a, lo_bundle b)
 
 int lo_send_bundle_from(lo_address a, lo_server from, lo_bundle b)
 {
-    const size_t data_len = lo_bundle_length(b);
-    char *data = lo_bundle_serialise(b, NULL, NULL);
+    size_t data_len;
+    char *data = lo_bundle_serialise(b, NULL, &data_len);
 
     // Send the bundle
     int ret = send_data(a, from, data, data_len);

@@ -110,6 +110,16 @@ int lo_send_bundle_from(lo_address targ, lo_server serv, lo_bundle b);
 lo_message lo_message_new();
 
 /**
+ * \brief  Add one to a message's reference count.
+ *
+ * Messages are reference counted. If a message is multiply referenced,
+ * the message's counter should be incremented. It is automatically
+ * decremented by lo_message_free lo_message_free_recursive, with
+ * lo_message_free_recursive being the preferable method.
+ */
+void lo_message_incref(lo_message m);
+
+/**
  * \brief Create a new lo_message object by cloning an already existing one
  */
 lo_message lo_message_clone(lo_message m);
@@ -465,6 +475,16 @@ const char* lo_address_get_iface(lo_address t);
 lo_bundle lo_bundle_new(lo_timetag tt);
 
 /**
+ * \brief  Add one to a bundle's reference count.
+ *
+ * Bundles are reference counted. If a bundle is multiply referenced,
+ * the bundle's counter should be incremented. It is automatically
+ * decremented by lo_bundle_free lo_bundle_free_recursive, with
+ * lo_bundle_free_recursive being the preferable method.
+ */
+void lo_bundle_incref(lo_bundle b);
+
+/**
  * \brief  Adds an OSC message to an existing bundle.
  *
  * The message passed is appended to the list of messages in the bundle to be
@@ -473,6 +493,16 @@ lo_bundle lo_bundle_new(lo_timetag tt);
  * \return 0 if successful, less than 0 otherwise.
  */
 int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
+
+/**
+ * \brief  Adds an OSC bundle to an existing bundle.
+ *
+ * The child bundle passed is appended to the list of child bundles|messages in the parent bundle to be
+ * dispatched.
+ *
+ * \return 0 if successful, less than 0 otherwise.
+ */
+int lo_bundle_add_bundle(lo_bundle b, lo_bundle n);
 
 /**
  * \brief  Return the length of a bundle in bytes.
@@ -484,11 +514,29 @@ int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m);
 size_t lo_bundle_length(lo_bundle b);
 
 /**
- * \brief  Return the number of messages in a bundle.
+ * \brief  Return the number of top-level elements in a bundle.
  *
  * \param b The bundle to be counted.
  */
 unsigned int lo_bundle_count(lo_bundle b);
+
+/**
+ * \brief  Gets the element type contained within a bundle.
+ *
+ * Returns a lo_element_type at a given index within a bundle.
+
+ * \return The requested lo_element_type if successful, otherwise 0.
+ */
+lo_element_type lo_bundle_get_type(lo_bundle b, int index);
+
+/**
+ * \brief  Gets a nested bundle contained within a bundle.
+ *
+ * Returns a lo_bundle at a given index within a bundle.
+ *
+ * \return The requested lo_bundle if successful, otherwise 0.
+ */
+lo_bundle lo_bundle_get_bundle(lo_bundle b, int index);
 
 /**
  * \brief  Gets a message contained within a bundle.
@@ -524,9 +572,16 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size);
 void lo_bundle_free(lo_bundle b);
 
 /**
- * \brief  Frees the memory taken by a bundle object and messages in the bundle.
+ * \brief  Frees the memory taken by a bundle object and its messages and nested bundles recursively.
  *
- * \param b The bundle, which may contain messages, to be freed.
+ * \param b The bundle, which may contain messages and nested bundles, to be freed.
+*/
+void lo_bundle_free_recursive(lo_bundle b);
+
+/**
+ * \brief  Obsolete, use lo_bundle_free_recursive instead.
+ *
+ * \param b The bundle, which may contain messages and nested bundles, to be freed.
 */
 void lo_bundle_free_messages(lo_bundle b);
 

@@ -575,8 +575,21 @@ int main()
 */
     TEST(lo_send_bundle(a, b) == 88);
 
+    /* Should fail to add a bundle recursively */
+    TEST(lo_bundle_add_bundle(b, b) != 0)
+
+    /* But we can create a nested bundle and it should free
+     * successfully. */
+    lo_bundle b2 = 0;
+    {
+        lo_timetag t = { 10, 0xFFFFFFFE };
+        b2 = lo_bundle_new(t);
+    }
+    lo_bundle_add_message(b2, "/bundle", m1);
+    TEST(lo_bundle_add_bundle(b2, b) == 0);
+
     /* Test freeing out-of-order copies of messages in a bundle. */
-    lo_bundle_free_messages(b);
+    lo_bundle_free_recursive(b2);
 
     {
         lo_timetag t = { 10, 0xFFFFFFFE };
