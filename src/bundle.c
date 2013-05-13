@@ -402,11 +402,14 @@ static int *lo_bundle_pp_internal(lo_bundle b, int offset, int *state, size_t *l
 
 void lo_bundle_pp(lo_bundle b)
 {
+    size_t len;
+    int *state;
+
     if (!b)
         return;
 
-    size_t len = 4;
-    int *state = calloc(len, sizeof(int));
+    len = 4;
+    state = calloc(len, sizeof(int));
 
     state[0] = 1;
     state = lo_bundle_pp_internal(b, 0, state, &len);
