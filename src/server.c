@@ -856,12 +856,13 @@ uint32_t lo_server_buffer_contains_msg(lo_server s, int isock)
 static
 void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
 {
+	void *data;
     struct socket_context *sc = &s->contexts[isock];
     uint32_t msg_len = lo_server_buffer_contains_msg(s, isock);
     if (msg_len == 0)
         return NULL;
 
-    void *data = malloc(msg_len);
+    data = malloc(msg_len);
     memcpy(data, sc->buffer + sizeof(uint32_t), msg_len);
     *psize = msg_len;
 
@@ -885,9 +886,11 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
                                      size_t *psize, void **pdata)
 {
     struct socket_context *sc = &s->contexts[isock];
-    char *stack_buffer = 0;
-    *pdata = 0;
+    char *stack_buffer = 0, *read_into;
     uint32_t msg_len;
+	int buffer_bytes_left, size, bytes_recv;
+	size_t bytes_wrote;
+    *pdata = 0;
 
   again:
 
@@ -896,10 +899,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         // There could be more data, so return true.
         return 1;
 
-    int buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
+    buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
 
     // If we need more than half the buffer, double the buffer size.
-    int size = sc->buffer_size;
+    size = sc->buffer_size;
     if (size < 64)
         size = 64;
     while (buffer_bytes_left < size/2)
@@ -929,7 +932,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     // Read as much as we can into the remaining buffer memory.
     buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
 
-    char *read_into = sc->buffer + sc->buffer_read_offset;
+    read_into = sc->buffer + sc->buffer_read_offset;
 
     // In SLIP mode, we instead read into the local stack buffer
     if (sc->is_slip == 1)
@@ -938,9 +941,9 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         read_into = stack_buffer;
     }
 
-    int bytes_recv = recv(s->sockets[isock].fd,
-                          read_into,
-                          buffer_bytes_left, 0);
+    bytes_recv = recv(s->sockets[isock].fd,
+                      read_into,
+                      buffer_bytes_left, 0);
 
     if (bytes_recv <= 0)
     {
@@ -1027,7 +1030,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // Any data left over is left in the buffer, so update the
         // read offset to indicate the end of it.
-        size_t bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
+        bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
         sc->buffer_read_offset += bytes_wrote;
     }
     else
@@ -1440,20 +1443,21 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
 
     /* Update array of open sockets */
     if ((s->sockets_len + 1) > s->sockets_alloc) {
-        void *sp = realloc(s->sockets,
+        char *sc;
+        char *sp = realloc(s->sockets,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
         if (!sp)
             return -1;
-        s->sockets = sp;
+        s->sockets = (void*)sp;
         memset(sp + s->sockets_alloc*sizeof(*s->sockets),
                0, s->sockets_alloc*sizeof(*s->sockets));
 
-        void *sc = realloc(s->contexts,
-                           sizeof(*(s->contexts))
-                           * (s->sockets_alloc * 2));
+        sc = realloc(s->contexts,
+                     sizeof(*(s->contexts))
+                     * (s->sockets_alloc * 2));
         if (!sc)
             return -1;
-        s->contexts = sc;
+        s->contexts = (void*)sc;
         memset(sc + s->sockets_alloc*sizeof(*s->contexts),
                0, s->sockets_alloc*sizeof(*s->contexts));
 

@@ -87,11 +87,13 @@ lo_message lo_message_new()
 
 lo_message lo_message_clone(lo_message m)
 {
+	lo_message c;
+
     if (!m) {
 	return NULL;
     }
 
-    lo_message c = malloc(sizeof(struct _lo_message));
+    c = malloc(sizeof(struct _lo_message));
     if (!c) {
 	return NULL;
     }

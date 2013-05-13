@@ -508,8 +508,8 @@ void lo_address_init_with_sockaddr(lo_address a,
                                    void *sa, size_t sa_len,
                                    int sock, int prot)
 {
-    assert(a != NULL);
     int err = 0;
+    assert(a != NULL);
     lo_address_free_mem(a);
     a->host = malloc(INET_ADDRSTRLEN);
     a->port = malloc(8);
