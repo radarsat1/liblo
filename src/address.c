@@ -44,6 +44,8 @@
 #include "lo/lo.h"
 #include "lo/lo_throw.h"
 
+static void lo_address_set_flags(lo_address t, int flags);
+
 lo_address lo_address_new_with_proto(int proto, const char *host,
                                      const char *port)
 {
@@ -460,6 +462,25 @@ int lo_address_get_ttl(lo_address t)
     return t->ttl;
 }
 
+int lo_address_set_tcp_nodelay(lo_address t, int enable)
+{
+    int r = (t->flags & LO_NODELAY) != 0;
+    lo_address_set_flags(t, enable
+                         ? t->flags | LO_NODELAY
+                         : t->flags & ~LO_NODELAY);
+    return r;
+}
+
+int lo_address_set_stream_slip(lo_address t, int enable)
+{
+    int r = (t->flags & LO_SLIP) != 0;
+    lo_address_set_flags(t, enable
+                         ? t->flags | LO_SLIP
+                         : t->flags & ~LO_SLIP);
+    return r;
+}
+
+static
 void lo_address_set_flags(lo_address t, int flags)
 {
     if (((t->flags & LO_NODELAY) != (flags & LO_NODELAY))

@@ -34,6 +34,9 @@ extern "C" {
 
 #include "lo/lo_osc_types.h"
 
+#define LO_DISABLE 0  //!< Disable a boolean option.
+#define LO_ENABLE 1   //!< Enable a boolean option.
+
 /**
  * \brief A reference to an OSC service.
  *

@@ -39,6 +39,20 @@ typedef __int32 int32_t;
 
 #define LO_HOST_SIZE 1024
 
+/** \brief Bitflags for optional protocol features, set by
+ *         lo_address_set_flags(). */
+typedef enum {
+    LO_SLIP=0x01,     /*!< SLIP decoding */
+    LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
+} lo_proto_flags;
+
+/** \brief Bitflags for optional server features, set by
+ *         lo_server_set_flags(). */
+typedef enum {
+    LO_SERVER_NO_FLAG=0x00,              /*!< default value */
+    LO_SERVER_DISABLE_COERCION=0x01 /*!< default value */
+} lo_server_flags;
+
 typedef void (*lo_err_handler) (int num, const char *msg,
                                 const char *path);
 

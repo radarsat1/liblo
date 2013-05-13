@@ -463,6 +463,23 @@ int lo_address_set_iface(lo_address t, const char *iface, const char *ip);
 const char* lo_address_get_iface(lo_address t);
 
 /**
+ * \brief Set the TCP_NODELAY flag on outgoing TCP connections.
+ * \param t The address to set this flag for.
+ * \param enable Non-zero to set the flag, zero to unset it.
+ * \return the previous value of this flag.
+ */
+int lo_address_set_tcp_nodelay(lo_address t, int enable);
+
+/**
+ * \brief Set outgoing stream connections (e.g., TCP) to be
+ *        transmitted using the SLIP packetizing protocol.
+ * \param t The address to set this flag for.
+ * \param enable Non-zero to set the flag, zero to unset it.
+ * \return the previous value of this flag.
+ */
+int lo_address_set_stream_slip(lo_address t, int enable);
+
+/**
  * \brief  Create a new bundle object.
  *
  * OSC Bundles encapsulate one or more OSC messages and may include a timestamp
@@ -700,9 +717,12 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
                                         lo_err_handler err_h);
 
 /**
- * \brief Sets the server's options.
+ * \brief Enables or disables type coercion during message dispatch.
+ * \param server The server to toggle this option for.
+ * \param enable Non-zero to enable, or zero to disable type coercion.
+ * \return The previous value of this option.
  */
-void lo_server_set_flags(lo_server server, lo_server_flags flag);
+int lo_server_enable_coercion(lo_server server, int enable);
 
 /**
  * \brief Free up memory used by the lo_server object

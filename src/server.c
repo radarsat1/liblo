@@ -628,9 +628,14 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
     return 0;
 }
 
-void lo_server_set_flags(lo_server s, lo_server_flags flags)
+int lo_server_enable_coercion(lo_server s, int enable)
 {
-    s->flags = flags;
+    int r = (s->flags & LO_SERVER_DISABLE_COERCION) != 0;
+    if (enable)
+        s->flags |= LO_SERVER_DISABLE_COERCION;
+    else
+        s->flags &= ~LO_SERVER_DISABLE_COERCION;
+    return r;
 }
 
 int lo_server_should_coerce_args(lo_server s)
