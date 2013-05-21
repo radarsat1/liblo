@@ -276,11 +276,10 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->ai = NULL;
     s->hostname = NULL;
     s->protocol = proto;
-    s->flags = LO_SERVER_NO_FLAG;
+    s->flags = LO_SERVER_DEFAULT_FLAGS;
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
-    s->queue_enabled = 1;
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
@@ -630,17 +629,15 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
 
 int lo_server_enable_coercion(lo_server s, int enable)
 {
-    int r = (s->flags & LO_SERVER_DISABLE_COERCION) != 0;
-    if (enable)
-        s->flags |= LO_SERVER_DISABLE_COERCION;
-    else
-        s->flags &= ~LO_SERVER_DISABLE_COERCION;
+    int r = (s->flags & LO_SERVER_COERCE) != 0;
+    s->flags = (s->flags & ~LO_SERVER_COERCE)
+        | (enable ? LO_SERVER_COERCE : 0);
     return r;
 }
 
 int lo_server_should_coerce_args(lo_server s)
 {
-    return (s->flags & LO_SERVER_DISABLE_COERCION) == 0;
+    return (s->flags & LO_SERVER_COERCE) != 0;
 }
 
 void lo_server_free(lo_server s)
@@ -717,13 +714,14 @@ void lo_server_free(lo_server s)
     }
 }
 
-int lo_server_enable_queue(lo_server s, int queue_enabled,
+int lo_server_enable_queue(lo_server s, int enable,
                            int dispatch_remaining)
 {
-    int prev = s->queue_enabled;
-    s->queue_enabled = queue_enabled;
+    int prev = (s->flags & LO_SERVER_ENQUEUE) != 0;
+    s->flags = (s->flags & ~LO_SERVER_ENQUEUE)
+        | (enable ? LO_SERVER_ENQUEUE : 0);
 
-    if (!queue_enabled && dispatch_remaining && s->queued)
+    if (!enable && dispatch_remaining && s->queued)
         dispatch_queued(s, 1);
 
     return prev;
@@ -1570,7 +1568,7 @@ static int dispatch_data(lo_server s, void *data,
                 if ((ts.sec == LO_TT_IMMEDIATE.sec
                      && ts.frac == LO_TT_IMMEDIATE.frac)
                     || lo_timetag_diff(ts, now) <= 0.0
-                    || !s->queue_enabled)
+                    || (s->flags & LO_SERVER_ENQUEUE) == 0)
                 {
                     dispatch_method(s, pos, msg, sock);
                     lo_message_free(msg);

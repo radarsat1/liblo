@@ -46,12 +46,15 @@ typedef enum {
     LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
 } lo_proto_flags;
 
-/** \brief Bitflags for optional server features, set by
- *         lo_server_set_flags(). */
+/** \brief Bitflags for optional server features. */
 typedef enum {
-    LO_SERVER_NO_FLAG=0x00,              /*!< default value */
-    LO_SERVER_DISABLE_COERCION=0x01 /*!< default value */
+    LO_SERVER_COERCE=0x01,     /*!< whether or not to coerce args
+                                * during dispatch */
+    LO_SERVER_ENQUEUE=0x02,    /*!< whether or not to enqueue early
+                                * messages */
 } lo_server_flags;
+
+#define LO_SERVER_DEFAULT_FLAGS (LO_SERVER_COERCE | LO_SERVER_ENQUEUE)
 
 typedef void (*lo_err_handler) (int num, const char *msg,
                                 const char *path);
@@ -140,7 +143,6 @@ typedef struct _lo_server {
     int protocol;
     lo_server_flags flags;
     void *queued;
-    int queue_enabled;
     struct sockaddr_storage addr;
     socklen_t addr_len;
     int sockets_len;
