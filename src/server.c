@@ -230,6 +230,49 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     return lo_server_new_with_proto_internal(NULL, port, 0, 0, proto, err_h);
 }
 
+lo_server lo_server_new_from_url(const char *url,
+                                 lo_err_handler err_h)
+{
+    lo_server s;
+    int protocol;
+    char *group, *port, *proto;
+
+    if (!url || !*url) {
+        return NULL;
+    }
+
+    protocol = lo_url_get_protocol_id(url);
+    if (protocol == LO_UDP || protocol == LO_TCP) {
+        group = lo_url_get_hostname(url);
+        port = lo_url_get_port(url);
+        s = lo_server_new_with_proto_internal(group, port, 0, 0,
+                                              protocol, err_h);
+        if (group)
+            free(group);
+        if (port)
+            free(port);
+#if !defined(WIN32) && !defined(_MSC_VER)
+    } else if (protocol == LO_UNIX) {
+        port = lo_url_get_path(url);
+        s = lo_server_new_with_proto_internal(0, port, 0, 0,
+                                              LO_UNIX, err_h);
+        if (port)
+            free(port);
+#endif
+    } else {
+        proto = lo_url_get_protocol(url);
+        fprintf(stderr,
+                PACKAGE_NAME ": protocol '%s' not supported by this "
+                "version\n", proto);
+        if (proto)
+            free(proto);
+
+        return NULL;
+    }
+
+    return s;
+}
+
 lo_server lo_server_new_with_proto_internal(const char *group,
                                             const char *port,
                                             const char *iface,

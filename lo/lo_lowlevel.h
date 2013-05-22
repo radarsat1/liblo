@@ -717,6 +717,19 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
                                         lo_err_handler err_h);
 
 /**
+ * \brief Create a new server instance, taking port and the optional
+ * multicast group IP from an URL string.
+ * 
+ * \param url The URL to specify the server parameters.
+ * \param err_h An error callback function that will be called if there is an
+ * error in messge reception or server creation. Pass NULL if you do not want
+ * error handling.
+ * \return A new lo_server instance.
+ */
+lo_server lo_server_new_from_url(const char *url,
+                                 lo_err_handler err_h);
+
+/**
  * \brief Enables or disables type coercion during message dispatch.
  * \param server The server to toggle this option for.
  * \param enable Non-zero to enable, or zero to disable type coercion.

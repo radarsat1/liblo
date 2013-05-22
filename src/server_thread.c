@@ -79,6 +79,23 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
     return st;
 }
 
+lo_server_thread lo_server_thread_new_from_url(const char *url,
+                                               lo_err_handler err_h)
+{
+    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
+    st->s = lo_server_new_from_url(url, err_h);
+    st->active = 0;
+    st->done = 0;
+
+    if (!st->s) {
+        free(st);
+
+        return NULL;
+    }
+
+    return st;
+}
+
 void lo_server_thread_set_error_context(lo_server_thread st,
                                         void *user_data)
 {

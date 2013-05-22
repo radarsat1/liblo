@@ -129,3 +129,5 @@ EXPORTS
     lo_address_set_tcp_nodelay             @126
     lo_address_set_stream_slip             @127
     lo_server_enable_coercion              @128
+    lo_server_new_from_url                 @129
+@DEFTHREADS@    lo_server_thread_new_from_url                   @130
