@@ -1,5 +1,80 @@
 
 --------------------------------------------
+2013-05-22: Release 0.27
+--------------------------------------------
+
+We are pleased to present stable release 0.27 of LibLo, the
+lightweight, easy to use implementation of the Open Sound Control
+protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+This is the first release in quite some time, and includes several
+major features and improvements since the 0.26 release, particularly
+related to bundles, multicast, and TCP support.  Features include:
+
+- Support for sending and receiving nested bundles, including
+  ref-counted memory handling for bundled messages.
+- Support for multicast in oscdump and oscsend tools.
+- Callbacks for bundle handling.
+- Select desired network interface for multicast.
+- Fix blocking semantics of lo_server_wait() / lo_server_recv().
+- Make inclusion of threading-related code optional.
+- Basic compilation script for Android.
+- Allow to optionally disable server dispatch queueing at runtime.
+  (In this case messages are dispatched immediately even if they are
+  timestamped for later.)
+- Support bidirectional use of TCP ports using lo_send_from().
+- Add SLIP protocol support for packetization when sending and
+  receiving with TCP.
+- Allow to enable the TCP_NODELAY flag on TCP sockets.
+- Support for specifying server parameters via URL string, and also
+  support for URL strings in the oscsend and oscdump tools.
+- As a result of the above, support for TCP and Unix sockets in the
+  oscsend and oscdump tools.
+
+Bug fixes include:
+
+- Fixed timestamp serialization.
+- Fixed blob padding and char-type padding.
+- Close sockets properly under Windows.
+- Fix multicast under Windows.
+- Fix TCP reception blocking behaviour, such that a message can span
+  multiple calls to recv().
+- Correct printing of blob bytes.
+- Only call getnameinfo() when requested.
+
+This release contains contributions by:
+
+- Camille Troillard
+- Hanspeter Portner
+- Jamie Bullock
+- Joseph Malloch
+- Pete Goodeve
+- rjvbertin
+- Mok Keith
+- David Robillard
+- John McFerran
+- Artem Baguinski
+- William Light
+
+Please download it at SourceForge:
+http://downloads.sourceforge.net/liblo/liblo-0.27.tar.gz
+
+Or read the online documentation:
+http://liblo.sourceforge.net
+
+The git repository can be found at the following mirrors:
+- git://liblo.git.sourceforge.net/gitroot/liblo/liblo
+- git://gitorious.org/liblo/mainline.git
+- https://github.com/radarsat1/liblo.git
+
+Stephen Sinclair
+  LibLo maintainer
+
+--------------------------------------------
 2009-03-07: Release 0.26
 --------------------------------------------
 
