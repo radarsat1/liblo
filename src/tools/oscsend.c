@@ -1,7 +1,7 @@
 /*
  * oscsend - Send OpenSound Control message.
  *
- * Copyright (C) 2008 Kentaro Fukuchi <fukuchi@megaui.net>
+ * Copyright (C) 2008 Kentaro Fukuchi <kentaro@fukuchi.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -73,8 +73,8 @@ void usage(void)
 lo_message create_message(char **argv)
 {
     /* Note:
-     * argv[1] <- types
-     * argv[2..] <- values
+     * argv[0] <- types
+     * argv[1..] <- values
      */
     int i, argi;
     lo_message message;
@@ -92,11 +92,26 @@ lo_message create_message(char **argv)
 
     argi = 1;
     for (i = 0; i < values; i++) {
-        arg = argv[argi];
-        if (arg == NULL) {
-            fprintf(stderr, "Value #%d is not given.\n", i + 1);
-            goto EXIT;
-        }
+		switch(types[i]) {
+		case LO_INT32:
+		case LO_FLOAT:
+		case LO_STRING:
+		case LO_BLOB:
+		case LO_INT64:
+		case LO_TIMETAG:
+		case LO_DOUBLE:
+		case LO_SYMBOL:
+		case LO_CHAR:
+		case LO_MIDI:
+			arg = argv[argi];
+			if (arg == NULL) {
+				fprintf(stderr, "Value #%d is not given.\n", i + 1);
+				goto EXIT;
+			}
+			break;
+		default:
+			break;
+		}
         switch (types[i]) {
         case LO_INT32:
             {
