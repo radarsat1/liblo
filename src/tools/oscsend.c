@@ -1,7 +1,7 @@
 /*
  * oscsend - Send OpenSound Control message.
  *
- * Copyright (C) 2008 Kentaro Fukuchi <fukuchi@megaui.net>
+ * Copyright (C) 2008 Kentaro Fukuchi <kentaro@fukuchi.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
