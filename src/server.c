@@ -1491,8 +1491,8 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
 
     /* Update array of open sockets */
     if ((s->sockets_len + 1) > s->sockets_alloc) {
-        char *sc;
-        char *sp = realloc(s->sockets,
+        void *sc;
+        void *sp = realloc(s->sockets,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
         if (!sp)
             return -1;
