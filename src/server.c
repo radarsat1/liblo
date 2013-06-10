@@ -18,6 +18,7 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -811,6 +812,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
 static int slip_decode(unsigned char **buffer, unsigned char *from,
                        size_t size, int *state, size_t *bytesread)
 {
+    assert(from != NULL);
     *bytesread = 0;
     while (size--) {
         (*bytesread)++;
@@ -1489,8 +1491,8 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
 
     /* Update array of open sockets */
     if ((s->sockets_len + 1) > s->sockets_alloc) {
-        char *sc;
-        char *sp = realloc(s->sockets,
+        void *sc;
+        void *sp = realloc(s->sockets,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
         if (!sp)
             return -1;
