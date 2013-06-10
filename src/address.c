@@ -526,7 +526,7 @@ void lo_address_copy(lo_address to, lo_address from)
     to->ttl = from->ttl;
     to->addr = from->addr;
     if (from->addr.iface) {
-        free(from->addr.iface);
+        free(to->addr.iface);
         to->addr.iface = strdup(from->addr.iface);
     }
 }
