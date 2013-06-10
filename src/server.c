@@ -18,6 +18,7 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -811,6 +812,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
 static int slip_decode(unsigned char **buffer, unsigned char *from,
                        size_t size, int *state, size_t *bytesread)
 {
+    assert(from != NULL);
     *bytesread = 0;
     while (size--) {
         (*bytesread)++;
