@@ -1130,8 +1130,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
         s->sockets[i].events = POLLIN | POLLPRI;
         s->sockets[i].revents = 0;
 
-        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size)))
+        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
+            *psock = s->sockets[i].fd;
             return data;
+        }
     }
 
     poll(s->sockets, s->sockets_len, -1);
@@ -1208,6 +1210,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
         }
     }
 
+    *psock = sock;
     return data;
 }
 
