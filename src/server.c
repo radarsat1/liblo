@@ -1116,6 +1116,8 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 #endif
 #endif
 
+    assert(psock != NULL);
+
   again:
 
     /* check sockets in reverse order so that already-open sockets
@@ -1165,8 +1167,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
         if (s->sockets[i].fd > nfds)
             nfds = s->sockets[i].fd;
 
-        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size)))
+        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
+            *psock = s->sockets[i].fd;
             return data;
+        }
     }
 
     if (select(nfds + 1, &ps, NULL, NULL, NULL) == SOCKET_ERROR)
@@ -1207,6 +1211,8 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 // There could be more data waiting
                 //*more = 1;
             }
+            if (data)
+                *psock = s->sockets[i].fd;
         }
     }
 
@@ -1401,7 +1407,10 @@ int lo_server_recv(lo_server s)
 
             if (s->protocol == LO_TCP
                 && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
+            {
+                sock = s->sockets[i].fd;
                 goto got_data;
+            }
         }
 
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
@@ -1438,7 +1447,10 @@ int lo_server_recv(lo_server s)
 
             if (s->protocol == LO_TCP
                 && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
+            {
+                sock = s->sockets[i].fd;
                 goto got_data;
+            }
         }
 
         stimeout.tv_sec = sched_time;
