@@ -1,6 +1,6 @@
-AC_PREREQ(2.57)
+AC_PREREQ([2.69])
 
-AC_INIT([liblo], [0.27], [liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo],[0.27],[liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
@@ -17,8 +17,9 @@ AC_INIT([liblo], [0.27], [liblo-devel@lists.sourceforge.net])
 # age to 0.
 LO_SO_VERSION=8:0:1
 
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/address.c])
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
@@ -99,7 +100,7 @@ if test "x$want_threads" = "xyes"; then
            [LIBPTHREAD="$ac_res"])
      have_threads=yes;
      AC_DEFINE(ENABLE_THREADS, 1, [Define this to enable threads.])],
-    [AC_ERROR([pthread not found. Try option --disable-threads.])])
+    [AC_MSG_ERROR(pthread not found. Try option --disable-threads.)])
 fi
 
 AC_SUBST(LIBPTHREAD)
@@ -126,12 +127,9 @@ AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is
      LIBS="$LIBS $extralibs"
      # some winsock2 functions require XP, so WINNT=0x501
      CFLAGS="$CFLAGS -DWIN32 -D_WIN32_WINNT=0x501"
-     AC_TRY_LINK([#include <winsock2.h>],
-                 [select(0,0,0,0,0)],
-                 [AC_MSG_RESULT(yes)
+     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <winsock2.h>]], [[select(0,0,0,0,0)]])],[AC_MSG_RESULT(yes)
                  AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])
-                 is_windows=yes],
-                 [AC_MSG_RESULT(no)])
+                 is_windows=yes],[AC_MSG_RESULT(no)])
 ])
 AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
 AC_CHECK_FUNC([inet_pton], [AC_DEFINE(HAVE_INET_PTON, [1], [Define to 1 if inet_pton() is available.])])
@@ -180,7 +178,7 @@ AC_CONFIG_FILES([
 	doc/reference.doxygen
 	build/Makefile
 ])
-AC_OUTPUT()
+AC_OUTPUT
 
 if ! test "x$have_threads" = "xyes"; then
     echo "[[liblo]] Building with server threads disabled."

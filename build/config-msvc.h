@@ -4,6 +4,9 @@
 /* Define this to enable ipv6. */
 /* #undef ENABLE_IPV6 */
 
+/* Define this to enable threads. */
+#define ENABLE_THREADS 1
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
@@ -14,7 +17,7 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
-/* #undef HAVE_LIBPTHREAD */
+#define HAVE_LIBPTHREAD 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -78,6 +81,9 @@
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION /*VERSION*/
+
+/* printf code for type long long int */
+#define PRINTF_LL "ll"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

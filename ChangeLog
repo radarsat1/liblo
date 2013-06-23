@@ -1,3 +1,282 @@
+
+2013-05-22 Stephen Sinclair <radarsat1@gmail.com>
+	* Add release notes for 0.27.
+	* Add functions lo_server_new_from_url() and
+	  lo_server_thread_new_from_url().
+	* Allow oscsend and oscdump to specify port and dest address via
+	  URL string.
+
+2013-05-21 Stephen Sinclair <radarsat1@gmail.com>
+	* Flags are positive, and use a flag to control queuing feature.
+
+2013-05-13 Stephen Sinclair <radarsat1@gmail.com>
+	* Instead of generic `flags' setters, specific functions for each
+	  option.
+	* A couple of fixes for MSVC from the nested_bundles branch.
+	* Merge branch 'nested_bundles'
+	* Remove premake4.exe from the repository -- MSVC users should
+	  download latest.
+	* Move variable declarations to top of scope for MSVC 2008.
+	* Add missing recently-added defines for MSVC config.
+	* Add missing iphlapi library to MSVC project.
+
+2013-05-06 Stephen Sinclair <radarsat1@gmail.com>
+	* A better place in autogen.sh to copy the README file.
+
+2013-04-15 Stephen Sinclair <radarsat1@gmail.com>
+	* Reformat the main README in Markdown and rename it for the
+	  benefit of github.
+	* Add a README to the build directory, exclude premake4.exe binary
+	  from tarball.
+	* Write lo.h when configuring using premake4.
+
+2013-04-10 Stephen Sinclair <radarsat1@gmail.com>
+	* Ensure pad memory is zeroed when serialising a char.
+	* Don't point to freed memory after coercion.
+	* Fix a memory leak from getaddrinfo() if server tries to bind
+	  more than once.
+	* Check all server resources for successful allocation.
+
+2013-04-08 Stephen Sinclair <radarsat1@gmail.com>
+	* Add new lo_server_set_flags() function to .def file.
+
+2013-04-03 Stephen Sinclair <radarsat1@gmail.com>
+	* Expose refcount mechanism publicly and use it for freeing.
+	* Add new bundle functions to export list.
+	* Add a test for a simple case of nested bundles.
+	* Add back the lo_bundle_free_messages() function for ABI
+	  backward-compatibility.
+	* Update comment for lo_bundle_count().
+
+2013-03-26 Stephen Sinclair <radarsat1@gmail.com>
+	* New API to set a server's options, lo_server_set_flags.
+
+2013-03-16 Stephen Sinclair <radarsat1@gmail.com>
+	* Resolve lo_address hostname in send_data() if necessary.
+
+2013-03-15 Stephen Sinclair <radarsat1@gmail.com>
+	* Merge branch 'udp_resolve_enable'
+
+2013-03-14 Stephen Sinclair <radarsat1@gmail.com>
+	* Only call getnameinfo() when lo_address_get_hostname() et al are
+	  called.
+	* Move lo_server_thread_pp() prototype to lo_serverthread.h.
+
+2013-03-13 Stephen Sinclair <radarsat1@gmail.com>
+	* UDP resolve enable in lo_server struct
+	* support for creating and sending nested bundles
+
+2013-03-11 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix a doxygen reference due to badly-placed group ending.
+	* Update doxygen file according to 'doxygen -u' for doxygen
+	  1.8.1.2.
+	* Update configure.ac according to autoupdate 2.69.
+
+2013-03-06 Stephen Sinclair <radarsat1@gmail.com>
+	* Some changes to support automake-1.13.
+	* For compatibility with MingW-w64, gcc 4.7.1, add LIBRARY line to
+	  .def file.
+
+2013-02-18 Stephen Sinclair <radarsat1@gmail.com>
+	* Merge pull request #6 from ventosus/clone_message
+
+2013-02-02 Stephen Sinclair <radarsat1@gmail.com>
+	* Cloning of lo_message objects
+
+2013-01-21 Stephen Sinclair <radarsat1@gmail.com>
+	* Resolve some errors that occur when compiling examples using g++
+	* Fix non-blocking semantics of lo_server_recv_noblock() for TCP.
+	* Add an external context pointer that can be accessed by error
+	  handlers.
+	* Initialize extended part of socket array to zero on realloc.
+	* Fix: If multiple calls to recv() were needed, message size was
+	  wrong.
+	* Changes to compile without warnings with MingW.
+
+2013-01-14 Stephen Sinclair <radarsat1@gmail.com>
+	Add new bundle-related functions to Windows .def file.
+
+2013-01-14 Stephen Sinclair <radarsat1@gmail.com>
+	* Avoid including netinet/tcp.h on Windows.
+
+2012-11-28 Stephen Sinclair <radarsat1@gmail.com>
+	* Merge pull request #4 from tuscland/master
+	* go further in dispatch_method to avoid another allocation of
+	  zero bytes.
+	* tell the static analyzer that lo_address_init_with_sockaddr is
+	  not meant to be called with a NULL lo_address argument.
+	* fix a logic error where a null pointer could be dereferenced.
+	* fix a memory leak happening when calling lo_server_add_method
+	  with a path that contains invalid characters.
+	* in dispatch_method, when a message with no argument is received,
+	  don't call malloc with a zero byte count.
+	* removed assignment to a variable that is never read again.
+	* call freeaddrinfo only when a call to getaddrinfo succeeds, free
+	  lo_server if it fails.
+	* fix potential memory leak.
+	* removed a couple of dead stores. (value written to ret is never
+	  read again)
+	* ensure we compare integers of same signedness.
+	* adjust argument to pthread_create so it is a valid function
+	  pointer cast.
+
+2012-11-15 Stephen Sinclair <radarsat1@gmail.com>
+	* Correct printing of blob bytes.
+
+2012-11-10 Stephen Sinclair <radarsat1@gmail.com>
+	* fix crash on 64-bit Mac due to uninitialised int
+
+2012-10-24 Stephen Sinclair <radarsat1@gmail.com>
+	* Merge pull request #1 from tuscland/master
+	* Free queue memory in lo_server_free() (ref. bug report by
+	  Sebastien Bourdeauducq 2010-11-09)
+
+2012-10-19 Stephen Sinclair <radarsat1@gmail.com>
+	* When a TCP message has been received, use the actual read
+	  message length to allocate the buffer and return its size.
+
+2012-09-11 Stephen Sinclair <radarsat1@gmail.com>
+	* Add bundle functions for getting the count and accessing messages.
+
+2012-09-04 Stephen Sinclair <radarsat1@gmail.com>
+	* Add maintainer mode and silent rules macros.
+	* Add a debug mode to disable optimisation and enable all warnings
+	  as errors.
+
+2012-09-04 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix a printf type warning for printing size_t.
+
+2012-09-03 Stephen Sinclair <radarsat1@gmail.com>
+	* Add a protocol flag to allow enabling TCP_NODELAY option.
+	* Remove sensitivity to trailing slash when dealing with Unix socket URLs.
+
+2012-08-30 Stephen Sinclair <radarsat1@gmail.com>
+	* Optionally perform SLIP encoding/decoding.
+
+2012-08-28 Stephen Sinclair <radarsat1@gmail.com>
+	* Merge branch 'camille'
+	* Change formatting of broadcast patch.
+
+2012-08-22 Stephen Sinclair <radarsat1@gmail.com>
+	* fixed a number of typos reported by the clang compiler.
+	* Ensure SO_BROADCAST is set on the server socket when the protocol
+	  is UDP.
+
+2012-07-11 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix endianness on little-endian machines for lo_message_pp().
+	  (Camille Troillard)
+	* Set SO_REUSEPORT on TCP server ports (Camille Troillard)
+
+2012-06-08 Stephen Sinclair <radarsat1@gmail.com>
+	* Add an option to the premake configuration to disable threads.
+	* Move some variables to top of scope for MSVC compatibility.
+	* Make server_thread functions conditional in Windows .def file.
+	* Conditional for including pthread.h
+	* Replace inet_ntop() calls during address initialization with
+	  getnameinfo().
+	* Fix call to lo_server_add_socket() in case select() is used.
+	* Zero memory after freeing address resources in order to
+	  invalidate the struct.
+	* Fix indexing of sources during removal from server socket list.
+	* An example "echo" server for bidirectional TCP messaging.
+	* Address removes TCP socket from source server's list if send
+	  fails.
+	* When address sends TCP from a server, server should own the
+	  socket.
+	* Retry stream recv until all bytes are read.
+
+2012-06-04 Stephen Sinclair <radarsat1@gmail.com>
+	* Add support for bidirectional TCP.
+	* Error in length given to getnameinfo(), found by Pete Goodeve.
+
+2012-05-09 Stephen Sinclair <radarsat1@gmail.com>
+	* Function lo_address_get_iface() was missing from Windows .def
+	  file.
+	* Fix a call to dispatch_queued() due to modified arguments in a
+	  Windows-only code block.
+	* Add a missing include for <sys/types.h>.
+	* Warn on configuration if getifaddr not found.  (Ignore on
+	  Windows.)
+	* Move lo_server_thread_* to their own header, include it
+	  conditionally.
+	* Add a configure flag to disable dependency on pthread.
+
+2012-04-06 Stephen Sinclair <radarsat1@gmail.com>
+	* Don't let "none required" get into CFLAGS on OS X.
+	* Ignore ENOPROTOOPT as a result of disabling IPV6_V6ONLY.
+	* Expose a flag to disable lo_server message queue.
+
+2012-03-05 Stephen Sinclair <radarsat1@gmail.com>
+	* Also don't build lo_server_new_multicast_iface() if getifaddrs()
+	  is not present.
+	* Add a rudimentary script for configuring & compiling for
+	  Android.
+	* Add top of source tree for oscdump and oscsend include paths.
+	* Don't add "-lpthread" to dependencies unless it is found.
+	* Check that getifaddrs() is available.
+
+2012-03-02 Stephen Sinclair <radarsat1@gmail.com>
+	* Accept new connections in lo_server_wait(), block until data
+	  ready.
+	* Check for Windows before calling initWSock() and define
+	  SOCKET_ERROR.
+
+2012-02-24 Stephen Sinclair <radarsat1@gmail.com>
+	* Add some items to TODO.
+
+2012-02-23 Stephen Sinclair <radarsat1@gmail.com>
+	* Everywhere that we check for WIN32, also check _MSC_VER.
+
+2011-11-21 Stephen Sinclair <radarsat1@gmail.com>
+	* Set SO_REUSEADDR and SO_REUSEPORT before bind().
+	* Iterating over addrinfo should not occur for UNIX sockets.
+	* Cache the result after iterating over addrinfo for send()/sendto().
+	* Fix a couple of stylistic issues with previous patch.
+	* Improve IPv6 support by using PF_UNSPEC and fixing dotted-quad
+	  hostnames (Camille Troillard)
+
+2011-05-05 Stephen Sinclair <radarsat1@gmail.com>
+	* Detect Windows Server 2003 or later, and use IP_ADD_MEMBERSHIP
+ 	  accordingly.
+
+2011-05-05 Stephen Sinclair <radarsat1@gmail.com>
+	* Removing "inline" was problematic since it causes a "defined but
+	  not used" warning for swap64.
+
+2011-05-03 Stephen Sinclair <radarsat1@gmail.com>
+	* Improve Windows support.
+
+2011-04-01 Stephen Sinclair <radarsat1@gmail.com>
+	* Call shutdown before closing a sending socket to ensure all data
+	  was sent.
+	* Fix a check on s->sockets[i] for
+	  lo_client_sockets.tcp. (rjvbertin)
+
+2011-02-16 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix compilation for IPv6, broken in r186. (SF user h3xx, patch
+	  tracker 3181851)
+
+2011-02-09 Stephen Sinclair <radarsat1@gmail.com>
+	* Add lo_server_new_multicast_iface() to allow specifying a
+	  network interface during server initialization.
+
+2010-10-07 Stephen Sinclair <radarsat1@gmail.com>
+	* Remove some development code that snuck itself into the last commit.
+
+2010-10-04 Stephen Sinclair <radarsat1@gmail.com>
+	* Add functions lo_address_set_iface() and lo_address_get_iface().
+	* Make the --disable-ipv6 configure option work.
+
+2010-02-27 Stephen Sinclair <radarsat1@gmail.com>
+	* Whitespace fixes from indent.
+	* socket created in Windows must be closed with closesocket. (Mok
+	  Keith)
+	* Provide callbacks for identifying the beginning and end of a
+	  bundle. (David Robillard)
+
+2010-01-25 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix padding for blobs. (John McFerran)
+
 2009-12-10 Stephen Sinclair <radarsat1@gmail.com>
 	* Add optional multicast group to oscdump's command line. (SS)
 

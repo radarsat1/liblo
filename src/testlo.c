@@ -575,8 +575,23 @@ int main()
 */
     TEST(lo_send_bundle(a, b) == 88);
 
-    /* Test freeing out-of-order copies of messages in a bundle. */
-    lo_bundle_free_messages(b);
+    /* Should fail to add a bundle recursively */
+    TEST(lo_bundle_add_bundle(b, b) != 0)
+
+    /* But we can create a nested bundle and it should free
+     * successfully. */
+    {
+        lo_bundle b2 = 0;
+        {
+            lo_timetag t = { 10, 0xFFFFFFFE };
+            b2 = lo_bundle_new(t);
+        }
+        lo_bundle_add_message(b2, "/bundle", m1);
+        TEST(lo_bundle_add_bundle(b2, b) == 0);
+
+        /* Test freeing out-of-order copies of messages in a bundle. */
+        lo_bundle_free_recursive(b2);
+    }
 
     {
         lo_timetag t = { 10, 0xFFFFFFFE };
@@ -1264,9 +1279,10 @@ int ok_handler(const char *path, const char *types,
 
 void *test_tcp_thread(void *context)
 {
+	lo_server s;
     printf("Thread started.\n");
 
-    lo_server s = lo_server_new_with_proto("9000", LO_TCP, error);
+    s = lo_server_new_with_proto("9000", LO_TCP, error);
     if (!s) {
         printf("Aborting thread, s=%p\n", s);
         return (void*)1;
@@ -1296,25 +1312,6 @@ void *test_tcp_thread(void *context)
 
 void test_tcp_halfsend(int stream_type)
 {
-    struct sockaddr_in sa;
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        perror("socket");
-        exit(1);
-    }
-    memset(&sa, 0, sizeof(struct sockaddr_in));
-	sa.sin_addr.s_addr = inet_addr("127.0.0.1");
-    sa.sin_port = htons(9000);
-    sa.sin_family = AF_INET;
-    int rc = connect(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in));
-    if (rc) {
-        perror("Error connecting");
-        close(sock);
-        exit(1);
-    }
-
-    printf("Connected, sending...\n");
-
     char prefixmsg[] = {0,0,0,0,
                         '/','t','e','s','t',0,0,0,
                         ',','i','s',0,
@@ -1333,6 +1330,26 @@ void test_tcp_halfsend(int stream_type)
 
     char *msg;
     int msglen;
+
+	struct sockaddr_in sa;
+	int rc;
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        exit(1);
+    }
+    memset(&sa, 0, sizeof(struct sockaddr_in));
+	sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+    sa.sin_port = htons(9000);
+    sa.sin_family = AF_INET;
+    rc = connect(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in));
+    if (rc) {
+        perror("Error connecting");
+        closesocket(sock);
+        exit(1);
+    }
+
+    printf("Connected, sending...\n");
 
     switch (stream_type)
     {
@@ -1386,15 +1403,17 @@ void test_tcp_halfsend(int stream_type)
         else printf("Sent3.\n");
     }
 
-    close(sock);
+    closesocket(sock);
 }
 
 int test_tcp_nonblock()
 {
-    printf("Testing TCP non-blocking behaviour.\n");
+    void *retval;
+    pthread_t thread;
+
+	printf("Testing TCP non-blocking behaviour.\n");
 
     done = 0;
-    pthread_t thread;
     if (pthread_create(&thread, 0, test_tcp_thread, 0))
 	{
 		perror("pthread_create");
@@ -1424,7 +1443,6 @@ int test_tcp_nonblock()
 #endif
 
     done = 1;
-    void *retval;
     pthread_join(thread, &retval);
     printf("Thread joined, retval=%p\n", retval);
 

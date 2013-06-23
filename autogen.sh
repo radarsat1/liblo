@@ -51,6 +51,9 @@ test -n "$NO_AUTOMAKE" || (aclocal --version) < /dev/null > /dev/null 2>&1 || {
   DIE=1
 }
 
+# Create README file for the benefit of automake
+test -e README || ln -v README.md README || cp -v README.md README || DIE=1
+
 if test "$DIE" -eq 1; then
   exit 1
 fi
@@ -98,7 +101,8 @@ do
       fi
       echo "Running aclocal $aclocalinclude ..."
       aclocal $aclocalinclude
-      if grep "^AM_CONFIG_HEADER" configure.ac >/dev/null; then
+      if grep "^AM_CONFIG_HEADER" configure.ac >/dev/null \
+          || grep "^AC_CONFIG_HEADERS" configure.ac >/dev/null; then
 	echo "Running autoheader..."
 	autoheader
       fi

@@ -81,18 +81,54 @@ lo_message lo_message_new()
     m->source = NULL;
     m->argv = NULL;
     m->ts = LO_TT_IMMEDIATE;
+    m->refcount = 0;
 
     return m;
 }
 
+void lo_message_incref(lo_message m)
+{
+    m->refcount ++;
+}
+
+lo_message lo_message_clone(lo_message m)
+{
+	lo_message c;
+
+    if (!m) {
+	return NULL;
+    }
+
+    c = malloc(sizeof(struct _lo_message));
+    if (!c) {
+	return NULL;
+    }
+
+    c->types = calloc(m->typesize, sizeof(char));
+    strcpy (c->types, m->types);
+    c->typelen = m->typelen;
+    c->typesize = m->typesize;
+    c->data = calloc(m->datasize, sizeof(uint8_t));
+    memcpy(c->data, m->data, m->datalen);
+    c->datalen = m->datalen;
+    c->datasize = m->datasize;
+    c->source = NULL;
+    c->argv = NULL;
+    c->ts = LO_TT_IMMEDIATE;
+    c->refcount = 0;
+    
+    return c;
+}
+
 void lo_message_free(lo_message m)
 {
-    if (m) {
+    if (m && (--m->refcount) <= 0)
+    {
         free(m->types);
         free(m->data);
         free(m->argv);
+        free(m);
     }
-    free(m);
 }
 
 /* Don't call lo_message_add_varargs_internal directly, use
@@ -390,6 +426,7 @@ int lo_message_add_char(lo_message m, char a)
     if (!nptr)
         return -1;
 
+    b.i = 0; // zero the 32 bits before writing the char
     b.c = a;
 
     if (lo_message_add_typechar(m, LO_CHAR))
@@ -850,6 +887,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     msg->source = NULL;
     msg->argv = NULL;
     msg->ts = LO_TT_IMMEDIATE;
+    msg->refcount = 0;
 
     // path
     len = lo_validate_string(data, remain);

@@ -1,7 +1,7 @@
 /*
  * oscsend - Send OpenSound Control message.
  *
- * Copyright (C) 2008 Kentaro Fukuchi <fukuchi@megaui.net>
+ * Copyright (C) 2008 Kentaro Fukuchi <kentaro@fukuchi.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <config.h>
 #include <limits.h>
@@ -37,10 +38,15 @@ void usage(void)
     printf("oscsend version %s\n"
            "Copyright (C) 2008 Kentaro Fukuchi\n\n"
            "Usage: oscsend hostname port address types values...\n"
+           "or     oscsend url address types values...\n"
            "Send OpenSound Control message via UDP.\n\n"
            "Description\n"
            "hostname: specifies the remote host's name.\n"
            "port    : specifies the port number to connect to the remote host.\n"
+           "url     : specifies the destination parameters using a liblo URL.\n"
+           "          e.g. UDP        \"osc.udp://localhost:9000\"\n"
+           "               Multicast  \"osc.udp://224.0.1.9:9000\"\n"
+           "               TCP        \"osc.tcp://localhost:9000\"\n\n"
            "address : the OSC address where the message to be sent.\n"
            "types   : specifies the types of the following values.\n",
            VERSION);
@@ -67,11 +73,8 @@ void usage(void)
 lo_message create_message(char **argv)
 {
     /* Note:
-     * argv[1] <- hostname
-     * argv[2] <- port
-     * argv[3] <- OSC address
-     * argv[4] <- types
-     * argv[5..] <- values
+     * argv[0] <- types
+     * argv[1..] <- values
      */
     int i, argi;
     lo_message message;
@@ -79,21 +82,36 @@ lo_message create_message(char **argv)
     int values;
 
     message = lo_message_new();
-    if (argv[4] == NULL) {
+    if (argv[0] == NULL) {
         /* empty message is allowed. */
         values = 0;
     } else {
-        types = argv[4];
+        types = argv[0];
         values = strlen(types);
     }
 
-    argi = 5;
+    argi = 1;
     for (i = 0; i < values; i++) {
-        arg = argv[argi];
-        if (arg == NULL) {
-            fprintf(stderr, "Value #%d is not given.\n", i + 1);
-            goto EXIT;
-        }
+		switch(types[i]) {
+		case LO_INT32:
+		case LO_FLOAT:
+		case LO_STRING:
+		case LO_BLOB:
+		case LO_INT64:
+		case LO_TIMETAG:
+		case LO_DOUBLE:
+		case LO_SYMBOL:
+		case LO_CHAR:
+		case LO_MIDI:
+			arg = argv[argi];
+			if (arg == NULL) {
+				fprintf(stderr, "Value #%d is not given.\n", i + 1);
+				goto EXIT;
+			}
+			break;
+		default:
+			break;
+		}
         switch (types[i]) {
         case LO_INT32:
             {
@@ -235,42 +253,53 @@ int main(int argc, char **argv)
 {
     lo_address target;
     lo_message message;
-    int ret;
+    int ret, i=1;
 
-    if (argc < 4) {
+    if (argc < 3) {
         usage();
         exit(1);
     }
 
-    if (argv[1] == NULL) {
+    if (argv[i] == NULL) {
         fprintf(stderr, "No hostname is given.\n");
         exit(1);
     }
-    if (argv[2] == NULL) {
+
+    if (strstr(argv[i], "://")!=0) {
+        target = lo_address_new_from_url(argv[i]);
+        if (target == NULL) {
+            fprintf(stderr, "Failed to open %s\n", argv[i]);
+            exit(1);
+        }
+        i++;
+    }
+    else if (argv[i+1] == NULL) {
         fprintf(stderr, "No port number is given.\n");
         exit(1);
     }
-
-    target = lo_address_new(argv[1], argv[2]);
-    if (target == NULL) {
-        fprintf(stderr, "Failed to open %s:%s\n", argv[1], argv[2]);
-        exit(1);
+    else {
+        target = lo_address_new(argv[i], argv[i+1]);
+        if (target == NULL) {
+            fprintf(stderr, "Failed to open %s:%s\n", argv[i], argv[i+1]);
+            exit(1);
+        }
+        i += 2;
     }
 
-    if (argv[3] == NULL) {
+    if (argv[i] == NULL) {
         fprintf(stderr, "No path is given.\n");
         exit(1);
     }
 
     lo_address_set_ttl(target, 1);
 
-    message = create_message(argv);
+    message = create_message(&argv[i+1]);
     if (message == NULL) {
         fprintf(stderr, "Failed to create OSC message.\n");
         exit(1);
     }
 
-    ret = lo_send_message(target, argv[3], message);
+    ret = lo_send_message(target, argv[i], message);
     if (ret == -1) {
         fprintf(stderr, "An error occured: %s\n",
                 lo_address_errstr(target));

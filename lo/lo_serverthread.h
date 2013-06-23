@@ -83,6 +83,19 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port, int proto,
 				   lo_err_handler err_h);
 
 /**
+ * \brief Create a new server thread, taking port and the optional
+ * multicast group IP from an URL string.
+ * 
+ * \param url The URL to specify the server parameters.
+ * \param err_h An error callback function that will be called if there is an
+ * error in messge reception or server creation. Pass NULL if you do not want
+ * error handling.
+ * \return A new lo_server_thread instance.
+ */
+lo_server_thread lo_server_thread_new_from_url(const char *url,
+                                               lo_err_handler err_h);
+
+/**
  * \brief Free memory taken by a server thread
  *
  * Frees the memory, and, if currently running will stop the associated thread.
@@ -158,6 +171,9 @@ lo_server lo_server_thread_get_server(lo_server_thread st);
 int lo_server_thread_events_pending(lo_server_thread st);
 
 void lo_server_thread_set_error_context(lo_server_thread st, void *user_data);
+
+/** \brief Pretty-print a lo_server_thread object. */
+void lo_server_thread_pp(lo_server_thread st);
 
 #ifdef __cplusplus
 }

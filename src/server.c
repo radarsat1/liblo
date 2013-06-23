@@ -18,6 +18,7 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -63,8 +64,6 @@
 #include "lo_internal.h"
 #include "lo/lo.h"
 #include "lo/lo_throw.h"
-
-#define LO_HOST_SIZE 1024
 
 typedef struct {
     lo_timetag ts;
@@ -232,6 +231,49 @@ lo_server lo_server_new_with_proto(const char *port, int proto,
     return lo_server_new_with_proto_internal(NULL, port, 0, 0, proto, err_h);
 }
 
+lo_server lo_server_new_from_url(const char *url,
+                                 lo_err_handler err_h)
+{
+    lo_server s;
+    int protocol;
+    char *group, *port, *proto;
+
+    if (!url || !*url) {
+        return NULL;
+    }
+
+    protocol = lo_url_get_protocol_id(url);
+    if (protocol == LO_UDP || protocol == LO_TCP) {
+        group = lo_url_get_hostname(url);
+        port = lo_url_get_port(url);
+        s = lo_server_new_with_proto_internal(group, port, 0, 0,
+                                              protocol, err_h);
+        if (group)
+            free(group);
+        if (port)
+            free(port);
+#if !defined(WIN32) && !defined(_MSC_VER)
+    } else if (protocol == LO_UNIX) {
+        port = lo_url_get_path(url);
+        s = lo_server_new_with_proto_internal(0, port, 0, 0,
+                                              LO_UNIX, err_h);
+        if (port)
+            free(port);
+#endif
+    } else {
+        proto = lo_url_get_protocol(url);
+        fprintf(stderr,
+                PACKAGE_NAME ": protocol '%s' not supported by this "
+                "version\n", proto);
+        if (proto)
+            free(proto);
+
+        return NULL;
+    }
+
+    return s;
+}
+
 lo_server lo_server_new_with_proto_internal(const char *group,
                                             const char *port,
                                             const char *iface,
@@ -278,10 +320,10 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->ai = NULL;
     s->hostname = NULL;
     s->protocol = proto;
+    s->flags = LO_SERVER_DEFAULT_FLAGS;
     s->port = 0;
     s->path = NULL;
     s->queued = NULL;
-    s->queue_enabled = 1;
     s->sockets_len = 1;
     s->sockets_alloc = 2;
     s->sockets = calloc(2, sizeof(*(s->sockets)));
@@ -294,7 +336,10 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->addr_if.iface = 0;
     s->addr_if.size = 0;
 
-    if (!s->sockets) {
+    if (!(s->sockets && s->contexts && s->sources)) {
+        free(s->sockets);
+        free(s->contexts);
+        free(s->sources);
         free(s);
         return 0;
     }
@@ -374,7 +419,15 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                                                time(NULL)) % 10000);
         }
 
+        if (ai)
+            freeaddrinfo(ai);
+
         ret = getaddrinfo(NULL, service, &hints, &ai);
+
+        s->ai = ai;
+        s->sockets[0].fd = -1;
+        s->port = 0;
+
         if (ret != 0) {
             lo_throw(s, ret, gai_strerror(ret), NULL);
             lo_server_free(s);
@@ -382,9 +435,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         }
 
         used = NULL;
-        s->ai = ai;
-        s->sockets[0].fd = -1;
-        s->port = 0;
 
         for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
             used = it;
@@ -621,6 +671,19 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
     return 0;
 }
 
+int lo_server_enable_coercion(lo_server s, int enable)
+{
+    int r = (s->flags & LO_SERVER_COERCE) != 0;
+    s->flags = (s->flags & ~LO_SERVER_COERCE)
+        | (enable ? LO_SERVER_COERCE : 0);
+    return r;
+}
+
+int lo_server_should_coerce_args(lo_server s)
+{
+    return (s->flags & LO_SERVER_COERCE) != 0;
+}
+
 void lo_server_free(lo_server s)
 {
     if (s) {
@@ -695,13 +758,14 @@ void lo_server_free(lo_server s)
     }
 }
 
-int lo_server_enable_queue(lo_server s, int queue_enabled,
+int lo_server_enable_queue(lo_server s, int enable,
                            int dispatch_remaining)
 {
-    int prev = s->queue_enabled;
-    s->queue_enabled = queue_enabled;
+    int prev = (s->flags & LO_SERVER_ENQUEUE) != 0;
+    s->flags = (s->flags & ~LO_SERVER_ENQUEUE)
+        | (enable ? LO_SERVER_ENQUEUE : 0);
 
-    if (!queue_enabled && dispatch_remaining && s->queued)
+    if (!enable && dispatch_remaining && s->queued)
         dispatch_queued(s, 1);
 
     return prev;
@@ -748,6 +812,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
 static int slip_decode(unsigned char **buffer, unsigned char *from,
                        size_t size, int *state, size_t *bytesread)
 {
+    assert(from != NULL);
     *bytesread = 0;
     while (size--) {
         (*bytesread)++;
@@ -839,12 +904,13 @@ uint32_t lo_server_buffer_contains_msg(lo_server s, int isock)
 static
 void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
 {
+	void *data;
     struct socket_context *sc = &s->contexts[isock];
     uint32_t msg_len = lo_server_buffer_contains_msg(s, isock);
     if (msg_len == 0)
         return NULL;
 
-    void *data = malloc(msg_len);
+    data = malloc(msg_len);
     memcpy(data, sc->buffer + sizeof(uint32_t), msg_len);
     *psize = msg_len;
 
@@ -868,9 +934,11 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
                                      size_t *psize, void **pdata)
 {
     struct socket_context *sc = &s->contexts[isock];
-    char *stack_buffer = 0;
-    *pdata = 0;
+    char *stack_buffer = 0, *read_into;
     uint32_t msg_len;
+	int buffer_bytes_left, size, bytes_recv;
+	size_t bytes_wrote;
+    *pdata = 0;
 
   again:
 
@@ -879,10 +947,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         // There could be more data, so return true.
         return 1;
 
-    int buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
+    buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
 
     // If we need more than half the buffer, double the buffer size.
-    int size = sc->buffer_size;
+    size = sc->buffer_size;
     if (size < 64)
         size = 64;
     while (buffer_bytes_left < size/2)
@@ -912,7 +980,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     // Read as much as we can into the remaining buffer memory.
     buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
 
-    char *read_into = sc->buffer + sc->buffer_read_offset;
+    read_into = sc->buffer + sc->buffer_read_offset;
 
     // In SLIP mode, we instead read into the local stack buffer
     if (sc->is_slip == 1)
@@ -921,9 +989,9 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         read_into = stack_buffer;
     }
 
-    int bytes_recv = recv(s->sockets[isock].fd,
-                          read_into,
-                          buffer_bytes_left, 0);
+    bytes_recv = recv(s->sockets[isock].fd,
+                      read_into,
+                      buffer_bytes_left, 0);
 
     if (bytes_recv <= 0)
     {
@@ -1010,7 +1078,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // Any data left over is left in the buffer, so update the
         // read offset to indicate the end of it.
-        size_t bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
+        bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
         sc->buffer_read_offset += bytes_wrote;
     }
     else
@@ -1048,6 +1116,8 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 #endif
 #endif
 
+    assert(psock != NULL);
+
   again:
 
     /* check sockets in reverse order so that already-open sockets
@@ -1062,8 +1132,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
         s->sockets[i].events = POLLIN | POLLPRI;
         s->sockets[i].revents = 0;
 
-        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size)))
+        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
+            *psock = s->sockets[i].fd;
             return data;
+        }
     }
 
     poll(s->sockets, s->sockets_len, -1);
@@ -1095,8 +1167,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
         if (s->sockets[i].fd > nfds)
             nfds = s->sockets[i].fd;
 
-        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size)))
+        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
+            *psock = s->sockets[i].fd;
             return data;
+        }
     }
 
     if (select(nfds + 1, &ps, NULL, NULL, NULL) == SOCKET_ERROR)
@@ -1137,9 +1211,12 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 // There could be more data waiting
                 //*more = 1;
             }
+            if (data)
+                *psock = s->sockets[i].fd;
         }
     }
 
+    *psock = sock;
     return data;
 }
 
@@ -1330,7 +1407,10 @@ int lo_server_recv(lo_server s)
 
             if (s->protocol == LO_TCP
                 && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
+            {
+                sock = s->sockets[i].fd;
                 goto got_data;
+            }
         }
 
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
@@ -1367,7 +1447,10 @@ int lo_server_recv(lo_server s)
 
             if (s->protocol == LO_TCP
                 && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
+            {
+                sock = s->sockets[i].fd;
                 goto got_data;
+            }
         }
 
         stimeout.tv_sec = sched_time;
@@ -1423,20 +1506,21 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
 
     /* Update array of open sockets */
     if ((s->sockets_len + 1) > s->sockets_alloc) {
+        void *sc;
         void *sp = realloc(s->sockets,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
         if (!sp)
             return -1;
-        s->sockets = sp;
+        s->sockets = (void*)sp;
         memset(sp + s->sockets_alloc*sizeof(*s->sockets),
                0, s->sockets_alloc*sizeof(*s->sockets));
 
-        void *sc = realloc(s->contexts,
-                           sizeof(*(s->contexts))
-                           * (s->sockets_alloc * 2));
+        sc = realloc(s->contexts,
+                     sizeof(*(s->contexts))
+                     * (s->sockets_alloc * 2));
         if (!sc)
             return -1;
-        s->contexts = sc;
+        s->contexts = (void*)sc;
         memset(sc + s->sockets_alloc*sizeof(*s->contexts),
                0, s->sockets_alloc*sizeof(*s->contexts));
 
@@ -1544,7 +1628,7 @@ static int dispatch_data(lo_server s, void *data,
                 if ((ts.sec == LO_TT_IMMEDIATE.sec
                      && ts.frac == LO_TT_IMMEDIATE.frac)
                     || lo_timetag_diff(ts, now) <= 0.0
-                    || !s->queue_enabled)
+                    || (s->flags & LO_SERVER_ENQUEUE) == 0)
                 {
                     dispatch_method(s, pos, msg, sock);
                     lo_message_free(msg);
@@ -1603,56 +1687,9 @@ static void dispatch_method(lo_server s, const char *path,
     int argc = strlen(types);
     lo_method it;
     int ret = 1;
-    int err;
     int pattern = strpbrk(path, " #*,?[]{}") != NULL;
     lo_address src = 0;
-    char hostname[LO_HOST_SIZE];
-    char portname[32];
     const char *pptr;
-
-    //inet_ntop(s->addr.ss_family, &s->addr.padding, hostname, sizeof(hostname));
-    if (s->protocol == LO_UDP && s->addr_len > 0) {
-        err = getnameinfo((struct sockaddr *) &s->addr, s->addr_len,
-                          hostname, sizeof(hostname), portname,
-                          sizeof(portname),
-                          NI_NUMERICHOST | NI_NUMERICSERV);
-        if (err) {
-            switch (err) {
-            case EAI_AGAIN:
-                lo_throw(s, err, "Try again", path);
-                break;
-            case EAI_BADFLAGS:
-                lo_throw(s, err, "Bad flags", path);
-                break;
-            case EAI_FAIL:
-                lo_throw(s, err, "Failed", path);
-                break;
-            case EAI_FAMILY:
-                lo_throw(s, err, "Cannot resolve address family", path);
-                break;
-            case EAI_MEMORY:
-                lo_throw(s, err, "Out of memory", path);
-                break;
-            case EAI_NONAME:
-                lo_throw(s, err, "Cannot resolve", path);
-                break;
-#if !defined(WIN32) && !defined(_MSC_VER)
-            case EAI_SYSTEM:
-                lo_throw(s, err, strerror(err), path);
-                break;
-#endif
-            default:
-                lo_throw(s, err, "Unknown error", path);
-                break;
-            }
-
-            return;
-        }
-    } else {
-        hostname[0] = '\0';
-        portname[0] = '\0';
-    }
-
 
     // Store the source information in the lo_address
     if (s->protocol == LO_TCP && sock >= 0) {
@@ -1660,14 +1697,21 @@ static void dispatch_method(lo_server s, const char *path,
     }
     else {
         src = lo_address_new(NULL, NULL);
-        msg->source = src;
-        if (src->host)
+
+        // free up default host/port strings so they can be resolved
+        // properly if requested
+        if (src->host) {
             free(src->host);
-        if (src->host)
+            src->host = 0;
+        }
+        if (src->port) {
             free(src->port);
-        src->host = strdup(hostname);
-        src->port = strdup(portname);
+            src->port = 0;
+        }
+        src->source_server = s;
+        src->source_path = path;
         src->protocol = s->protocol;
+        msg->source = src;
     }
 
     for (it = s->first; it; it = it->next) {
@@ -1685,14 +1729,14 @@ static void dispatch_method(lo_server s, const char *path,
                 ret = it->handler(pptr, types, msg->argv, argc, msg,
                                   it->user_data);
 
-            } else if (lo_can_coerce_spec(types, it->typespec)) {
+            } else if (lo_server_should_coerce_args(s) && lo_can_coerce_spec(types, it->typespec)) {
                 lo_arg **argv = NULL;
+                char *data_co = NULL;
 
                 if (argc > 0) {
                     int i;
                     int opsize = 0;
-                    char *data_co = NULL, *data_co_ptr = NULL;
-                    char *ptr = msg->data;
+                    char *ptr = msg->data, *data_co_ptr = NULL;
 
                     argv = calloc(argc, sizeof(lo_arg *));
                     for (i = 0; i < argc; i++) {
@@ -1711,10 +1755,6 @@ static void dispatch_method(lo_server s, const char *path,
                         lo_arg_size(it->typespec[i], data_co_ptr);
                         ptr += lo_arg_size(types[i], ptr);
                     }
-
-                    if (data_co) {
-                        free(data_co);
-                    }
                 }
 
                 /* Send wildcard path to generic handler, expanded path
@@ -1725,10 +1765,9 @@ static void dispatch_method(lo_server s, const char *path,
                     pptr = it->path;
                 ret = it->handler(pptr, it->typespec, argv, argc, msg,
                                   it->user_data);
-                if (argv) {
-                    free(argv);
-                    argv = NULL;
-                }
+                free(argv);
+                free(data_co);
+                argv = NULL;
             }
 
             if (ret == 0 && !pattern) {

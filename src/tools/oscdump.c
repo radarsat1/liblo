@@ -1,7 +1,7 @@
 /*
  * oscdump - Receive and dump OpenSound Control messages.
  *
- * Copyright (C) 2008 Kentaro Fukuchi <fukuchi@megaui.net>
+ * Copyright (C) 2008 Kentaro Fukuchi <kentaro@fukuchi.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
 #include <config.h>
@@ -32,10 +33,15 @@ void usage(void)
 {
     printf("oscdump version %s\n"
            "Copyright (C) 2008 Kentaro Fukuchi\n\n"
-           "Usage: oscdump port\n"
-           "Receive OpenSound Control messages via UDP and dump to standard output.\n\n"
+           "Usage: oscdump <port>\n"
+           "or     oscdump <url>\n"
+           "Receive OpenSound Control messages and dump to standard output.\n\n"
            "Description\n"
-           "port    : specifies the listening port number.\n\n", VERSION);
+           "port    : specifies the listening port number.\n"
+           "url     : specifies the server parameters using a liblo URL.\n"
+           "          e.g. UDP        \"osc.udp://:9000\"\n"
+           "               Multicast  \"osc.udp://224.0.1.9:9000\"\n"
+           "               TCP        \"osc.tcp://:9000\"\n\n", VERSION);
 }
 
 void errorHandler(int num, const char *msg, const char *where)
@@ -77,8 +83,10 @@ int main(int argc, char **argv)
 
     if (group) {
         server = lo_server_new_multicast(group, port, errorHandler);
-    } else {
+    } else if (isdigit(port[0])) {
         server = lo_server_new(port, errorHandler);
+    } else {
+        server = lo_server_new_from_url(port, errorHandler);
     }
 
     if (server == NULL) {

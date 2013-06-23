@@ -111,6 +111,23 @@
   io.close()
 
 ----------------------------------------------------------------------
+-- Write a custom <lo.h> to ../lo/
+----------------------------------------------------------------------
+
+  io.input("../lo/lo.h.in")
+  local text = io.read("*all")
+
+  if _OPTIONS["without-threads"] then
+    text = string.gsub(text, '@ENABLE_THREADS@', '0')
+  else
+    text = string.gsub(text, '@ENABLE_THREADS@', '1')
+  end
+
+  io.output("../lo/lo.h")
+  io.write(text)
+  io.close()
+
+----------------------------------------------------------------------
 -- Copy <lo_endian.h> to ../lo
 ----------------------------------------------------------------------
 
@@ -187,6 +204,7 @@
     links   { "user32",
               "wsock32",
               "ws2_32",
+              "iphlpapi",
               "pthreadVC2",
             }
 
@@ -216,6 +234,7 @@
     links   { "user32",
               "wsock32",
               "ws2_32",
+              "iphlpapi",
               "pthreadVC2",
             }
 

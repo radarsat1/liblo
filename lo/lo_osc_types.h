@@ -52,6 +52,18 @@ typedef struct {
 } lo_timetag;
 
 /**
+ * \brief An enumeration of bundle element types liblo can handle.
+ *
+ * The element of a bundle can either be a message or an other bundle.
+ */
+typedef enum {
+	/** bundle element is a message */
+	LO_ELEMENT_MESSAGE = 1,
+	/** bundle element is a bundle */
+	LO_ELEMENT_BUNDLE = 2
+} lo_element_type;
+
+/**
  * \brief An enumeration of the OSC types liblo can send and receive.
  *
  * The value of the enumeration is the typechar used to tag messages and to
@@ -150,13 +162,6 @@ lo_timetag lo_get_tt_immediate();
 #else // !USE_ANSI_C
 #define LO_TT_IMMEDIATE ((lo_timetag){0U,1U})
 #endif // USE_ANSI_C
-
-/** \brief Bitflags for optional protocol features, set by
- *         lo_address_set_flags(). */
-typedef enum {
-    LO_SLIP=0x01,     /*!< SLIP decoding */
-    LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
-} lo_proto_flags;
 
 /** @} */
 
