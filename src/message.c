@@ -251,7 +251,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
     }
 #ifndef USE_ANSI_C
     void *i = va_arg(ap, void *);
-    if (i != LO_MARKER_A) {
+    if (((uint64_t)i & 0xFFFFFFFFL) != ((uint64_t)LO_MARKER_A & 0xFFFFFFFFL)) {
         ret = -2;               // bad format/args
         fprintf(stderr,
                 "liblo error: lo_send, lo_message_add, or lo_message_add_varargs called with "
@@ -261,7 +261,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         return ret;
     }
     i = va_arg(ap, void *);
-    if (i != LO_MARKER_B) {
+    if (((uint64_t)i & 0xFFFFFFFFL) != ((uint64_t)LO_MARKER_B & 0xFFFFFFFFL)) {
         ret = -2;               // bad format/args
         fprintf(stderr,
                 "liblo error: lo_send, lo_message_add, or lo_message_add_varargs called with "
