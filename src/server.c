@@ -1624,6 +1624,10 @@ static int dispatch_data(lo_server s, void *data,
                 // set timetag from bundle
                 msg->ts = ts;
 
+                // bump the reference count so that it isn't
+                // automatically released
+                lo_message_incref(msg);
+
                 // test for immediate dispatch
                 if ((ts.sec == LO_TT_IMMEDIATE.sec
                      && ts.frac == LO_TT_IMMEDIATE.frac)
@@ -1650,6 +1654,7 @@ static int dispatch_data(lo_server s, void *data,
             lo_throw(s, result, "Invalid message received", path);
             return -result;
         }
+        lo_message_incref(msg);
         dispatch_method(s, data, msg, sock);
         lo_message_free(msg);
     }

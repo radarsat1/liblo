@@ -40,11 +40,10 @@
     LO_ADD_METHOD_RT(ht, argtypes, args,                          \
                      RT_INT(argtypes), int, return,);             \
     LO_ADD_METHOD_RT(ht, argtypes, args,                          \
-                     RT_VOID(argtypes), void, , return 1)
+                     RT_VOID(argtypes), void, , return 0)
 
 namespace lo {
 
-    template <bool is_owner>
     class Message;
 
     // Helper classes to allow polymorphism on "const char *",
@@ -154,19 +153,19 @@ namespace lo {
         LO_ADD_METHOD( (const char*, lo_arg**, int),
                        ((char*)0, (lo_arg**)0, (int)0),
                        (types, argv, argc) );
-        LO_ADD_METHOD( (const char*, lo_arg**, int, const Message<false>&),
-                       ((char*)0, (lo_arg**)0, (int)0, Message<false>((lo_message)0)),
-                       (types, argv, argc, Message<false>(msg)) );
-        LO_ADD_METHOD( (const char*, const Message<false>&),
-                       ((char*)0, Message<false>((lo_message)0)),
-                       (path, Message<false>(msg)) );
+        LO_ADD_METHOD( (const char*, lo_arg**, int, const Message&),
+                       ((char*)0, (lo_arg**)0, (int)0, Message((lo_message)0)),
+                       (types, argv, argc, Message(msg)) );
+        LO_ADD_METHOD( (const char*, const Message&),
+                       ((char*)0, Message((lo_message)0)),
+                       (path, Message(msg)) );
         LO_ADD_METHOD( (lo_arg**, int), ((lo_arg**)0, (int)0), (argv, argc) )
-        LO_ADD_METHOD( (lo_arg**, int, const Message<false>& ),
-                       ((lo_arg**)0, (int)0, Message<false>((lo_message)0) ),
-                       (argv, argc, Message<false>(msg)) );
-        LO_ADD_METHOD( (const Message<false>&),
-                       (Message<false>((lo_message)0)),
-                       (Message<false>(msg)) );
+        LO_ADD_METHOD( (lo_arg**, int, const Message& ),
+                       ((lo_arg**)0, (int)0, Message((lo_message)0) ),
+                       (argv, argc, Message(msg)) );
+        LO_ADD_METHOD( (const Message&),
+                       (Message((lo_message)0)),
+                       (Message(msg)) );
         LO_ADD_METHOD( (), (), () );
 
         void del_method(const string_type &path, const string_type &typespec)
@@ -321,21 +320,21 @@ namespace lo {
         }
     };
 
-    template <bool is_owned>
     class Address
     {
       public:
         Address(const string_type &host, const num_string_type &port,
                 int proto=LO_UDP)
-          { address = lo_address_new_with_proto(proto, host, port); }
+          { address = lo_address_new_with_proto(proto, host, port); owned=true; }
 
         Address(const string_type &url)
-          { address = lo_address_new_from_url(url); }
+          { address = lo_address_new_from_url(url); owned=true; }
 
-        Address(lo_address a)
-          { address = a; }
+        Address(lo_address a, bool _owned=true)
+          { address = a; owned=_owned; }
 
-        ~Address() {}
+        ~Address()
+          { if (address && owned) lo_address_free(address); }
 
         int ttl() const
           { return lo_address_get_ttl(address); }
@@ -446,35 +445,33 @@ namespace lo {
 
       protected:
         lo_address address;
+        bool owned;
     };
 
-    template <>
-    Address<true>::~Address()
-        { if (address) lo_address_free(address); }
-
-    template <bool is_owner>
     class Message
     {
       public:
         Message()
-            : message(lo_message_new()) {}
+            : message(lo_message_new()) { lo_message_incref(message); }
 
         Message(lo_message m)
-            : message(m) {}
+            : message(m) { if (m) { lo_message_incref(m); } }
 
         Message(const Message &m)
-            : message(m.message) {}
+            : message(m.message) { lo_message_incref(m.message); }
 
         Message(const string_type &types, ...)
         {
             message = lo_message_new();
+            lo_message_incref(message);
             va_list q;
             va_start(q, types);
             std::string t(std::string(types)+"$$");
             add_varargs(t.c_str(), q);
         }
 
-        virtual ~Message() {};
+        ~Message()
+          { lo_message_free(message); }
 
         int add(const string_type &types, ...)
         {
@@ -569,8 +566,8 @@ namespace lo {
               else
                 return lo_message_add_false(message); }
 
-        Address<false> source() const
-            { return Address<false>(lo_message_get_source(message)); }
+        Address source() const
+            { return Address(lo_message_get_source(message), false); }
 
         lo_timetag timestamp() const
             { return lo_message_get_timestamp(message); }
@@ -593,7 +590,7 @@ namespace lo {
         static
         Message *deserialise(void *data, size_t size, int *result=0)
             { lo_message m = lo_message_deserialise(data, size, result);
-              return new Message(m); }
+              return m ? new Message(m) : nullptr; }
 
         void print() const
             { lo_message_pp(message); }
@@ -604,10 +601,6 @@ namespace lo {
       protected:
         lo_message message;
     };
-
-    template<>
-    Message<true>::~Message()
-        { lo_message_free(message); }
 
     class Blob
     {
@@ -638,35 +631,64 @@ namespace lo {
         lo_blob blob;
     };
 
-    template <bool is_owner>
     struct PathMsg
     {
-        const string_type &path;
-        Message<is_owner> msg;
+        PathMsg() {}
+        PathMsg(const string_type _path, const Message _msg) : path(_path), msg(_msg) {}
+        std::string path;
+        Message msg;
     };
 
-    template <bool is_owner>
+    template<typename T>
+    struct BundleElementT
+    {
+        BundleElementT(const string_type _path, const Message _msg)
+          : element_type(LO_ELEMENT_MESSAGE), pm(PathMsg(_path, _msg)), bundle((lo_bundle)0,0) {}
+        BundleElementT(const T _bundle)
+          : element_type(LO_ELEMENT_BUNDLE), pm((const char*)0,(lo_message)0), bundle(_bundle) {}
+        lo_element_type element_type;
+        PathMsg pm;
+        T bundle;
+    };
+
+    class Bundle;
+    typedef BundleElementT<Bundle> BundleElement;
+
     class Bundle
     {
       public:
-        Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE); }
+        Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE); lo_bundle_incref(bundle); }
 
         Bundle(lo_timetag tt)
-            : bundle(lo_bundle_new(tt)) {}
+            : bundle(lo_bundle_new(tt)) { lo_bundle_incref(bundle); }
 
         Bundle(lo_bundle b)
             : bundle(b) {}
 
+        Bundle(lo_bundle b, int not_owned = 0)
+            : bundle(b) { if (b && not_owned) { lo_bundle_incref(b); lo_bundle_incref(b); } }
+
         Bundle(lo_timetag tt, const string_type &path, lo_message m)
             : bundle(lo_bundle_new(tt))
         {
+            lo_bundle_incref(bundle);
             lo_bundle_add_message(bundle, path, m);
         }
 
-        Bundle(const std::initializer_list<PathMsg<true>> &msgs);
-        Bundle(const std::initializer_list<PathMsg<false>> &msgs);
+        Bundle(const std::initializer_list<PathMsg> &msgs)
+            : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
+        {
+            lo_bundle_incref(bundle);
+            for (auto m : msgs) {
+                lo_bundle_add_message(bundle, m.path.c_str(), m.msg);
+            }
+        }
 
-        virtual ~Bundle() {}
+        Bundle(const Bundle &b)
+            : bundle(b) { lo_bundle_incref(b); }
+
+        ~Bundle()
+            { lo_bundle_free_messages(bundle); }
 
         int add(const string_type &path, lo_message m)
             { return lo_bundle_add_message(bundle, path, m); }
@@ -680,11 +702,38 @@ namespace lo {
         lo_message get_message(int index, const char **path=0) const
             { return lo_bundle_get_message(bundle, index, path); }
 
-        lo_message get_message(int index, std::string &path) const
+        Message get_message(int index, std::string &path) const
             { const char *p;
-              int r=lo_bundle_get_message(bundle, index, &p);
+              lo_message m=lo_bundle_get_message(bundle, index, &p);
               path = p?:0;
-              return r; }
+              return Message(m); }
+
+        PathMsg get_message(int index) const
+            { const char *p;
+              lo_message m = lo_bundle_get_message(bundle, index, &p);
+              return PathMsg(p?:0, m); }
+
+        lo_bundle get_bundle(int index, const char **path=0) const
+            { return lo_bundle_get_bundle(bundle, index); }
+
+        Bundle get_bundle(int index, std::string &path) const
+            { const char *p;
+              lo_bundle b=lo_bundle_get_bundle(bundle, index);
+              path = p?:0;
+              return Bundle(b,0); }
+
+        BundleElement get_element(int index, const char **path=0) const
+            {
+                switch (lo_bundle_get_type(bundle, index)) {
+                case LO_ELEMENT_MESSAGE: {
+                    const char *p;
+                    lo_message m = lo_bundle_get_message(bundle, index, &p);
+                    return BundleElement(p, m);
+                }
+                case LO_ELEMENT_BUNDLE:
+                    return BundleElement(Bundle(lo_bundle_get_bundle(bundle, index),0));
+                }
+            }
 
         void *serialise(void *to, size_t *size) const
             { return lo_bundle_serialise(bundle, to, size); }
@@ -695,36 +744,6 @@ namespace lo {
       protected:
         lo_bundle bundle;
     };
-
-    template<>
-    Bundle<true>::Bundle(const std::initializer_list<PathMsg<false>> &msgs)
-        : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
-    {
-        for (auto m : msgs) {
-            lo_bundle_add_message(bundle, m.path, m.msg);
-        }
-    }
-
-    template<>
-    Bundle<false>::Bundle(const std::initializer_list<PathMsg<true>> &msgs)
-        : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
-    {
-        for (auto m : msgs) {
-            lo_bundle_add_message(bundle, m.path, m.msg);
-        }
-    }
-
-    template<>
-    Bundle<false>::Bundle(const std::initializer_list<PathMsg<false>> &msgs)
-        : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
-    {
-        for (auto m : msgs) {
-            lo_bundle_add_message(bundle, m.path, m.msg);
-        }
-    }
-
-    template<> Bundle<true>::~Bundle()
-        { lo_bundle_free_messages(bundle); }
 };
 
 #endif // _LO_CPP_H_

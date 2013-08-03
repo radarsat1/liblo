@@ -93,29 +93,29 @@ void init(lo::Server &s)
 
     j*=2;
     s.add_method("test9", "i", [j](const char *path, const char *types, lo_arg **argv, int argc)
-                  {printf("test9: %d, %s, %s, %d\n", j, path, types, argv[0]->i); return 0;});
+                  {printf("test9.1: %d, %s, %s, %d\n", j, path, types, argv[0]->i); return 1;});
     j*=2;
     s.add_method("test10", "i", [j](const char *types, lo_arg **argv, int argc)
-                  {printf("test10: %d, %s, %d\n", j, types, argv[0]->i); return 0;});
+                  {printf("test10.1: %d, %s, %d\n", j, types, argv[0]->i); return 1;});
     j*=2;
-    s.add_method("test11", "i", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
-                  {printf("test11: %d, %s, %d -- ", j, types, argv[0]->i); lo_message_pp(msg); return 0;});
+    s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
+                  {printf("test11.1: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg); return 1;});
 
     j*=2;
     s.add_method("test9", "i", [j](const char *path, const char *types, lo_arg **argv, int argc)
-                  {printf("test9: %d, %s, %s, %d\n", j, path, types, argv[0]->i);});
+                  {printf("test9.2: %d, %s, %s, %d\n", j, path, types, argv[0]->i);});
     j*=2;
     s.add_method("test10", "i", [j](const char *types, lo_arg **argv, int argc)
-                  {printf("test10: %d, %s, %d\n", j, types, argv[0]->i);});
+                  {printf("test10.2: %d, %s, %d\n", j, types, argv[0]->i);});
     j*=2;
     s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
-                 {printf("test11: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
+                 {printf("test11.2: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
 
     j*=2;
-    s.add_method("test12", "i", [j](const lo::Message<false> m)
+    s.add_method("test12", "i", [j](const lo::Message m)
                  {printf("test12 source: %s\n", m.source().url().c_str());});
 
-    s.add_method(0, 0, [](const char *path, lo_message m){printf("%s ", path); lo_message_pp(m);});
+    s.add_method(0, 0, [](const char *path, lo_message m){printf("generic: %s ", path); lo_message_pp(m);});
 
     j*=2;
     s.add_bundle_handlers(
@@ -140,7 +140,7 @@ int main()
 
     st.start();
 
-    lo::Address<true> a("localhost", "9000");
+    lo::Address a("localhost", "9000");
 
     printf("address host %s, port %s\n", a.hostname().c_str(), a.port().c_str());
     printf("iface: %s\n", a.iface().c_str());
@@ -159,7 +159,7 @@ int main()
     a.send("test9", "i", 180);
     a.send("test10", "i", 200);
 
-    lo::Message<true> m;
+    lo::Message m;
     m.add("i", 220);
     m.add_string(std::string("blah"));
     a.send("test11", m);
@@ -169,25 +169,26 @@ int main()
     m.add(lo::Blob(std::array<char,5>{"asdf"}));
     a.send("blobtest", m);
 
-    a.send(lo::Bundle<true>({
-                {"test11", lo::Message<false>("is",20,"first in bundle")},
-                {"test11", lo::Message<false>("is",30,"second in bundle")}
-            }));
+    a.send(
+        lo::Bundle({
+                {"test11", lo::Message("is",20,"first in bundle")},
+                {"test11", lo::Message("is",30,"second in bundle")}
+            })
+        );
 
-    char oscmsg[] = "/ok\x00,\x00\x00";
+    a.send("test12", "i", 240);
+
+    char oscmsg[] = {'/','o','k',0,',','i',0,0,0,0,0,4};
     int result = 0;
-    std::unique_ptr<lo::Message<true>> m2(
-        lo::Message<true>::deserialise(oscmsg, sizeof(oscmsg), &result));
+    std::unique_ptr<lo::Message> m2(
+        lo::Message::deserialise(oscmsg, sizeof(oscmsg), &result));
     if (m2 != nullptr) {
-        printf("deserialise: ");
+        printf("deserialise: %s", oscmsg);
         m2->print();
     }
     else
         printf("Unexpected failure in deserialise(): %d\n", result);
 
-    a.send("test12", "i", 240);
-
-    printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
-
     sleep(1);
+    printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 }
