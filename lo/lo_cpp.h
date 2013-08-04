@@ -440,6 +440,12 @@ namespace lo {
         void set_iface(const string_type &iface, const string_type &ip)
           { lo_address_set_iface(address, iface._s?:0, ip._s?:0); }
 
+        int set_tcp_nodelay(int enable)
+          { return lo_address_set_tcp_nodelay(address, enable); }
+
+        int set_stream_slip(int enable)
+          { return lo_address_set_stream_slip(address, enable); }
+
         operator lo_address() const
             { return address; }
 
