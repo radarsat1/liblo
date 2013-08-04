@@ -194,7 +194,14 @@ static int lo_server_setsock_reuseaddr(lo_server s)
         lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEADDR)");
         return err;
     }
+    return 0;
+}
+
+#if 0
+static int lo_server_setsock_reuseport(lo_server s)
+{
 #ifdef SO_REUSEPORT
+    unsigned int yes = 1;
     if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEPORT,
                    &yes, sizeof(yes)) < 0) {
         int err = geterror();
@@ -204,6 +211,7 @@ static int lo_server_setsock_reuseaddr(lo_server s)
 #endif
     return 0;
 }
+#endif
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
