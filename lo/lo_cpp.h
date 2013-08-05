@@ -601,6 +601,9 @@ namespace lo {
         void print() const
             { lo_message_pp(message); }
 
+        lo::Message clone() const
+            { return lo::Message(lo_message_clone(message)); }
+
         operator lo_message() const
             { return message; }
 

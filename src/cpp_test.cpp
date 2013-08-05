@@ -189,6 +189,12 @@ int main()
     else
         printf("Unexpected failure in deserialise(): %d\n", result);
 
+    // Memory for lo_message not copied
+    lo::Message m3(*m2);
+
+    // Memory for lo_message is copied
+    lo::Message m4 = m2->clone();
+
     sleep(1);
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
 }
