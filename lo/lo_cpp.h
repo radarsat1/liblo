@@ -677,10 +677,7 @@ namespace lo {
             : bundle(lo_bundle_new(tt)) { lo_bundle_incref(bundle); }
 
         Bundle(lo_bundle b)
-            : bundle(b) {}
-
-        Bundle(lo_bundle b, int not_owned = 0)
-            : bundle(b) { if (b && not_owned) { lo_bundle_incref(b); lo_bundle_incref(b); } }
+            : bundle(b) { if (b) { lo_bundle_incref(b); } }
 
         Bundle(lo_timetag tt, const string_type &path, lo_message m)
             : bundle(lo_bundle_new(tt))
@@ -699,10 +696,10 @@ namespace lo {
         }
 
         Bundle(const Bundle &b)
-            : bundle(b) { lo_bundle_incref(b); }
+            : Bundle((lo_bundle)b) {}
 
         ~Bundle()
-            { lo_bundle_free_messages(bundle); }
+            { if (bundle) lo_bundle_free_recursive(bundle); }
 
         int add(const string_type &path, lo_message m)
             { return lo_bundle_add_message(bundle, path, m); }
