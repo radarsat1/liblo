@@ -336,6 +336,9 @@ namespace lo {
         ~Address()
           { if (address && owned) lo_address_free(address); }
 
+        Address& operator=(Address b) { b.swap(*this); return *this; }
+        void swap(Address& b) throw () { std::swap(this->address, b.address); }
+
         int ttl() const
           { return lo_address_get_ttl(address); }
 
@@ -479,6 +482,9 @@ namespace lo {
 
         ~Message()
             { if (message) lo_message_free(message); }
+
+        Message& operator=(Message m) { m.swap(*this); return *this; }
+        void swap(Message& m) throw () { std::swap(this->message, m.message); }
 
         int add(const string_type &types, ...)
         {
@@ -628,6 +634,9 @@ namespace lo {
         virtual ~Blob()
             { lo_blob_free(blob); }
 
+        Blob& operator=(Blob b) { b.swap(*this); return *this; }
+        void swap(Blob& b) throw () { std::swap(this->blob, b.blob); }
+
         uint32_t datasize() const
             { return lo_blob_datasize(blob); }
 
@@ -709,6 +718,9 @@ namespace lo {
 
         ~Bundle()
             { if (bundle) lo_bundle_free_recursive(bundle); }
+
+        Bundle& operator=(Bundle b) { b.swap(*this); return *this; }
+        void swap(Bundle& b) throw () { std::swap(this->bundle, b.bundle); }
 
         int add(const string_type &path, lo_message m)
             { return lo_bundle_add_message(bundle, path, m); }
