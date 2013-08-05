@@ -478,7 +478,7 @@ namespace lo {
         }
 
         ~Message()
-          { lo_message_free(message); }
+            { if (message) lo_message_free(message); }
 
         int add(const string_type &types, ...)
         {
