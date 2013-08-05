@@ -679,15 +679,17 @@ namespace lo {
         Bundle(lo_bundle b)
             : bundle(b) { if (b) { lo_bundle_incref(b); } }
 
-        Bundle(lo_timetag tt, const string_type &path, lo_message m)
+        Bundle(const string_type &path, lo_message m,
+               lo_timetag tt=LO_TT_IMMEDIATE)
             : bundle(lo_bundle_new(tt))
         {
             lo_bundle_incref(bundle);
             lo_bundle_add_message(bundle, path, m);
         }
 
-        Bundle(const std::initializer_list<PathMsg> &msgs)
-            : bundle(lo_bundle_new(LO_TT_IMMEDIATE))
+        Bundle(const std::initializer_list<Element> &elements,
+               lo_timetag tt=LO_TT_IMMEDIATE)
+            : bundle(lo_bundle_new(tt))
         {
             lo_bundle_incref(bundle);
             for (auto m : msgs) {
