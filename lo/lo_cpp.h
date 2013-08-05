@@ -653,24 +653,26 @@ namespace lo {
         Message msg;
     };
 
-    template<typename T>
-    struct BundleElementT
-    {
-        BundleElementT(const string_type _path, const Message _msg)
-          : element_type(LO_ELEMENT_MESSAGE), pm(PathMsg(_path, _msg)), bundle((lo_bundle)0,0) {}
-        BundleElementT(const T _bundle)
-          : element_type(LO_ELEMENT_BUNDLE), pm((const char*)0,(lo_message)0), bundle(_bundle) {}
-        lo_element_type element_type;
-        PathMsg pm;
-        T bundle;
-    };
-
-    class Bundle;
-    typedef BundleElementT<Bundle> BundleElement;
-
     class Bundle
     {
       public:
+        template <typename T>
+        struct ElementT
+        {
+            ElementT()
+            : type((lo_element_type)0), pm("", 0), bundle((lo_bundle)0) {}
+            ElementT(const string_type _path, const Message& _msg)
+              : type(LO_ELEMENT_MESSAGE),
+                pm(PathMsg(_path, _msg)),
+                bundle((lo_bundle)0) {}
+            ElementT(const T& _bundle)
+              : type(LO_ELEMENT_BUNDLE), pm("", 0), bundle(_bundle) {}
+            lo_element_type type;
+            PathMsg pm;
+            T bundle;
+        };
+        typedef ElementT<Bundle> Element;
+
         Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE); lo_bundle_incref(bundle); }
 
         Bundle(lo_timetag tt)
@@ -692,8 +694,13 @@ namespace lo {
             : bundle(lo_bundle_new(tt))
         {
             lo_bundle_incref(bundle);
-            for (auto m : msgs) {
-                lo_bundle_add_message(bundle, m.path.c_str(), m.msg);
+            for (auto const &e : elements) {
+                if (e.type == LO_ELEMENT_MESSAGE) {
+                    lo_bundle_add_message(bundle, e.pm.path.c_str(), e.pm.msg);
+                }
+                else if (e.type == LO_ELEMENT_BUNDLE) {
+                    lo_bundle_add_bundle(bundle, e.bundle);
+                }
             }
         }
 
