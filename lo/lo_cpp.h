@@ -647,7 +647,8 @@ namespace lo {
     struct PathMsg
     {
         PathMsg() {}
-        PathMsg(const string_type _path, const Message _msg) : path(_path), msg(_msg) {}
+        PathMsg(const string_type _path, const Message& _msg)
+          : path(_path), msg(_msg) {}
         std::string path;
         Message msg;
     };
