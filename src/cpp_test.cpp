@@ -176,6 +176,17 @@ int main()
             })
         );
 
+    lo::Bundle b({{"ok1", lo::Message("is",20,"first in bundle")},
+                  lo::Bundle({"ok2", lo::Message("is",30,"second in bundle")})
+                 }, LO_TT_IMMEDIATE);
+    printf("Bundle:\n"); b.print();
+
+    lo::Bundle::Element e(b.get_element(0));
+    printf("Bundle Message: %s ", e.pm.path.c_str()); e.pm.msg.print();
+
+    e = b.get_element(1);
+    printf("Bundle Bundle:\n"); e.bundle.print();
+
     a.send("test12", "i", 240);
 
     char oscmsg[] = {'/','o','k',0,',','i',0,0,0,0,0,4};
