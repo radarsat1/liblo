@@ -736,23 +736,28 @@ namespace lo {
             { const char *p;
               lo_bundle b=lo_bundle_get_bundle(bundle, index);
               path = p?:0;
-              return Bundle(b,0); }
+              return b; }
 
-        BundleElement get_element(int index, const char **path=0) const
+        Element get_element(int index, const char **path=0) const
             {
                 switch (lo_bundle_get_type(bundle, index)) {
                 case LO_ELEMENT_MESSAGE: {
                     const char *p;
                     lo_message m = lo_bundle_get_message(bundle, index, &p);
-                    return BundleElement(p, m);
+                    return Element(p, m);
                 }
                 case LO_ELEMENT_BUNDLE:
-                    return BundleElement(Bundle(lo_bundle_get_bundle(bundle, index),0));
+                    return Element(lo_bundle_get_bundle(bundle, index));
+                default:
+                    return Element();
                 }
             }
 
         void *serialise(void *to, size_t *size) const
             { return lo_bundle_serialise(bundle, to, size); }
+
+        void print() const
+            { lo_bundle_pp(bundle); }
 
         operator lo_bundle() const
             { return bundle; }
