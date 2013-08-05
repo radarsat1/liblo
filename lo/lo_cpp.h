@@ -464,7 +464,8 @@ namespace lo {
             : message(m) { if (m) { lo_message_incref(m); } }
 
         Message(const Message &m)
-            : message(m.message) { lo_message_incref(m.message); }
+            : message(m.message) { if (m.message)
+                                       lo_message_incref(m.message); }
 
         Message(const string_type &types, ...)
         {
@@ -593,10 +594,13 @@ namespace lo {
         void *serialise(const string_type &path, void *to, size_t *size) const
             { return lo_message_serialise(message, path, to, size); }
 
+        typedef std::pair<int, Message> maybe;
+
         static
-        Message *deserialise(void *data, size_t size, int *result=0)
-            { lo_message m = lo_message_deserialise(data, size, result);
-              return m ? new Message(m) : nullptr; }
+        maybe deserialise(void *data, size_t size)
+            { int result = 0;
+              lo_message m = lo_message_deserialise(data, size, &result);
+              return maybe(result, m); }
 
         void print() const
             { lo_message_pp(message); }

@@ -179,21 +179,21 @@ int main()
     a.send("test12", "i", 240);
 
     char oscmsg[] = {'/','o','k',0,',','i',0,0,0,0,0,4};
-    int result = 0;
-    std::unique_ptr<lo::Message> m2(
-        lo::Message::deserialise(oscmsg, sizeof(oscmsg), &result));
-    if (m2 != nullptr) {
+    lo::Message::maybe m2 = lo::Message::deserialise(oscmsg, sizeof(oscmsg));
+    if (m2.first == 0) {
         printf("deserialise: %s", oscmsg);
-        m2->print();
+        m2.second.print();
     }
-    else
-        printf("Unexpected failure in deserialise(): %d\n", result);
+    else {
+        printf("Unexpected failure in deserialise(): %d\n", m2.first);
+        exit(1);
+    }
 
     // Memory for lo_message not copied
-    lo::Message m3(*m2);
+    lo::Message m3(m2.second);
 
     // Memory for lo_message is copied
-    lo::Message m4 = m2->clone();
+    lo::Message m4 = m2.second.clone();
 
     sleep(1);
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
