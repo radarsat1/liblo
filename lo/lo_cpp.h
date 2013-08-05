@@ -706,6 +706,9 @@ namespace lo {
         int add(const string_type &path, lo_message m)
             { return lo_bundle_add_message(bundle, path, m); }
 
+        int add(const lo_bundle b)
+            { return lo_bundle_add_bundle(bundle, b); }
+
         size_t length() const
             { return lo_bundle_length(bundle); }
 
