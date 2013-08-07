@@ -745,14 +745,8 @@ namespace lo {
               lo_message m = lo_bundle_get_message(bundle, index, &p);
               return PathMsg(p?:0, m); }
 
-        lo_bundle get_bundle(int index, const char **path=0) const
+        Bundle get_bundle(int index) const
             { return lo_bundle_get_bundle(bundle, index); }
-
-        Bundle get_bundle(int index, std::string &path) const
-            { const char *p;
-              lo_bundle b=lo_bundle_get_bundle(bundle, index);
-              path = p?:0;
-              return b; }
 
         Element get_element(int index, const char **path=0) const
             {
