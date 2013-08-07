@@ -2,7 +2,7 @@ SUBDIRS = . tools
 
 MAINTAINERCLEANFILES = Makefile.in
 
-EXTRA_DIST = liblo.def
+EXTRA_DIST = liblo.def.in
 
 noinst_HEADERS = lo_types_internal.h lo_internal.h
 
