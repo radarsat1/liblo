@@ -77,8 +77,14 @@ AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM([#include <functional>],[[[]](std::function<void()> f){f();}([[]](){0;});])],
     [AC_MSG_RESULT([yes])
      HAVE_LAMBDA=yes],
+    [
+CXXFLAGS="$_CXXFLAGS -std=c++11 -stdlib=libc++"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([#include <functional>],[[[]](std::function<void()> f){f();}([[]](){0;});])],
+    [AC_MSG_RESULT([yes])
+     HAVE_LAMBDA=yes],
     [AC_MSG_RESULT([no])
-     CXXFLAGS="$_CXXFLAGS"])])
+     CXXFLAGS="$_CXXFLAGS"])])])
 AC_LANG(C)
 AM_CONDITIONAL([HAVE_LAMBDA],[test x$HAVE_LAMBDA = xyes])
 
