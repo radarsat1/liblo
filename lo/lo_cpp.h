@@ -44,8 +44,6 @@
 
 namespace lo {
 
-    class Message;
-
     // Helper classes to allow polymorphism on "const char *",
     // "std::string", and "int".
     class string_type {
@@ -63,261 +61,6 @@ namespace lo {
         num_string_type(int n) { std::ostringstream ss; ss << n;
             _p.reset(new std::string(ss.str())); _s = _p->c_str(); }
         std::unique_ptr<std::string> _p;
-    };
-
-    class Server
-    {
-      public:
-        Server(lo_server s) : server(s) {}
-
-        template <typename E>
-        Server(const num_string_type &port, E&& e)
-            : Server(lo_server_new(port,
-              [](int num, const char *msg, const char *where){
-                auto h = static_cast<handler_error*>(lo_error_get_context());
-                (*h)(num, msg, where);
-              }))
-        {
-            if (server) {
-                lo_server_set_error_context(server,
-                    _error_handler = std::unique_ptr<handler>(
-                        new handler_error(e)));
-            }
-        }
-
-        template <typename E>
-        Server(const num_string_type &port, int proto, E&& e=0)
-            : Server(lo_server_new_with_proto(port, proto,
-              [](int num, const char *msg, const char *where){
-                auto h = static_cast<handler_error*>(lo_error_get_context());
-                (*h)(num, msg, where);
-              }))
-        {
-            if (server) {
-                lo_server_set_error_context(server,
-                    _error_handler = std::unique_ptr<handler>(
-                        new handler_error(e)));
-            }
-        }
-
-        template <typename E>
-        Server(const string_type &group, const num_string_type &port,
-               const string_type &iface=0, const string_type &ip=0, E&& e=0)
-            : Server((!iface._s || !ip._s)
-                     ? lo_server_new_multicast_iface(group, port, iface, ip,
-                           [](int num, const char *msg, const char *where){
-                               auto h = static_cast<handler_error*>(lo_error_get_context());
-                               (*h)(num, msg, where);
-                           })
-                     : lo_server_new_multicast(group, port,
-                           [](int num, const char *msg, const char *where){
-                               auto h = static_cast<handler_error*>(lo_error_get_context());
-                               (*h)(num, msg, where);
-                       }))
-        {
-            if (server) {
-                lo_server_set_error_context(server,
-                    _error_handler = std::unique_ptr<handler>(
-                        new handler_error(e)));
-            }
-        }
-
-        Server(const num_string_type &port, lo_err_handler err_h=0)
-            : Server(lo_server_new(port, err_h)) {}
-
-        Server(const num_string_type &port, int proto, lo_err_handler err_h=0)
-            : Server(lo_server_new_with_proto(port, proto, err_h)) {}
-
-        Server(const string_type &group, const num_string_type &port,
-               const string_type &iface="", const string_type &ip="", lo_err_handler err_h=0)
-            : Server((iface._s || ip._s)
-                     ? lo_server_new_multicast_iface(group, port,
-                                                     iface._s?:0,
-                                                     ip._s?:0, err_h)
-                     : lo_server_new_multicast(group, port, err_h)) {}
-
-        virtual ~Server()
-            { if (server) lo_server_free(server); }
-
-        bool is_valid() const { return server!=nullptr; }
-
-        // Regular old liblo method handlers
-        void add_method(const string_type &path, const string_type &types,
-                        lo_method_handler h, void *data) const
-            { _add_method(path, types, h, data); }
-
-        // Alternative callback prototypes
-        LO_ADD_METHOD( (const char*, const char*, lo_arg**, int),
-                       ((char*)0, (char*)0, (lo_arg**)0, (int)0),
-                       (path, types, argv, argc) );
-        LO_ADD_METHOD( (const char*, lo_arg**, int),
-                       ((char*)0, (lo_arg**)0, (int)0),
-                       (types, argv, argc) );
-        LO_ADD_METHOD( (const char*, lo_arg**, int, const Message&),
-                       ((char*)0, (lo_arg**)0, (int)0, Message((lo_message)0)),
-                       (types, argv, argc, Message(msg)) );
-        LO_ADD_METHOD( (const char*, const Message&),
-                       ((char*)0, Message((lo_message)0)),
-                       (path, Message(msg)) );
-        LO_ADD_METHOD( (lo_arg**, int), ((lo_arg**)0, (int)0), (argv, argc) )
-        LO_ADD_METHOD( (lo_arg**, int, const Message& ),
-                       ((lo_arg**)0, (int)0, Message((lo_message)0) ),
-                       (argv, argc, Message(msg)) );
-        LO_ADD_METHOD( (const Message&),
-                       (Message((lo_message)0)),
-                       (Message(msg)) );
-        LO_ADD_METHOD( (), (), () );
-
-        void del_method(const string_type &path, const string_type &typespec)
-        {
-            _handlers.erase(std::string(path._s?:"") + ","
-                            + (typespec._s?:""));
-            lo_server_del_method(server, path, typespec);
-        }
-
-        int dispatch_data(void *data, size_t size)
-            { return lo_server_dispatch_data(server, data, size); }
-
-        int wait(int timeout)
-            { return lo_server_wait(server, timeout); }
-
-        int recv()
-            { return lo_server_recv(server); }
-
-        int recv(int timeout)
-            { return lo_server_recv_noblock(server, timeout); }
-
-        int add_bundle_handlers(lo_bundle_start_handler sh,
-                                lo_bundle_end_handler eh,
-                                void *user_data)
-        {
-            return lo_server_add_bundle_handlers(server, sh, eh, user_data);
-        }
-
-        template <typename S, typename E>
-        int add_bundle_handlers(S&& s, E&& e)
-        {
-            _bundle_handlers.reset(new std::pair<handler_bundle_start,
-                                                 handler_bundle_end>(
-                                       handler_bundle_start(s),
-                                       handler_bundle_end(e)));
-            return lo_server_add_bundle_handlers(
-                server,
-                [](lo_timetag time, void *user_data)->int{
-                    auto h = (std::pair<handler_bundle_start,
-                                        handler_bundle_end>*) user_data;
-                    h->first(time);
-                    return 0;
-                },
-                [](void *user_data)->int{
-                    auto h = (std::pair<handler_bundle_start,
-                                        handler_bundle_end>*) user_data;
-                    h->second();
-                    return 0;
-                },
-                _bundle_handlers.get());
-        }
-
-        int socket_fd() const
-            { return lo_server_get_socket_fd(server); }
-
-        int port() const
-            { return lo_server_get_port(server); }
-
-        int protocol() const
-            { return lo_server_get_protocol(server); }
-
-        std::string url() const
-            { return std::string(lo_server_get_url(server)?:""); }
-
-        int enable_queue(int queue_enabled,
-                         int dispatch_remaining=1)
-            { return lo_server_enable_queue(server,
-                                            queue_enabled,
-                                            dispatch_remaining); }
-
-        int events_pending() const
-            { return lo_server_events_pending(server); }
-
-        double next_event_delay() const
-            { return lo_server_next_event_delay(server); }
-
-        operator lo_server() const
-            { return server; }
-
-      protected:
-        lo_server server;
-
-        class handler {};
-        template <typename T>
-        class handler_type : public handler, public std::function<T> {
-          public: template<typename H>handler_type(H&& h) : std::function<T>(h) {}
-        };
-        typedef handler_type<void(int, const char *, const char *)> handler_error;
-        typedef handler_type<void(int, const std::string&, const std::string&)> handler_error_s;
-        typedef handler_type<void(lo_timetag)> handler_bundle_start;
-        typedef handler_type<void()> handler_bundle_end;
-
-        // Keep std::functions here so they are freed correctly
-        std::unordered_map<std::string,
-            std::list<std::unique_ptr<handler>>> _handlers;
-        std::unique_ptr<handler> _error_handler;
-        std::unique_ptr<std::pair<handler_bundle_start,
-                                  handler_bundle_end>> _bundle_handlers;
-
-        virtual void _add_method(const char *path, const char *types,
-                        lo_method_handler h, void *data) const
-        {
-            lo_server_add_method(server, path, types, h, data);
-        }
-    };
-
-    class ServerThread : public Server
-    {
-      public:
-        ServerThread(const num_string_type &port, lo_err_handler err_h=0)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new(port, err_h))) {}
-
-        template <typename E>
-        ServerThread(const num_string_type &port, E&& e)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new(port,
-                  [](int num, const char *msg, const char *where){
-                      auto h = static_cast<handler_error*>(lo_error_get_context());
-                      (*h)(num, msg, where);})))
-            {
-                if (server_thread) {
-                    auto h = new handler_error(e);
-                    _error_handler.reset(h);
-                    lo_server_thread_set_error_context(server_thread, h);
-                }
-            }
-
-        ServerThread(const num_string_type &port, int proto, lo_err_handler err_h)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new_with_proto(port, proto, err_h))) {}
-
-        virtual ~ServerThread()
-            { server = 0;
-              if (server_thread) lo_server_thread_free(server_thread); }
-
-        void start() { lo_server_thread_start(server_thread); }
-        void stop() { lo_server_thread_stop(server_thread); }
-
-        operator lo_server_thread() const
-            { return server_thread; }
-
-      protected:
-        lo_server_thread server_thread;
-
-        // Regular old liblo method handlers
-        virtual void _add_method(const string_type &path,
-                                 const string_type &types,
-                                 lo_method_handler h, void *data) const
-        {
-            lo_server_thread_add_method(server_thread, path, types, h, data);
-        }
     };
 
     class Address
@@ -619,6 +362,261 @@ namespace lo {
 
       protected:
         lo_message message;
+    };
+
+    class Server
+    {
+      public:
+        Server(lo_server s) : server(s) {}
+
+        template <typename E>
+        Server(const num_string_type &port, E&& e)
+            : Server(lo_server_new(port,
+              [](int num, const char *msg, const char *where){
+                auto h = static_cast<handler_error*>(lo_error_get_context());
+                (*h)(num, msg, where);
+              }))
+        {
+            if (server) {
+                lo_server_set_error_context(server,
+					    (_error_handler = std::unique_ptr<handler>(
+										       new handler_error(e))).get());
+            }
+        }
+
+        template <typename E>
+        Server(const num_string_type &port, int proto, E&& e=0)
+            : Server(lo_server_new_with_proto(port, proto,
+              [](int num, const char *msg, const char *where){
+                auto h = static_cast<handler_error*>(lo_error_get_context());
+                (*h)(num, msg, where);
+              }))
+        {
+            if (server) {
+                lo_server_set_error_context(server,
+					    (_error_handler = std::unique_ptr<handler>(
+										       new handler_error(e))).get());
+            }
+        }
+
+        template <typename E>
+        Server(const string_type &group, const num_string_type &port,
+               const string_type &iface=0, const string_type &ip=0, E&& e=0)
+            : Server((!iface._s || !ip._s)
+                     ? lo_server_new_multicast_iface(group, port, iface, ip,
+                           [](int num, const char *msg, const char *where){
+                               auto h = static_cast<handler_error*>(lo_error_get_context());
+                               (*h)(num, msg, where);
+                           })
+                     : lo_server_new_multicast(group, port,
+                           [](int num, const char *msg, const char *where){
+                               auto h = static_cast<handler_error*>(lo_error_get_context());
+                               (*h)(num, msg, where);
+                       }))
+        {
+            if (server) {
+                lo_server_set_error_context(server,
+					    (_error_handler = std::unique_ptr<handler>(
+										       new handler_error(e))).get());
+            }
+        }
+
+        Server(const num_string_type &port, lo_err_handler err_h=0)
+            : Server(lo_server_new(port, err_h)) {}
+
+        Server(const num_string_type &port, int proto, lo_err_handler err_h=0)
+            : Server(lo_server_new_with_proto(port, proto, err_h)) {}
+
+        Server(const string_type &group, const num_string_type &port,
+               const string_type &iface="", const string_type &ip="", lo_err_handler err_h=0)
+            : Server((iface._s || ip._s)
+                     ? lo_server_new_multicast_iface(group, port,
+                                                     iface._s?:0,
+                                                     ip._s?:0, err_h)
+                     : lo_server_new_multicast(group, port, err_h)) {}
+
+        virtual ~Server()
+            { if (server) lo_server_free(server); }
+
+        bool is_valid() const { return server!=nullptr; }
+
+        // Regular old liblo method handlers
+        void add_method(const string_type &path, const string_type &types,
+                        lo_method_handler h, void *data) const
+            { _add_method(path, types, h, data); }
+
+        // Alternative callback prototypes
+        LO_ADD_METHOD( (const char*, const char*, lo_arg**, int),
+                       ((char*)0, (char*)0, (lo_arg**)0, (int)0),
+                       (path, types, argv, argc) );
+        LO_ADD_METHOD( (const char*, lo_arg**, int),
+                       ((char*)0, (lo_arg**)0, (int)0),
+                       (types, argv, argc) );
+        LO_ADD_METHOD( (const char*, lo_arg**, int, const Message&),
+                       ((char*)0, (lo_arg**)0, (int)0, Message((lo_message)0)),
+                       (types, argv, argc, Message(msg)) );
+        LO_ADD_METHOD( (const char*, const Message&),
+                       ((char*)0, Message((lo_message)0)),
+                       (path, Message(msg)) );
+        LO_ADD_METHOD( (lo_arg**, int), ((lo_arg**)0, (int)0), (argv, argc) )
+        LO_ADD_METHOD( (lo_arg**, int, const Message& ),
+                       ((lo_arg**)0, (int)0, Message((lo_message)0)),
+                       (argv, argc, Message(msg)) );
+        LO_ADD_METHOD( (const Message&),
+                       (Message((lo_message)0)),
+                       (Message(msg)) );
+        LO_ADD_METHOD( (), (), () );
+
+        void del_method(const string_type &path, const string_type &typespec)
+        {
+            _handlers.erase(std::string(path._s?:"") + ","
+                            + (typespec._s?:""));
+            lo_server_del_method(server, path, typespec);
+        }
+
+        int dispatch_data(void *data, size_t size)
+            { return lo_server_dispatch_data(server, data, size); }
+
+        int wait(int timeout)
+            { return lo_server_wait(server, timeout); }
+
+        int recv()
+            { return lo_server_recv(server); }
+
+        int recv(int timeout)
+            { return lo_server_recv_noblock(server, timeout); }
+
+        int add_bundle_handlers(lo_bundle_start_handler sh,
+                                lo_bundle_end_handler eh,
+                                void *user_data)
+        {
+            return lo_server_add_bundle_handlers(server, sh, eh, user_data);
+        }
+
+        template <typename S, typename E>
+        int add_bundle_handlers(S&& s, E&& e)
+        {
+            _bundle_handlers.reset(new std::pair<handler_bundle_start,
+                                                 handler_bundle_end>(
+                                       handler_bundle_start(s),
+                                       handler_bundle_end(e)));
+            return lo_server_add_bundle_handlers(
+                server,
+                [](lo_timetag time, void *user_data)->int{
+                    auto h = (std::pair<handler_bundle_start,
+                                        handler_bundle_end>*) user_data;
+                    h->first(time);
+                    return 0;
+                },
+                [](void *user_data)->int{
+                    auto h = (std::pair<handler_bundle_start,
+                                        handler_bundle_end>*) user_data;
+                    h->second();
+                    return 0;
+                },
+                _bundle_handlers.get());
+        }
+
+        int socket_fd() const
+            { return lo_server_get_socket_fd(server); }
+
+        int port() const
+            { return lo_server_get_port(server); }
+
+        int protocol() const
+            { return lo_server_get_protocol(server); }
+
+        std::string url() const
+            { return std::string(lo_server_get_url(server)?:""); }
+
+        int enable_queue(int queue_enabled,
+                         int dispatch_remaining=1)
+            { return lo_server_enable_queue(server,
+                                            queue_enabled,
+                                            dispatch_remaining); }
+
+        int events_pending() const
+            { return lo_server_events_pending(server); }
+
+        double next_event_delay() const
+            { return lo_server_next_event_delay(server); }
+
+        operator lo_server() const
+            { return server; }
+
+      protected:
+        lo_server server;
+
+        class handler {};
+        template <typename T>
+        class handler_type : public handler, public std::function<T> {
+          public: template<typename H>handler_type(H&& h) : std::function<T>(h) {}
+        };
+        typedef handler_type<void(int, const char *, const char *)> handler_error;
+        typedef handler_type<void(int, const std::string&, const std::string&)> handler_error_s;
+        typedef handler_type<void(lo_timetag)> handler_bundle_start;
+        typedef handler_type<void()> handler_bundle_end;
+
+        // Keep std::functions here so they are freed correctly
+        std::unordered_map<std::string,
+            std::list<std::unique_ptr<handler>>> _handlers;
+        std::unique_ptr<handler> _error_handler;
+        std::unique_ptr<std::pair<handler_bundle_start,
+                                  handler_bundle_end>> _bundle_handlers;
+
+        virtual void _add_method(const char *path, const char *types,
+                        lo_method_handler h, void *data) const
+        {
+            lo_server_add_method(server, path, types, h, data);
+        }
+    };
+
+    class ServerThread : public Server
+    {
+      public:
+        ServerThread(const num_string_type &port, lo_err_handler err_h=0)
+            : Server(lo_server_thread_get_server(
+                  server_thread = lo_server_thread_new(port, err_h))) {}
+
+        template <typename E>
+        ServerThread(const num_string_type &port, E&& e)
+            : Server(lo_server_thread_get_server(
+                  server_thread = lo_server_thread_new(port,
+                  [](int num, const char *msg, const char *where){
+                      auto h = static_cast<handler_error*>(lo_error_get_context());
+                      (*h)(num, msg, where);})))
+            {
+                if (server_thread) {
+                    auto h = new handler_error(e);
+                    _error_handler.reset(h);
+                    lo_server_thread_set_error_context(server_thread, h);
+                }
+            }
+
+        ServerThread(const num_string_type &port, int proto, lo_err_handler err_h)
+            : Server(lo_server_thread_get_server(
+                  server_thread = lo_server_thread_new_with_proto(port, proto, err_h))) {}
+
+        virtual ~ServerThread()
+            { server = 0;
+              if (server_thread) lo_server_thread_free(server_thread); }
+
+        void start() { lo_server_thread_start(server_thread); }
+        void stop() { lo_server_thread_stop(server_thread); }
+
+        operator lo_server_thread() const
+            { return server_thread; }
+
+      protected:
+        lo_server_thread server_thread;
+
+        // Regular old liblo method handlers
+        virtual void _add_method(const string_type &path,
+                                 const string_type &types,
+                                 lo_method_handler h, void *data) const
+        {
+            lo_server_thread_add_method(server_thread, path, types, h, data);
+        }
     };
 
     class Blob
