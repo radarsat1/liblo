@@ -567,6 +567,15 @@ lo_message lo_bundle_get_message(lo_bundle b, int index,
                                  const char **path);
 
 /**
+ * \brief  Get the timestamp associated with a bundle.
+ *
+ * \param b The bundle for which the timestamp should be returned.
+ *
+ * \return The timestamp of the bundle as a lo_timetag.
+ */
+lo_timetag lo_bundle_get_timestamp(lo_bundle b);
+
+/**
  * \brief  Serialise the bundle object to an area of memory and return a
  * pointer to the serialised form.
  *
