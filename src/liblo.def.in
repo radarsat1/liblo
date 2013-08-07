@@ -131,3 +131,4 @@ EXPORTS
     lo_server_enable_coercion              @128
     lo_server_new_from_url                 @129
 @DEFTHREADS@    lo_server_thread_new_from_url                   @130
+    lo_bundle_get_timestamp                @131
