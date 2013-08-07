@@ -188,6 +188,10 @@ int main()
     e = b.get_element(1);
     printf("Bundle Bundle:\n"); e.bundle.print();
 
+    printf("Bundle timestamp: %u.%u\n",
+           e.bundle.timestamp().sec,
+           e.bundle.timestamp().frac);
+
     a.send("test12", "i", 240);
 
     char oscmsg[] = {'/','o','k',0,',','i',0,0,0,0,0,4};

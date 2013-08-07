@@ -763,6 +763,9 @@ namespace lo {
                 }
             }
 
+        lo_timetag timestamp()
+            { return lo_bundle_get_timestamp(bundle); }
+
         void *serialise(void *to, size_t *size) const
             { return lo_bundle_serialise(bundle, to, size); }
 
