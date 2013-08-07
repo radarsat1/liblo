@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include <lo/lo.h>
+#include <lo/lo_cpp.h>
 
 int test1(const char *path, const char *types,
           lo_arg **argv, int argc, lo_message m,

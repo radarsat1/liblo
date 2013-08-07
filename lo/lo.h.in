@@ -220,7 +220,6 @@ void *lo_blob_dataptr(lo_blob b);
 
 #ifdef __cplusplus
 }
-#include "lo/lo_cpp.h"
 #endif
 
 #endif
