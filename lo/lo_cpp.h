@@ -611,8 +611,7 @@ namespace lo {
         lo_server_thread server_thread;
 
         // Regular old liblo method handlers
-        virtual void _add_method(const string_type &path,
-                                 const string_type &types,
+        virtual void _add_method(const char *path, const char *types,
                                  lo_method_handler h, void *data) const
         {
             lo_server_thread_add_method(server_thread, path, types, h, data);
