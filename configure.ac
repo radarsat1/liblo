@@ -126,6 +126,9 @@ AC_CHECK_FUNC([inet_pton], [AC_DEFINE(HAVE_INET_PTON, [1], [Define to 1 if inet_
 AM_CONDITIONAL(WINDOWS, test x$is_windows = xyes)
 AM_CONDITIONAL(WINDOWS_DLL, test x$is_windows = xyes && test x$enable_shared = xyes)
 
+# Note that configure-time endianness detection may be ignored during
+# Apple universal builds, see lo/lo_endian.h.in
+LO_BIGENDIAN="2"
 AC_C_BIGENDIAN([LO_BIGENDIAN="1"], [LO_BIGENDIAN="0"])
 AC_DEFINE_UNQUOTED(LO_BIGENDIAN, "$LO_BIGENDIAN", [If machine is bigendian])
 AC_SUBST(LO_BIGENDIAN)
