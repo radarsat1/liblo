@@ -114,6 +114,10 @@ do
   fi
 done
 
+if ( echo "$@" | grep -q -e "--no-configure" ); then
+  NOCONFIGURE=1
+fi
+
 conf_flags="--enable-maintainer-mode --enable-debug --disable-silent-rules"
 
 if test x$NOCONFIGURE = x; then
