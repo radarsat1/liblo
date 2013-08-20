@@ -116,9 +116,27 @@ static LO_INLINE uint64_t lo_swap64(uint64_t x)
 #undef LO_INLINE
 #endif
 
-/* Host to OSC and OSC to Host conversion macros */
+/* When compiling for an Apple universal build, allow compile-time
+ * macros to override autoconf endianness settings. */
+#ifdef LO_BIGENDIAN
+#undef LO_BIGENDIAN
+#endif
+#if @LO_BIGENDIAN@ == 2
+#ifdef __BIG_ENDIAN__
+#define LO_BIGENDIAN 1
+#else
+#ifdef __LITTLE_ENDIAN__
+#define LO_BIGENDIAN 0
+#else
+#error Unknown endianness during Apple universal build.
+#endif
+#endif
+#else
+#define LO_BIGENDIAN @LO_BIGENDIAN@
+#endif
 
-#if @LO_BIGENDIAN@
+/* Host to OSC and OSC to Host conversion macros */
+#if LO_BIGENDIAN
 #define lo_htoo16(x) (x)
 #define lo_htoo32(x) (x)
 #define lo_htoo64(x) (x)

@@ -31,10 +31,13 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "lo_types_internal.h"
 #include "lo_internal.h"
 #include "lo/lo.h"
-#include "config.h"
 
 #if defined(WIN32) || defined(_MSC_VER)
 #define PATHDELIM "\\"

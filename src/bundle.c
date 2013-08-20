@@ -208,6 +208,11 @@ lo_message lo_bundle_get_message(lo_bundle b, int index,
     return 0;
 }
 
+lo_timetag lo_bundle_get_timestamp(lo_bundle b)
+{
+    return b->ts;
+}
+
 unsigned int lo_bundle_count(lo_bundle b)
 {
     return b->len;

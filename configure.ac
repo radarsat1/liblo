@@ -43,12 +43,23 @@ AM_PROG_CC_C_O
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
 AC_SUBST(DOXYGEN)
 
+# If we can add -Qunused-arguments, add it.
+# This error occurs when ccache and clang are used together.
+AC_MSG_CHECKING([whether to add -Qunused-arguments])
+_CFLAGS="$CFLAGS"
+CFLAGS="$_CFLAGS -Qunused-arguments"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([],[])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+   CFLAGS="$_CFLAGS"])
+
 # Since we don't require C99, format code for long long int can vary
 # in some compilers.  (In particular, MingW seems to require "I64"
 # instead of "ll")
 AC_MSG_CHECKING([how to print long long int])
 _CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Werror -Wall"
+CFLAGS="$_CFLAGS -Werror -Wall"
 AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM([#include <stdio.h>],[printf("%lld", (long long int)0);])],
     [printf_ll=\"ll\"],
@@ -115,6 +126,9 @@ AC_CHECK_FUNC([inet_pton], [AC_DEFINE(HAVE_INET_PTON, [1], [Define to 1 if inet_
 AM_CONDITIONAL(WINDOWS, test x$is_windows = xyes)
 AM_CONDITIONAL(WINDOWS_DLL, test x$is_windows = xyes && test x$enable_shared = xyes)
 
+# Note that configure-time endianness detection may be ignored during
+# Apple universal builds, see lo/lo_endian.h.in
+LO_BIGENDIAN="2"
 AC_C_BIGENDIAN([LO_BIGENDIAN="1"], [LO_BIGENDIAN="0"])
 AC_DEFINE_UNQUOTED(LO_BIGENDIAN, "$LO_BIGENDIAN", [If machine is bigendian])
 AC_SUBST(LO_BIGENDIAN)
