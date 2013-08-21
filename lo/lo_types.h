@@ -79,8 +79,8 @@ typedef void *lo_method;
 /**
  * \brief An object representing an instance of an OSC server.
  *
- * Created by calls to lo_server_new(). If you with the library to take care of
- * the threading as well you can just use server threads instead.
+ * Created by calls to lo_server_new(). If you wish to have the server
+ * operate in a background thread, use lo_server_thread instead.
  */
 typedef void *lo_server;
 
@@ -122,9 +122,9 @@ typedef void (*lo_err_handler)(int num, const char *msg, const char *where);
  * will match those and the incoming types will have been coerced to match,
  * otherwise it will be the types of the arguments of the incoming message.
  * \param argv An array of lo_arg types containing the values, e.g. if the
- * first argument of the incoming message is of type 'f' then the vlaue will be
+ * first argument of the incoming message is of type 'f' then the value will be
  * found in argv[0]->f.
- * \param argc The number of argumets received.
+ * \param argc The number of arguments received.
  * \param msg A structure containing the original raw message as received. No
  * type coercion will have occured and the data will be in OSC byte order
  * (bigendian).

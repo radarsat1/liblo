@@ -524,7 +524,7 @@ int lo_bundle_add_bundle(lo_bundle b, lo_bundle n);
 /**
  * \brief  Return the length of a bundle in bytes.
  *
- * Includes the marker and typetage length.
+ * Includes the marker and typetag length.
  *
  * \param b The bundle to be sized
  */
