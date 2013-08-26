@@ -197,11 +197,9 @@ static int lo_server_setsock_reuseaddr(lo_server s)
     return 0;
 }
 
-#if 0
 static int lo_server_setsock_reuseport(lo_server s)
 {
 #ifdef SO_REUSEPORT
-    unsigned int yes = 1;
     if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEPORT,
                    &yes, sizeof(yes)) < 0) {
         int err = geterror();
@@ -211,7 +209,6 @@ static int lo_server_setsock_reuseport(lo_server s)
 #endif
     return 0;
 }
-#endif
 
 lo_server lo_server_new(const char *port, lo_err_handler err_h)
 {
@@ -488,6 +485,12 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                 lo_server_free(s);
                 return NULL;
             }
+        }
+
+        if (group != NULL)
+        {
+            /* Ignore the error if SO_REUSEPORT wasn't successful. */
+            lo_server_setsock_reuseport(s);
         }
 
 #if defined(WIN32) || defined(_MSC_VER)
