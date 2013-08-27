@@ -200,6 +200,7 @@ static int lo_server_setsock_reuseaddr(lo_server s)
 static int lo_server_setsock_reuseport(lo_server s)
 {
 #ifdef SO_REUSEPORT
+    unsigned int yes = 1;
     if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEPORT,
                    &yes, sizeof(yes)) < 0) {
         int err = geterror();
