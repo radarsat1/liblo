@@ -52,9 +52,10 @@ extern "C" {
  *
  * The lo_address object may be used as the target of OSC messages.
  *
- * Note: if you wish to receive replies from the target of this address, you
- * must first create a lo_server_thread or lo_server object which will receive
- * the replies. The last lo_server(_thread) object creted will be the receiver.
+ * Note: if you wish to receive replies from the target of this
+ * address, you must first create a lo_server_thread or lo_server
+ * object which will receive the replies. The last lo_server(_thread)
+ * object craeted will be the receiver.
  */
 lo_address lo_address_new(const char *host, const char *port);
 
@@ -68,9 +69,10 @@ lo_address lo_address_new(const char *host, const char *port);
  *
  * The lo_address object may be used as the target of OSC messages.
  *
- * Note: if you wish to receive replies from the target of this address, you
- * must first create a lo_server_thread or lo_server object which will receive
- * the replies. The last lo_server(_thread) object creted will be the receiver.
+ * Note: if you wish to receive replies from the target of this
+ * address, you must first create a lo_server_thread or lo_server
+ * object which will receive the replies. The last lo_server(_thread)
+ * object created will be the receiver.
  */
 lo_address lo_address_new_with_proto(int proto, const char *host, const char *port);
 
@@ -127,7 +129,7 @@ int lo_send(lo_address targ, const char *path, const char *type, ...);
 
 /**
  * \brief Send a OSC formatted message to the address specified, 
- * from the same socket as the specificied server.
+ * from the same socket as the specified server.
  *
  * \param targ The target OSC address
  * \param from The server to send message from   (can be NULL to use new socket)
