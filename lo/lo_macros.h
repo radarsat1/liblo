@@ -36,13 +36,8 @@ extern "C" {
 
 /* an internal value, ignored in transmission but check against LO_MARKER in the
  * argument list. Used to do primitive bounds checking */
-#ifdef __LP64__
-#	define LO_MARKER_A (void *)0xdeadbeefdeadbeef
-#	define LO_MARKER_B (void *)0xf00baa23f00baa23
-#else /*__LP64__*/  
-#	define LO_MARKER_A (void *)0xdeadbeef
-#	define LO_MARKER_B (void *)0xf00baa23
-#endif
+#	define LO_MARKER_A (void *)0xdeadbeefdeadbeefL
+#	define LO_MARKER_B (void *)0xf00baa23f00baa23L
 
 #define LO_ARGS_END LO_MARKER_A, LO_MARKER_B
 
