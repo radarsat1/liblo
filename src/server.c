@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <float.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <fcntl.h>
 
 #ifdef _MSC_VER
