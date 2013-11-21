@@ -77,6 +77,15 @@ AC_ARG_ENABLE(threads,
   [want_threads=$enableval],
   [want_threads=yes])
 
+# Filter out -Werror temporarily, otherwise library checks can fail
+CFLAGS_nowerror="`echo $CFLAGS | sed s/-Werror//`"
+if test "$CFLAGS" = "$CFLAGS_nowerror"; then
+  CFLAGS_werror=
+else
+  CFLAGS_werror=" -Werror"
+  CFLAGS="$CFLAGS_nowerror"
+fi
+
 # Checks for libraries.
 AC_SEARCH_LIBS([recvfrom], [socket])
 AC_CHECK_FUNC([log], [], [AC_CHECK_LIB([m],[log])])
@@ -91,6 +100,9 @@ if test "x$want_threads" = "xyes"; then
      AC_DEFINE(ENABLE_THREADS, 1, [Define this to enable threads.])],
     [AC_MSG_ERROR(pthread not found. Try option --disable-threads.)])
 fi
+
+# Add back -Werror if it was there before
+CFLAGS="$CFLAGS""$CFLAGS_werror"
 
 AC_SUBST(LIBPTHREAD)
 AC_SUBST(DEFTHREADS)
