@@ -1376,6 +1376,9 @@ void test_tcp_halfsend(int stream_type)
         msg = slipmsg;
         msglen = sizeof(slipmsg);
         break;
+    default:
+        closesocket(sock);
+        return;
     }
 
     if (0)
