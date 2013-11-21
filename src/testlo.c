@@ -145,6 +145,7 @@ int main()
     int proto;
     char cmd[256];
     const char *p;
+    int i, rc;
 
     test_deserialise();
 
@@ -521,11 +522,18 @@ int main()
 
     server_url = lo_server_thread_get_url(st);
     sprintf(cmd, "." PATHDELIM "subtest %s &", server_url);
-    if (system(cmd) != 0) {
-        fprintf(stderr, "Cannot execute subtest command\n");
-        exit(1);
+    for (i=0; i<2; i++) {
+        rc = system(cmd);
+        if (rc == -1) {
+            fprintf(stderr, "Cannot execute subtest command (%d)\n", i);
+            exit(1);
+        }
+        else if (rc > 0) {
+            fprintf(stderr, "subtest command returned %d\n", rc);
+            exit(1);
+        }
     }
-    system(cmd);
+        
     free(server_url);
 
 #if defined(WIN32) || defined(_MSC_VER)
@@ -636,7 +644,6 @@ int main()
     {
         lo_timetag stamps[JITTER_ITS];
         lo_timetag now;
-        int i;
 
         for (i = 0; i < JITTER_ITS; i++) {
             lo_timetag_now(&now);
