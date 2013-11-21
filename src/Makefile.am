@@ -27,8 +27,10 @@ liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 # disabled.
 if ENABLE_THREADS
 noinst_PROGRAMS = testlo subtest test_bidirectional_tcp
+TESTS = testlo test_bidirectonal_tcp
 if HAVE_LAMBDA
 noinst_PROGRAMS += cpp_test
+TESTS += cpp_test
 endif
 endif
 
@@ -49,8 +51,7 @@ cpp_test_SOURCES = cpp_test.cpp
 cpp_test_LDADD = liblo.la
 
 test: all
-	./testlo
-	./test_bidirectional_tcp
+	for i in $(TESTS); do echo $$i; ./$$i; done
 
 memtest: all
 	LD_LIBRARY_PATH=.libs valgrind --tool=memcheck .libs/testlo
