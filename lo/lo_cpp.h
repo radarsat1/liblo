@@ -547,6 +547,8 @@ namespace lo {
       protected:
         lo_server server;
 
+        friend class ServerThread;
+
         class handler {};
         template <typename T>
         class handler_type : public handler, public std::function<T> {
