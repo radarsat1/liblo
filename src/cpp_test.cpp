@@ -213,4 +213,5 @@ int main()
 
     sleep(1);
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
+    return a.get_errno();
 }
