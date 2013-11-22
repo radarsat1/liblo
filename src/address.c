@@ -324,6 +324,9 @@ const char *lo_address_errstr(lo_address a)
         return a->errstr;
     }
 
+    if (a->errnum == 0)
+        return "Success";
+
     msg = strerror(a->errnum);
     if (msg) {
         return msg;
