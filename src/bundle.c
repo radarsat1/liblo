@@ -250,6 +250,8 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
     lo_pcast32 be;
 
     if (!b) {
+        if (size)
+            *size = 0;
         return NULL;
     }
 
