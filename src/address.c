@@ -254,6 +254,9 @@ char *lo_address_get_url(lo_address a)
     if (!a->host)
         lo_address_resolve_source(a);
 
+    if (!a->host)
+		return NULL;
+
     needquote = strchr(a->host, ':') ? 1 : 0;
 
     if (needquote) {
