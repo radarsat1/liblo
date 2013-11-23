@@ -27,7 +27,7 @@ liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 # disabled.
 if ENABLE_THREADS
 noinst_PROGRAMS = testlo subtest test_bidirectional_tcp
-TESTS = testlo test_bidirectonal_tcp
+TESTS = testlo test_bidirectional_tcp
 if HAVE_LAMBDA
 noinst_PROGRAMS += cpp_test
 TESTS += cpp_test
