@@ -647,7 +647,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
             int err = geterror();
             lo_throw(s, err, strerror(err), "inet_aton()");
             lo_server_free(s);
-            return err;
+            return err ? err : 1;
         }
 #else
         mreq.imr_multiaddr.s_addr = inet_addr(group);
@@ -656,7 +656,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
             int err = geterror();
             lo_throw(s, err, strerror(err), "inet_addr()");
             lo_server_free(s);
-            return err;
+            return err ? err : 1;
         }
 #endif
     }
@@ -678,7 +678,7 @@ int lo_server_join_multicast_group(lo_server s, const char *group,
         int err = geterror();
         lo_throw(s, err, strerror(err), "setsockopt(IP_ADD_MEMBERSHIP)");
         lo_server_free(s);
-        return err;
+        return err ? err : 1;
     }
 
     return 0;
