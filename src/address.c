@@ -533,10 +533,8 @@ void lo_address_copy(lo_address to, lo_address from)
     to->protocol = from->protocol;
     to->ttl = from->ttl;
     to->addr = from->addr;
-    if (from->addr.iface) {
-        free(to->addr.iface);
+    if (from->addr.iface)
         to->addr.iface = strdup(from->addr.iface);
-    }
 }
 
 void lo_address_init_with_sockaddr(lo_address a,
