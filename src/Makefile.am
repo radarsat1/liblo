@@ -51,7 +51,7 @@ cpp_test_SOURCES = cpp_test.cpp
 cpp_test_LDADD = liblo.la
 
 test: all
-	for i in $(TESTS); do echo $$i; ./$$i; done
+	for i in $(TESTS); do echo Running $$i; if ! ./$$i; then exit 1; fi; done
 
 memtest: all
 	LD_LIBRARY_PATH=.libs valgrind --tool=memcheck .libs/testlo
