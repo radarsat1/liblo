@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 
-AC_INIT([liblo],[0.28-rc],[liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo],[0.28rc],[liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
