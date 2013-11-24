@@ -1,4 +1,13 @@
 
+2013-11-24 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix checking of vararg markers on 64-bit systems.
+	* Fix hang in TCP blocking test.
+	* Prevent potential bugs through static analysis.
+	* Add function lo_bundle_get_timestamp().
+	* Add C++11 wrapper, `lo_cpp.h', and test program.
+	* Support a few more build tools: clang/clang++, ccache.
+	* Fix typos in public headers.
+
 2013-05-22 Stephen Sinclair <radarsat1@gmail.com>
 	* Add release notes for 0.27.
 	* Add functions lo_server_new_from_url() and

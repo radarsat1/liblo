@@ -1,5 +1,33 @@
 
 --------------------------------------------
+2013-11-24: Release candidate 0.28rc
+--------------------------------------------
+
+This is a release candidate 0.28rc of LibLo, the lightweight, easy to
+use implementation of the Open Sound Control protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+This is mainly a bugfix release due to some deal breakers that
+unfortunately made it through to the 0.27 release.  Additionally, this
+is the first release to include a modern C++11 object-oriented wrapper
+for the LibLo API.  Please test!
+
+Important bug fixes:
+
+- Fixed checking of vararg markers on 64-bit systems
+- Fixed hang in TCP blocking test
+- Several potential bugs prevented through static analysis
+
+Additional changes:
+
+- Add function lo_bundle_get_timestamp()
+- Add C++11 wrapper, `lo_cpp.h', and test program
+- Support for a few more build tools: clang/clang++, ccache
+
+--------------------------------------------
 2013-05-22: Release 0.27
 --------------------------------------------
 
