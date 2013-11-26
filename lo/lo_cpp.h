@@ -135,7 +135,7 @@ namespace lo {
             lo_message m = lo_message_new();
             std::string t = std::string(type) + "$$";
             lo_message_add_varargs(m, t.c_str(), q);
-            int r = lo_send_message_from(from, address, path, m);
+            int r = lo_send_message_from(address, from, path, m);
             lo_message_free(m);
             return r;
         }
