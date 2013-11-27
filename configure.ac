@@ -106,7 +106,7 @@ AC_ARG_ENABLE(threads,
   [want_threads=yes])
 
 # Filter out -Werror temporarily, otherwise library checks can fail
-CFLAGS_nowerror="`echo $CFLAGS | sed s/-Werror//`"
+CFLAGS_nowerror="`echo $CFLAGS | sed 's/-Werror\([^=]\|$\)//'`"
 if test "$CFLAGS" = "$CFLAGS_nowerror"; then
   CFLAGS_werror=
 else
