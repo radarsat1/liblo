@@ -117,7 +117,7 @@ namespace lo {
             lo_bundle b = lo_bundle_new(ts);
             lo_bundle_add_message(b, path, m);
             int r = lo_send_bundle(address, b);
-            lo_bundle_free_messages(m);
+            lo_bundle_free_messages(b);
             return r;
         }
 
@@ -151,7 +151,7 @@ namespace lo {
             lo_message_add_varargs(m, t.c_str(), q);
             lo_bundle b = lo_bundle_new(ts);
             lo_bundle_add_message(b, path, m);
-            int r = lo_send_bundle_from(from, address, b);
+            int r = lo_send_bundle_from(address, from, b);
             lo_bundle_free_messages(b);
             return r;
         }

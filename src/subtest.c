@@ -28,7 +28,7 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
 
 int main(int argc, char *argv[])
 {
-    lo_server st = lo_server_thread_new(NULL, NULL);
+    lo_server_thread st = lo_server_thread_new(NULL, NULL);
     lo_address t;
 
     if (argc != 2) {
