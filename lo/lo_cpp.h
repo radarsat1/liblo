@@ -63,6 +63,8 @@ namespace lo {
         std::unique_ptr<std::string> _p;
     };
 
+    class ServerThread;
+
     class Address
     {
       public:
@@ -126,6 +128,9 @@ namespace lo {
 
         int send(lo_bundle b)
             { return lo_send_bundle(address, b); }
+
+        int send_from(lo::ServerThread &from, const string_type &path,
+                      const string_type &type, ...) const;
 
         int send_from(lo_server from, const string_type &path,
                       const string_type &type, ...) const
@@ -619,6 +624,23 @@ namespace lo {
             lo_server_thread_add_method(server_thread, path, types, h, data);
         }
     };
+
+	// This function needed since lo::ServerThread doesn't
+	// properly auto-upcast to lo::Server -> lo_server.  (Because
+	// both lo_server and lo_serverthread are typedef'd as void*)
+	int Address::send_from(lo::ServerThread &from, const string_type &path,
+						   const string_type &type, ...) const
+	{
+		va_list q;
+		va_start(q, type);
+		lo_message m = lo_message_new();
+		std::string t = std::string(type) + "$$";
+		lo_message_add_varargs(m, t.c_str(), q);
+		lo_server s = static_cast<lo::Server&>(from);
+		int r = lo_send_message_from(address, s, path, m);
+		lo_message_free(m);
+		return r;
+	}
 
     class Blob
     {
