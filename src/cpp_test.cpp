@@ -6,7 +6,9 @@
 #include <array>
 #include <vector>
 
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include <lo/lo.h>
 #include <lo/lo_cpp.h>
@@ -211,7 +213,11 @@ int main()
     // Memory for lo_message is copied
     lo::Message m4 = m2.second.clone();
 
+#ifdef WIN32
+    Sleep(1000);
+#else
     sleep(1);
+#endif
     printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
     return a.get_errno();
 }
