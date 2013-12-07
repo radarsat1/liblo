@@ -1527,8 +1527,8 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
         if (!sp)
             return -1;
-        s->sockets = (void*)sp;
-        memset(sp + s->sockets_alloc*sizeof(*s->sockets),
+        s->sockets = sp;
+        memset((char*)sp + s->sockets_alloc*sizeof(*s->sockets),
                0, s->sockets_alloc*sizeof(*s->sockets));
 
         sc = realloc(s->contexts,
@@ -1536,8 +1536,8 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
                      * (s->sockets_alloc * 2));
         if (!sc)
             return -1;
-        s->contexts = (void*)sc;
-        memset(sc + s->sockets_alloc*sizeof(*s->contexts),
+        s->contexts = sc;
+        memset((char*)sc + s->sockets_alloc*sizeof(*s->contexts),
                0, s->sockets_alloc*sizeof(*s->contexts));
 
         s->sockets_alloc *= 2;
