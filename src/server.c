@@ -26,14 +26,15 @@
 #include <errno.h>
 #include <float.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <fcntl.h>
 
 #ifdef _MSC_VER
 #define _WINSOCKAPI_
 #define snprintf _snprintf
+#include <time.h>
 #else
 #include <unistd.h>
+#include <sys/time.h>
 #endif
 
 #if defined(WIN32) || defined(_MSC_VER)
