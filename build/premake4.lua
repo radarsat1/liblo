@@ -89,6 +89,12 @@
 
   text = string.gsub(text, '/%*VERSION%*/', '"'..version..'"')
 
+  if _OPTIONS["without-threads"] then
+    text = string.gsub(text, '@DEFTHREADS@', '// ')
+  else
+    text = string.gsub(text, '@DEFTHREADS@', '')
+  end
+
   io.output("../config.h")
   io.write(text)
   io.close()
