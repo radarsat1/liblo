@@ -1226,9 +1226,10 @@ void test_validation(lo_address a)
 #endif
     if (sock == -1) {
         fprintf(stderr,
-                "Couldn't get socket in test_validation(), %s:%d\n",
+                "Warning: Couldn't get socket in test_validation(), "
+                "lo_client_sockets.udp not supported on Windows, %s:%d\n",
                 __FILE__, __LINE__);
-        exit(1);
+        return;
     }
 
     error_okay = 1;
