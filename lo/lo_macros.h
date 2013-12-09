@@ -50,13 +50,7 @@ extern "C" {
 #endif
 #endif
 
-#ifdef DLL_EXPORT
-#ifndef USE_ANSI_C
-#define USE_ANSI_C
-#endif
-#endif
-
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 
 /* In non-GCC compilers, there is no support for variable-argument
  * macros, so provide "internal" vararg functions directly instead. */

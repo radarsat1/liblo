@@ -17,7 +17,7 @@
 #include "lo_types_internal.h"
 #include "lo/lo.h"
 
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 lo_timetag lo_get_tt_immediate()
 {
     lo_timetag tt = { 0U, 1U };

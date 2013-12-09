@@ -96,7 +96,7 @@ int lo_send_varargs_internal(lo_address t, const char *file,
     return ret;
 }
 
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 int lo_send(lo_address t, const char *path, const char *types, ...)
 {
     const char *file = "";
@@ -145,7 +145,7 @@ int lo_send_timestamped_varargs_internal(lo_address t, const char *file,
 }
 
 
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 int lo_send_timestamped(lo_address t, lo_timetag ts,
                         const char *path, const char *types, ...)
 {
@@ -206,7 +206,7 @@ int lo_send_from_varargs_internal(lo_address to, lo_server from,
     return ret;
 }
 
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
                  const char *path, const char *types, ...)
 {

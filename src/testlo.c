@@ -493,6 +493,7 @@ int main()
           'Y', LO_ARGS_END) == 0);
 
 #ifdef __GNUC__
+#ifndef USE_ANSI_C
     // Note: Lack of support for variable-argument macros in non-GCC compilers
     //       does not allow us to test for these conditions.
 
@@ -505,6 +506,7 @@ int main()
          (a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
           btest, midi_data, 0x0123456789abcdefULL, tt, 0.5,
           LO_ARGS_END) != 0);
+#endif
 #endif
 
     // test lo_message_add

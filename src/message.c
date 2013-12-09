@@ -287,7 +287,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
     return ret;
 }
 
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 int lo_message_add(lo_message msg, const char *types, ...)
 {
     va_list ap;

@@ -149,14 +149,8 @@ typedef union {
 #endif
 #endif
 
-#ifdef DLL_EXPORT
-#ifndef USE_ANSI_C
-#define USE_ANSI_C
-#endif
-#endif
-
 /** \brief A timetag constant representing "now". */
-#ifdef USE_ANSI_C
+#if defined(USE_ANSI_C) || defined(DLL_EXPORT)
 lo_timetag lo_get_tt_immediate();
 #define LO_TT_IMMEDIATE lo_get_tt_immediate()
 #else // !USE_ANSI_C
