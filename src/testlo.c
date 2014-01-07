@@ -41,8 +41,10 @@
 
 #if defined(WIN32) || defined(_MSC_VER)
 #define PATHDELIM "\\"
+#define EXTEXE ".exe"
 #else
 #define PATHDELIM "/"
+#define EXTEXE ""
 #endif
 
 #ifndef MSG_NOSIGNAL
@@ -523,7 +525,7 @@ int main()
     lo_send(a, "/pattern/ba[rz]", "s", "b");
 
     server_url = lo_server_thread_get_url(st);
-    sprintf(cmd, "." PATHDELIM "subtest %s &", server_url);
+    sprintf(cmd, "." PATHDELIM "subtest" EXTEXE " %s &", server_url);
     for (i=0; i<2; i++) {
         rc = system(cmd);
         if (rc == -1) {
