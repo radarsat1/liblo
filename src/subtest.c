@@ -28,8 +28,12 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
 
 int main(int argc, char *argv[])
 {
-    lo_server_thread st = lo_server_thread_new(NULL, NULL);
+    lo_server_thread st;
     lo_address t;
+
+    printf("entered subtest\n");
+
+    st = lo_server_thread_new(NULL, NULL);
 
     if (argc != 2) {
         fprintf(stderr, "Usage: subtest <uri>\n");
@@ -40,6 +44,7 @@ int main(int argc, char *argv[])
     lo_server_thread_add_method(st, NULL, "i", subtest_handler, NULL);
     lo_server_thread_start(st);
 
+    printf("subtest: creating new address `%s'\n", argv[1]);
     t = lo_address_new_from_url(argv[1]);
     lo_send(t, "/subtest", "i", 0xf00);
 

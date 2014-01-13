@@ -525,7 +525,34 @@ int main()
     lo_send(a, "/pattern/ba[rz]", "s", "b");
 
     server_url = lo_server_thread_get_url(st);
-    sprintf(cmd, "." PATHDELIM "subtest" EXTEXE " %s &", server_url);
+
+#ifdef WIN32
+    {
+        char cwd[2048];
+        getcwd(cwd, 2048);
+        sprintf(cmd, "%s" PATHDELIM "subtest" EXTEXE, cwd);
+    }
+    printf("spawning subtest with `%s'\n", cmd);
+    for (i=0; i<2; i++) {
+        rc = _spawnl( _P_NOWAIT, cmd, cmd, server_url, NULL );
+        int j=0;
+        if (rc == -1) {
+            fprintf(stderr, "Cannot execute subtest command (%d)\n", i);
+            exit(1);
+        }
+        else while (subtest_count < 1 && j < 20) {
+            Sleep(100);
+            j++;
+        }
+        if (j >= 20) {
+            fprintf(stderr, "Never got a message from subtest (%d) "
+                    "after 2 seconds.\n", i);
+            exit(1);
+        }
+    }
+#else
+    sprintf(cmd, "." PATHDELIM "subtest" EXTEXE " %s", server_url);
+    printf("executing subtest with `%s'\n", cmd);
     for (i=0; i<2; i++) {
         rc = system(cmd);
         if (rc == -1) {
@@ -537,7 +564,8 @@ int main()
             exit(1);
         }
     }
-        
+#endif
+
     free(server_url);
 
 #if defined(WIN32) || defined(_MSC_VER)
