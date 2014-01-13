@@ -426,7 +426,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         if (!port) {
             /* not a good way to get random numbers, but its not critical */
             snprintf(pnum, 15, "%ld", 10000 + ((unsigned int) rand() +
-                                               time(NULL)) % 10000);
+                                               (long int)time(NULL)) % 10000);
         }
 
         if (ai)
