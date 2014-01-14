@@ -204,7 +204,7 @@ int main()
     }
     else {
         printf("Unexpected failure in deserialise(): %d\n", m2.first);
-        exit(1);
+        return 1;
     }
 
     // Memory for lo_message not copied
