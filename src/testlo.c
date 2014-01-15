@@ -31,6 +31,11 @@
 #include <unistd.h>
 #endif
 
+#ifdef WIN32
+#include <process.h>
+#include <direct.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -529,13 +534,13 @@ int main()
 #ifdef WIN32
     {
         char cwd[2048];
-        getcwd(cwd, 2048);
+        _getcwd(cwd, 2048);
         sprintf(cmd, "%s" PATHDELIM "subtest" EXTEXE, cwd);
     }
     printf("spawning subtest with `%s'\n", cmd);
     for (i=0; i<2; i++) {
-        rc = _spawnl( _P_NOWAIT, cmd, cmd, server_url, NULL );
         int j=0;
+        rc = _spawnl( _P_NOWAIT, cmd, cmd, server_url, NULL );
         if (rc == -1) {
             fprintf(stderr, "Cannot execute subtest command (%d)\n", i);
             exit(1);
