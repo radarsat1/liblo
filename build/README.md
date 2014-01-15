@@ -48,14 +48,16 @@ Building liblo for Android
 --------------------------
 
 The `build` directory contains a script called `android_build.sh`.
-Ensure that the following two variables at the top of the script
-conform to where you have installed the Android NDK, and to the
-platform you wish to target.
+Ensure that the variables at the top of the script conform to where
+you have installed the Android NDK, and to the platform you wish to
+target.
 
 The default values are:
 
-    ANDROID_NDK_PATH=$HOME/android-ndk-r7b
-    ANDROID_PLATFORM=9
+    ANDROID_NDK_PATH=$HOME/android-ndk-r9c
+    ANDROID_PLATFORM=19
+    ANDROID_ARCH=arm
+    ANDROID_TOOLCHAIN=arm-linux-androideabi-4.8
 
 Then, run the script from the `build` directory:
 
