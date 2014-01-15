@@ -15,7 +15,12 @@ AC_INIT([liblo],[0.28rc],[liblo-devel@lists.sourceforge.net])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-LO_SO_VERSION=8:0:1
+m4_define([lt_current], 8)
+m4_define([lt_revision], 0)
+m4_define([lt_age], 1)
+
+m4_define([lt_version_info], [lt_current:lt_revision:lt_age])
+m4_define([lt_current_minus_age], [m4_eval(lt_current - lt_age)])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/address.c])
@@ -27,7 +32,12 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_ENABLE_STATIC(no)
 AC_ENABLE_SHARED(yes)
+LO_SO_VERSION=lt_version_info
 AC_SUBST(LO_SO_VERSION)
+LT_CURRENT_MINUS_AGE=lt_current_minus_age
+AC_SUBST(LT_CURRENT_MINUS_AGE)
+DLL_NAME=liblo-${LT_CURRENT_MINUS_AGE}.dll
+AC_SUBST(DLL_NAME)
 
 # disable support for ipv6.
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           Enable ipv6 support],[want_ipv6=$enableval],)

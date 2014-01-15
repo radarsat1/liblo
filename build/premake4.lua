@@ -117,6 +117,8 @@
     text = string.gsub(text, '@DEFTHREADS@', '')
   end
 
+  text = string.gsub(text, ' @DLL_NAME@', '')
+
   io.output("../src/liblo.def")
   io.write(text)
   io.close()

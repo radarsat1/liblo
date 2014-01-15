@@ -1,4 +1,4 @@
-LIBRARY
+LIBRARY @DLL_NAME@
 DESCRIPTION 'Lightweight OSC implementation'
 EXPORTS
     lo_address_errno                       @1
