@@ -31,6 +31,11 @@
         description = "Disable lo_server_thread functions, no need for pthread."
 }
 
+    newoption {
+        trigger     = "pthreads",
+	description = "Specify the location of the pthreads-w32 library."
+    }
+
     includedirs {
       "../lo",
       "../src"
@@ -182,6 +187,9 @@
 
     configuration { "not without-threads" }
       links { "pthreadVC2" }
+      if (_OPTIONS["pthreads"]) then
+        includedirs { _OPTIONS["pthreads"] }
+      end
 
     configuration { "*Lib" }
       kind    "StaticLib"
@@ -232,6 +240,12 @@
       
     configuration { "Release*" }
       links { "liblo" }
+
+    configuration { "not without-threads" }
+      links { "pthreadVC2" }
+      if (_OPTIONS["pthreads"]) then
+        includedirs { _OPTIONS["pthreads"] }
+      end
 
   project "subtest"
   

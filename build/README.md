@@ -23,9 +23,9 @@ Once `premake4.exe` is copied to the `build` directory, open a
 `cmd.exe` prompt and `cd` to the `build` directory.
 Then, run `premake4` with arguments specifying the version of
 Microsoft Visual Studio you wish to use.
-For example, for MSVS 2008:
+For example, for MSVS 2010:
 
-    > premake4 vs2008
+    > premake4 vs2010
 
 You may provide the `--without-threads` option if you wish to exclude
 support for liblo's `lo_server_thread` API, which can be helpful if you
@@ -34,7 +34,15 @@ This can be found at,
 
     http://sourceware.org/pthreads-win32/
 
-Unfortunately liblo does not yet support the Win32 thread API.
+You should specify the location of this library using the `--pthreads`
+option to premake4, e.g.:
+
+    > premake4 --pthreads=C:/Libraries/pthreads-w32-2-9-1-release vs2010
+
+Unfortunately liblo does not yet support the Win32 thread API, so
+pthreads-w32 is required for lo_server_thread functionality. Note that
+test programs (`subtest.exe`, `testlo.exe`) will not be built without
+threading enabled.
 
 Building liblo for Android
 --------------------------
