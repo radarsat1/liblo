@@ -1,9 +1,10 @@
 
+
 Building liblo for other platforms
 ==================================
 
-This document describes how to build liblo for platforms that do not
-support GNU automake.
+This document describes how to build liblo for platforms that require
+special configuration.
 
 Building liblo for Microsoft Visual Studio
 ------------------------------------------
