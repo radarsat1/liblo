@@ -49,6 +49,31 @@ ANDROID_NDK_TOOLCHAIN=$ANDROID_NDK_PATH/toolchains/$ANDROID_TOOLCHAIN/prebuilt/$
 ANDROID_NDK_PLATFORM=$ANDROID_NDK_PATH/platforms/android-$ANDROID_PLATFORM/arch-$ANDROID_ARCH
 ANDROID_NDK_HOST=$ANDROID_ARCH-linux-androideabi
 
+# Sanity checks before getting into configure/make
+if ! [ -x $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc ]; then
+  echo "C compiler not found,"
+  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc
+  exit 1
+fi
+
+if ! [ -x $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++ ]; then
+  echo "C++ compiler not found,"
+  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++
+  exit 1
+fi
+
+if ! $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc -v 2>/dev/null; then
+  echo "C compiler would not run,"
+  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc
+  exit 1
+fi
+
+if ! $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++ -v 2>/dev/null; then
+  echo "C compiler would not run,"
+  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++
+  exit 1
+fi
+
 # Also, if you get errors about an unrecognized configuration, you
 # need a recent version of config.sub and config.guess, available at:
 # http://git.savannah.gnu.org/gitweb/?p=config.git;a=tree
