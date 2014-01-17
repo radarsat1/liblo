@@ -7,17 +7,29 @@ ANDROID_PLATFORM=19
 ANDROID_ARCH=arm
 ANDROID_TOOLCHAIN=arm-linux-androideabi-4.8
 
+case $(uname -m) in
+*i[3456]86*)
+BITS=x86
+ ;;
+*x86_64*)
+BITS=x86_64
+ ;;
+*)
+echo Couldn\'t determine bitness of kernel.
+exit 1
+esac
+
 case $(uname) in
 
 # ---- Linux
 *Linux*)
-ANDROID_BUILD_PLATFORM=linux-$(uname -p)
+ANDROID_BUILD_PLATFORM=linux-$BITS
 GCC_BUILD_PLATFORM=i686-pc-linux-gnu
  ;;
 
 *Darwin*)
 # ---- Darwin
-ANDROID_BUILD_PLATFORM=darwin-$(uname -p)
+ANDROID_BUILD_PLATFORM=darwin-$BITS
 GCC_BUILD_PLATFORM=i686-apple-darwin11
  ;;
 
