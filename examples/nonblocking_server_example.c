@@ -4,7 +4,7 @@
  *  This code demonstrates two methods of monitoring both an lo_server
  *  and other I/O from a single thread.
  *
- *  Copyright (C) 2004 Steve Harris, Uwe Koloska
+ *  Copyright (C) 2014 Steve Harris et al. (see AUTHORS)
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as

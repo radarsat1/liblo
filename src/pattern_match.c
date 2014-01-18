@@ -1,3 +1,21 @@
+/*
+ *  Copyright (C) 2014 Steve Harris et al. (see AUTHORS)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as
+ *  published by the Free Software Foundation; either version 2.1 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  $Id$
+ */
+
+/* This code was originally forked from: */
+
 /* Open SoundControl kit in C++                                              */
 /* Copyright (C) 2002-2004 libOSC++ contributors. See AUTHORS                */
 /*                                                                           */
