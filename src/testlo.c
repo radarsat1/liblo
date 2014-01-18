@@ -134,6 +134,8 @@ int test_varargs(lo_address a, const char *path, const char *types, ...);
 
 int test_tcp_nonblock();
 
+int test_version();
+
 int main()
 {
     lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
@@ -153,6 +155,8 @@ int main()
     char cmd[256];
     const char *p;
     int i, rc;
+
+    test_version();
 
     test_deserialise();
 
@@ -1029,6 +1033,24 @@ int quit_handler(const char *path, const char *types, lo_arg ** argv,
                  int argc, lo_message data, void *user_data)
 {
     done = 1;
+
+    return 0;
+}
+
+int test_version()
+{
+    int major, minor, lt_maj, lt_min, lt_bug;
+    char extra[256];
+    char string[256];
+
+    lo_version(string, 256,
+               &major, &minor, extra, 256,
+               &lt_maj, &lt_min, &lt_bug);
+
+    printf("liblo version string `%s'\n", string);
+    printf("liblo version: %d.%d%s\n", major, minor, extra);
+    printf("liblo libtool version: %d.%d.%d\n", lt_maj, lt_min, lt_bug);
+    printf("\n");
 
     return 0;
 }

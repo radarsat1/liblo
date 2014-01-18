@@ -39,6 +39,9 @@ AC_SUBST(LT_CURRENT_MINUS_AGE)
 DLL_NAME=liblo-${LT_CURRENT_MINUS_AGE}.dll
 AC_SUBST(DLL_NAME)
 
+AC_DEFINE(LO_SO_VERSION, [{lt_current, lt_revision, lt_age}],
+          [Libtool compatibility version])
+
 # disable support for ipv6.
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           Enable ipv6 support],[want_ipv6=$enableval],)
 if test "$want_ipv6" = "yes"; then
@@ -200,14 +203,14 @@ if test x"$enable_debug" = "xyes"; then
             CF="$CF $i"
         fi
     done
-	CFLAGS="$CF -O0 -g -Wall -Werror"
+	CFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
     CF=""
     for i in $CXXFLAGS; do
         if ! ((test x"$i" = x-g) || (test x"$i" = x-O2)); then
             CF="$CF $i"
         fi
     done
-	CXXFLAGS="$CF -O0 -g -Wall -Werror"
+	CXXFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
 fi
 
 AC_CONFIG_FILES([

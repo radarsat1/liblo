@@ -7,7 +7,7 @@ EXTRA_DIST = liblo.def.in
 noinst_HEADERS = lo_types_internal.h lo_internal.h
 
 SOURCE_FILES = address.c send.c message.c server.c method.c \
-	blob.c bundle.c timetag.c pattern_match.c
+	blob.c bundle.c timetag.c pattern_match.c version.c
 
 if ENABLE_THREADS
 SOURCE_FILES += server_thread.c
