@@ -27,11 +27,11 @@
 #include <float.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <time.h>
 
 #ifdef _MSC_VER
 #define _WINSOCKAPI_
 #define snprintf _snprintf
-#include <time.h>
 #else
 #include <unistd.h>
 #include <sys/time.h>
