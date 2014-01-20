@@ -61,6 +61,9 @@
 /* If machine is bigendian */
 #define LO_BIGENDIAN "0"
 
+/* Libtool compatibility version */
+#define LO_SO_VERSION @LO_SO_VERSION@
+
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 /* #undef NO_MINUS_C_MINUS_O */
 

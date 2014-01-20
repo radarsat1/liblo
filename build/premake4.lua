@@ -84,8 +84,14 @@
   io.input("../configure.ac")
   text = io.read("*all")
   io.close()
-  text = string.sub(text,string.find(text, "AC_INIT.+"))
-  version = string.sub(text,string.find(text, "%d+%.%d+"))
+
+  version = string.match(text, "AC_INIT%(%[liblo%],%[(%d+%.%d+%w+)%]")
+
+  ltcurrent = string.match(text, "m4_define%(%[lt_current%], (%d+)")
+  ltrev = string.match(text, "m4_define%(%[lt_revision%], (%d+)")
+  ltage = string.match(text, "m4_define%(%[lt_age%], (%d+)")
+
+  ltversion = '{' .. ltcurrent .. ', ' .. ltrev .. ', ' .. ltage .. '}'
 
 -- Replace it in "config.h" --
 
@@ -99,6 +105,8 @@
   else
     text = string.gsub(text, '@DEFTHREADS@', '')
   end
+
+  text = string.gsub(text, '@LO_SO_VERSION@', ltversion)
 
   io.output("../config.h")
   io.write(text)
