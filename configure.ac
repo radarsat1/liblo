@@ -58,7 +58,7 @@ AC_SUBST(DOXYGEN)
 
 # If we can add -Qunused-arguments, add it.
 # This error occurs when ccache and clang are used together.
-AC_MSG_CHECKING([whether to add -Qunused-arguments])
+AC_MSG_CHECKING([whether to add -Qunused-arguments (C)])
 _CFLAGS="$CFLAGS"
 CFLAGS="$_CFLAGS -Qunused-arguments"
 AC_COMPILE_IFELSE(
@@ -87,9 +87,9 @@ CFLAGS="$_CFLAGS"
 # Check for C++11 features
 AC_PROG_CXX
 _CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
 
 AC_MSG_CHECKING([whether C++11 lambdas are supported])
-AC_LANG(C++)
 CXXFLAGS="$_CXXFLAGS -std=c++11"
 AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM([#include <functional>],[[[]](std::function<void()> f){f();}([[]](){0;});])],
@@ -109,8 +109,19 @@ AC_COMPILE_IFELSE(
      HAVE_LAMBDA=yes],
     [AC_MSG_RESULT([no])
      CXXFLAGS="$_CXXFLAGS"])])])
-AC_LANG(C)
 AM_CONDITIONAL([HAVE_LAMBDA],[test x$HAVE_LAMBDA = xyes])
+
+# If we can add -Qunused-arguments, add it.
+# This error occurs when ccache and clang are used together.
+AC_MSG_CHECKING([whether to add -Qunused-arguments (C++)])
+_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$_CXXFLAGS -Qunused-arguments"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([],[])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+   CXXFLAGS="$_CXXFLAGS"])
+AC_LANG_POP([C++])
 
 # Check if threads are wanted
 AC_ARG_ENABLE(threads,
