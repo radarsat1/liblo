@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * \file lo.h The liblo main headerfile and high-level API functions.
+ * \file lo_serverthread.h The liblo headerfile declaring thread-related functions.
  */
 
 
