@@ -240,7 +240,7 @@ void *lo_blob_dataptr(lo_blob b);
  * \param extra        Location to receive the library version extra string.
  * \param extra_size   Size of the buffer pointed to by extra.
  * \param lt_major     Location to receive the ABI major version.
- * \param lt_major     Location to receive the ABI minor version.
+ * \param lt_minor     Location to receive the ABI minor version.
  * \param lt_bug       Location to receive the ABI 'bugfix' version.
  */
 void lo_version(char *verstr, int verstr_size,
