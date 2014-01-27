@@ -98,10 +98,24 @@ fixconfigsubguess() {
     cd build
 }
 
+# Check for some known-bad config.sub/config.guess files
+# and replace them if found.
+# (These were found in MingW autoconf 2.68)
+checkconfigsubguess() {
+if (echo "513a0fb7db33b8a0c5ba5345fc70ff62 *../config.sub" \
+	| md5sum --status -c -) \
+|| (echo "513a0fb7db33b8a0c5ba5345fc70ff62 *../config.guess" \
+	| md5sum --status -c -);
+then
+    fixconfigsubguess
+fi
+}
+
 # Uncomment the following line to do the above automatically.  It is
 # not enabled by default because the correct files will be distributed
 # with the tarball.
 #fixconfigsubguess
+checkconfigsubguess
 
 mkdir -p android
 cd android
