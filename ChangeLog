@@ -1,4 +1,10 @@
 
+2014-01-27 Stephen Sinclair <radarsat1@gmail.com>
+	* Fix build for Windows (MingW, MSVC) and Android platforms
+	* Fix an implicit cast issue in C++ bindings for lo::ServerThread
+	* Documentation, small fixes
+	* Add a function to get library version information (lo_version)
+
 2013-11-24 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix checking of vararg markers on 64-bit systems.
 	* Fix hang in TCP blocking test.

@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 
-AC_INIT([liblo],[0.28rc],[liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo],[0.28],[liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
@@ -15,9 +15,9 @@ AC_INIT([liblo],[0.28rc],[liblo-devel@lists.sourceforge.net])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-m4_define([lt_current], 8)
+m4_define([lt_current], 9)
 m4_define([lt_revision], 0)
-m4_define([lt_age], 1)
+m4_define([lt_age], 2)
 
 m4_define([lt_version_info], [lt_current:lt_revision:lt_age])
 m4_define([lt_current_minus_age], [m4_eval(lt_current - lt_age)])

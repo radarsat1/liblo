@@ -1,5 +1,24 @@
 
 --------------------------------------------
+2014-01-27: Release 0.28
+--------------------------------------------
+
+We are pleased to present stable release 0.28 of LibLo, the
+lightweight, easy to use implementation of the Open Sound Control
+protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+Changes since the 0.28rc release candidate include:
+
+- Fixed build for Windows (MingW, MSVC) and Android platforms
+- Fixed an implicit cast issue in C++ bindings for lo::ServerThread
+- Documentation, small fixes
+- Added a function to get library version information (lo_version)
+
+--------------------------------------------
 2013-11-24: Release candidate 0.28rc
 --------------------------------------------
 
