@@ -802,6 +802,12 @@ namespace lo {
       protected:
         lo_bundle bundle;
     };
+
+    std::string version() {
+        char str[32];
+        lo_version(str, 32, 0, 0, 0, 0, 0, 0, 0);
+        return std::string(str);
+    }
 };
 
 #endif // _LO_CPP_H_

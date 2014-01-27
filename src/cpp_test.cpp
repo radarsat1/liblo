@@ -39,6 +39,8 @@ void init(lo::Server &s)
 {
     int j = 234;
 
+    std::cout << "liblo version: " << lo::version() << std::endl;
+
     std::cout << "URL: " << s.url() << std::endl;
 
     class test3
