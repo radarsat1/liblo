@@ -808,6 +808,9 @@ namespace lo {
         lo_version(str, 32, 0, 0, 0, 0, 0, 0, 0);
         return std::string(str);
     }
+
+    lo_timetag now() { lo_timetag tt; lo_timetag_now(&tt); return tt; }
+    lo_timetag immediate() { return LO_TT_IMMEDIATE; }
 };
 
 #endif // _LO_CPP_H_
