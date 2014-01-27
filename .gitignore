@@ -33,6 +33,7 @@ examples/example_client
 examples/example_server
 examples/example_tcp_echo_server
 examples/nonblocking_server_example
+examples/cpp_example
 install-sh
 liblo.pc
 libtool
