@@ -138,3 +138,4 @@ EXPORTS
     lo_server_set_error_context            @135
     lo_message_clone                       @136
     lo_version                             @137
+    lo_server_enable_queue                 @138
