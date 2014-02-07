@@ -224,6 +224,43 @@ if test x"$enable_debug" = "xyes"; then
 	CXXFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
 fi
 
+AC_ARG_ENABLE(tests, [  --disable-tests         Disable compiling test programs])
+AC_ARG_ENABLE(network-tests, [  --disable-network-tests Disable compiling network-based tests])
+AC_ARG_ENABLE(tools, [  --disable-tools         Disable compiling tools])
+AC_ARG_ENABLE(examples, [  --disable-examples      Disable compiling examples])
+
+AM_CONDITIONAL([COMPILE_TESTS],[test x$enable_tests != xno])
+AM_CONDITIONAL([COMPILE_TOOLS],[test x$enable_tools != xno])
+AM_CONDITIONAL([COMPILE_EXAMPLES],[test x$enable_examples != xno])
+
+if ! test x$enable_network_tests = xno; then
+  AC_DEFINE(ENABLE_NETWORK_TESTS, [1],
+    [Define this to enable network tests.])
+fi
+
+# Display some information about this build
+echo
+echo About this liblo build:
+echo
+echo CC=\"$CC\"
+echo CXX=\"$CXX\"
+echo DOXYGEN=\"$DOXYGEN\"
+echo CFLAGS=\"$CFLAGS\"
+echo CXXFLAGS=\"$CXXFLAGS\"
+echo LDFLAGS=\"$LDFLAGS\"
+echo LIBS=\"$LIBS\"
+echo
+test x$LO_BIGENDIAN = x0 && echo '== Building for little-endian architecture'
+test x$LO_BIGENDIAN = x1 && echo '== Building for big-endian architecture'
+test x$enable_debug = xyes && echo '== Compiling in debug mode'
+test x$enable_tests = xno && echo '== Disabled tests'
+test x$enable_networktests = xno && echo '== Disabled network-based tests'
+test x$enable_tools = xno && echo '== Disabled tools'
+test x$enable_examples = xno && echo '== Disabled examples'
+test x$HAVE_LAMBDA = xyes && echo '== Compiling C++ bindings' || echo '== Not compiling C++ bindings'
+test x$DOXYGEN = x && echo '== Disabled documentation (no doxygen found)'
+echo
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile

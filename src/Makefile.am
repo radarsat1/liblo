@@ -1,4 +1,7 @@
-SUBDIRS = . tools
+SUBDIRS = .
+if COMPILE_TOOLS
+SUBDIRS += tools
+endif
 
 MAINTAINERCLEANFILES = Makefile.in
 
@@ -25,12 +28,14 @@ liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 
 # Test programs depend on server threads, so skip them if threads are
 # disabled.
+if COMPILE_TESTS
 if ENABLE_THREADS
 noinst_PROGRAMS = testlo subtest test_bidirectional_tcp
 TESTS = testlo test_bidirectional_tcp
 if HAVE_LAMBDA
 noinst_PROGRAMS += cpp_test
 TESTS += cpp_test
+endif
 endif
 endif
 
@@ -51,7 +56,11 @@ cpp_test_SOURCES = cpp_test.cpp
 cpp_test_LDADD = liblo.la
 
 test: all
+if COMPILE_TESTS
 	for i in $(TESTS); do echo Running $$i; if ! ./$$i; then exit 1; fi; done
+endif
 
 memtest: all
+if COMPILE_TESTS
 	LD_LIBRARY_PATH=.libs valgrind --tool=memcheck .libs/testlo
+endif

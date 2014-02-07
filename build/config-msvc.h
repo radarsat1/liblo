@@ -4,6 +4,9 @@
 /* Define this to enable ipv6. */
 /* #undef ENABLE_IPV6 */
 
+/* Define this to enable network tests. */
+#define ENABLE_NETWORK_TESTS 1
+
 /* Define this to enable threads. */
 @DEFTHREADS@#define ENABLE_THREADS 1
 
