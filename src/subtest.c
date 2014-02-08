@@ -23,6 +23,8 @@
 
 #include "lo/lo.h"
 
+static int subtest_count = 0;
+
 int subtest_handler(const char *path, const char *types, lo_arg ** argv,
                     int argc, lo_message data, void *user_data);
 
@@ -30,6 +32,7 @@ int main(int argc, char *argv[])
 {
     lo_server_thread st;
     lo_address t;
+    int tries;
 
     printf("entered subtest\n");
 
@@ -48,11 +51,19 @@ int main(int argc, char *argv[])
     t = lo_address_new_from_url(argv[1]);
     lo_send(t, "/subtest", "i", 0xf00);
 
+    tries = 400;
+    while (subtest_count == 0 && (--tries > 0)) {
 #if defined(WIN32) || defined(_MSC_VER)
-    Sleep(4000);
+        Sleep(10);
 #else
-    sleep(4);
+        usleep(10000);
 #endif
+    }
+
+    if (tries == 0) {
+        printf("subtest: too many tries\n");
+        exit(1);
+    }
 
     return 0;
 }
@@ -65,6 +76,7 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
     static char *uri = NULL;
 
     printf("subtest: got reply (%s)\n", path);
+
     if (!uri) {
         uri = lo_address_get_url(a);
     } else {
@@ -77,7 +89,9 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
         }
         free(new_uri);
     }
+
     lo_send(a, "/subtest-reply", "i", 0xbaa);
+
     if (lo_address_errno(a)) {
         fprintf(stderr, "subtest error %d: %s\n", lo_address_errno(a),
                 lo_address_errstr(a));
@@ -86,14 +100,15 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
     }
 
     for (i = 0; i < 10; i++) {
+        lo_send(a, "/subtest-reply", "i", 0xbaa + i);
 #if defined(WIN32) || defined(_MSC_VER)
-        /* TODO: Wait time of 2.233 not easily doable in Windows */
         Sleep(2);
 #else
-        usleep(2233);
+        usleep(2000);
 #endif
-        lo_send(a, "/subtest-reply", "i", 0xbaa + i);
     }
+
+    subtest_count ++;
 
     return 0;
 }

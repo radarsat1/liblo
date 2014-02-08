@@ -31,10 +31,15 @@ liblo_la_LDFLAGS  = $(lt_windows) -export-dynamic -version-info @LO_SO_VERSION@
 if COMPILE_TESTS
 if ENABLE_THREADS
 noinst_PROGRAMS = testlo subtest test_bidirectional_tcp
-TESTS = testlo test_bidirectional_tcp
+TESTS = testlo
 if HAVE_LAMBDA
 noinst_PROGRAMS += cpp_test
+endif
+if ENABLE_NETWORK_TESTS
+TESTS += test_bidirectional_tcp
+if HAVE_LAMBDA
 TESTS += cpp_test
+endif
 endif
 endif
 endif

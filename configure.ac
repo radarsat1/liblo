@@ -232,6 +232,7 @@ AC_ARG_ENABLE(examples, [  --disable-examples      Disable compiling examples])
 AM_CONDITIONAL([COMPILE_TESTS],[test x$enable_tests != xno])
 AM_CONDITIONAL([COMPILE_TOOLS],[test x$enable_tools != xno])
 AM_CONDITIONAL([COMPILE_EXAMPLES],[test x$enable_examples != xno])
+AM_CONDITIONAL([ENABLE_NETWORK_TESTS],[test x$enable_network_tests != xno])
 
 if ! test x$enable_network_tests = xno; then
   AC_DEFINE(ENABLE_NETWORK_TESTS, [1],
@@ -244,7 +245,6 @@ echo About this liblo build:
 echo
 echo CC=\"$CC\"
 echo CXX=\"$CXX\"
-echo DOXYGEN=\"$DOXYGEN\"
 echo CFLAGS=\"$CFLAGS\"
 echo CXXFLAGS=\"$CXXFLAGS\"
 echo LDFLAGS=\"$LDFLAGS\"
@@ -254,7 +254,7 @@ test x$LO_BIGENDIAN = x0 && echo '== Building for little-endian architecture'
 test x$LO_BIGENDIAN = x1 && echo '== Building for big-endian architecture'
 test x$enable_debug = xyes && echo '== Compiling in debug mode'
 test x$enable_tests = xno && echo '== Disabled tests'
-test x$enable_networktests = xno && echo '== Disabled network-based tests'
+test x$enable_network_tests = xno && echo '== Disabled network-based tests'
 test x$enable_tools = xno && echo '== Disabled tools'
 test x$enable_examples = xno && echo '== Disabled examples'
 test x$HAVE_LAMBDA = xyes && echo '== Compiling C++ bindings' || echo '== Not compiling C++ bindings'
