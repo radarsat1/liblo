@@ -47,7 +47,7 @@
 #if defined(WIN32) || defined(_MSC_VER)
 #define PATHDELIM "\\"
 #define EXTEXE ".exe"
-#defnie SLEEP_MS(x) Sleep(x)
+#define SLEEP_MS(x) Sleep(x)
 #else
 #define PATHDELIM "/"
 #define EXTEXE ""
