@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title><link rel=stylesheet type=text/css href=style.css>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body><div id="content">
+<h1 id="building-liblo-for-other-platforms">Building liblo for other platforms</h1>
+<p>This document describes how to build liblo for platforms that require special configuration.</p>
+<h2 id="building-liblo-for-microsoft-visual-studio">Building liblo for Microsoft Visual Studio</h2>
+<p>Some Windows users prefer to use Microsoft Visual Studio to the well-supported MSYS/MingW or Cygwin environments.</p>
+<p>For them, an alternative configuration system is supported by liblo using the excellent <code>premake4</code> utility. The <code>build</code> folder contains a file called <code>premake4.lua</code>. It must be accompanied by <code>premake4.exe</code>, which can be downloaded from:</p>
+<pre><code>http://industriousone.com/premake/download</code></pre>
+<p>Once <code>premake4.exe</code> is copied to the <code>build</code> directory, open a <code>cmd.exe</code> prompt and <code>cd</code> to the <code>build</code> directory. Then, run <code>premake4</code> with arguments specifying the version of Microsoft Visual Studio you wish to use. For example, for MSVS 2010:</p>
+<pre><code>&gt; premake4 vs2010</code></pre>
+<p>You may provide the <code>--without-threads</code> option if you wish to exclude support for liblo's <code>lo_server_thread</code> API, which can be helpful if you have not downloaded the Win32 port of <code>pthread</code>. This can be found at,</p>
+<pre><code>http://sourceware.org/pthreads-win32/</code></pre>
+<p>You should specify the location of this library using the <code>--pthreads</code> option to premake4, e.g.:</p>
+<pre><code>&gt; premake4 --pthreads=C:/Libraries/pthreads-w32-2-9-1-release vs2010</code></pre>
+<p>Unfortunately liblo does not yet support the Win32 thread API, so pthreads-w32 is required for lo_server_thread functionality. Note that test programs (<code>subtest.exe</code>, <code>testlo.exe</code>) will not be built without threading enabled.</p>
+<h2 id="building-liblo-for-android">Building liblo for Android</h2>
+<p>The <code>build</code> directory contains a script called <code>android_build.sh</code>. Ensure that the variables at the top of the script conform to where you have installed the Android NDK, and to the platform you wish to target.</p>
+<p>The default values are:</p>
+<pre><code>ANDROID_NDK_PATH=$HOME/android-ndk-r9c
+ANDROID_PLATFORM=19
+ANDROID_ARCH=arm
+ANDROID_TOOLCHAIN=arm-linux-androideabi-4.8</code></pre>
+<p>Then, run the script from the <code>build</code> directory:</p>
+<pre><code>$ ./android_build.sh</code></pre>
+<p>The script will run <code>configure</code> in a cross-compilation mode. It will only work if you have not previously run <code>configure</code> in the liblo directory.</p>
+<p>If the script gives an error, examine <code>build/android/config.log</code>. Otherwise, it should successfully create an ARM binary file in the directory <code>build/android/src/.libs</code>.</p>
+</div></body>
+</html>

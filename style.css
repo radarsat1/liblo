@@ -1,0 +1,41 @@
+
+h1, h2, h3, h4, h5, h6
+{
+    font-weight: bolder;
+    font-family: Helvetica, Geneva, Arial, Verdana, sans-serif;
+    padding: 0px;
+    margin: 1ex 0px 0ex 0px;
+}
+
+h1
+{
+    background-color: #ccbbbb;
+    padding: 20px;
+    border-radius: 20px;
+}
+
+body
+{
+    margin: 20px;
+	background-color: #eeeeee;
+	color: #554444;
+    text-align: center;
+}
+
+#content {
+    width: 640px;
+    margin: 0px auto;
+    text-align: left;
+}
+
+a { text-decoration: none; color: #ddaa77; }
+
+a:hover { text-decoration: underline; }
+
+address {
+  text-align: right;
+  font-size: 10pt;
+  font-style: italic;
+}
+
+img { border: none; }

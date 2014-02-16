@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title><link rel=stylesheet type=text/css href=style.css>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body><div id="content">
+<h1 id="liblo">liblo</h1>
+<p>liblo is a lightweight library that provides an easy to use implementation of the OSC protocol. For more information about the OSC protocol, please see:</p>
+<ul>
+<li><a href="http://www.cnmat.berkeley.edu/OpenSoundControl/">OSC at CNMAT</a></li>
+<li><a href="http://www.opensoundcontrol.org/">opensoundcontrol.org</a></li>
+</ul>
+<p>The official liblo homepage is here:</p>
+<ul>
+<li><a href="http://liblo.sourceforge.net/">liblo homepage</a></li>
+</ul>
+<p>liblo is portable to most UNIX systems (including OS X) and Windows. It is released under the GNU Lesser General Public Licence (LGPL) v2.1 or later. See COPYING for details.</p>
+<h2 id="building">Building</h2>
+<p>To build and install liblo, read INSTALL in the main liblo directory. liblo is configured as a dynamically-linked library. To use liblo in a new application, after</p>
+<pre><code>configure</code></pre>
+<p>you should install liblo with</p>
+<pre><code>make install</code></pre>
+<p>so that the liblo library can be located by your application.</p>
+<p>To build with MS Visual Studio on Windows, first download and run the <code>premake4.exe</code> application in the build directory with an argument describing which IDE you are using. This will generate project and solution files. See <code>build/README.md</code> for more details.</p>
+<h2 id="examples">Examples</h2>
+<p>See <code>examples</code> for example source code for a simple client and two servers:</p>
+<ul>
+<li><p><code>example_server.c</code> uses <code>lo_server_thread_start()</code> to create a liblo server in an separate thread.</p></li>
+<li><p><code>nonblocking_server_example.c</code> uses <code>select()</code> to wait for either console input or OSC messages, all in a single thread.</p></li>
+<li><p><code>example_client.c</code> uses liblo to send OSC messages to a server.</p></li>
+</ul>
+<p>These examples will work without installing liblo. This is accomplished by a shell script. For example, <code>examples/client_example</code> is a shell script that runs the &quot;real&quot; program <code>examples/.libs/example_client</code>. Because of this indirection, you cannot run <code>example_client</code> with a debugger.</p>
+<h2 id="debugging">Debugging</h2>
+<p>To debug applications using liblo, one option is to include all the liblo source code in the application rather than linking with the liblo library. For more information about this, please see the (libtool manual)<a href="http://www.gnu.org/software/libtool/manual/libtool.html#Debugging-executables">1</a></p>
+<p>To compile liblo with debugging flags, use,</p>
+<pre><code>./configure --enable-debug</code></pre>
+<h2 id="ipv6-notice">IPv6 NOTICE</h2>
+<p>liblo was written to support both IPv4 and IPv6, however it has caused various problems along the way because most of the currently available OSC applications like Pd and SuperCollider don't listen on IPv6 sockets. IPv6 is currently disabled by default, but you can enable it using</p>
+<pre><code>./configure --enable-ipv6</code></pre>
+</div></body>
+</html>

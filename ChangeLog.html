@@ -1,0 +1,1288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title><link rel=stylesheet type=text/css href=style.css>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body><div id="content">
+<p>2014-01-27 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix build for Windows (MingW, MSVC) and Android platforms</li>
+<li>Fix an implicit cast issue in C++ bindings for lo::ServerThread</li>
+<li>Documentation, small fixes</li>
+<li>Add a function to get library version information (lo_version)</li>
+</ul>
+<p>2013-11-24 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix checking of vararg markers on 64-bit systems.</li>
+<li>Fix hang in TCP blocking test.</li>
+<li>Prevent potential bugs through static analysis.</li>
+<li>Add function lo_bundle_get_timestamp().</li>
+<li>Add C++11 wrapper, `lo_cpp.h', and test program.</li>
+<li>Support a few more build tools: clang/clang++, ccache.</li>
+<li>Fix typos in public headers.</li>
+</ul>
+<p>2013-05-22 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add release notes for 0.27.</li>
+<li>Add functions lo_server_new_from_url() and lo_server_thread_new_from_url().</li>
+<li>Allow oscsend and oscdump to specify port and dest address via URL string.</li>
+</ul>
+<p>2013-05-21 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Flags are positive, and use a flag to control queuing feature.</li>
+</ul>
+<p>2013-05-13 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Instead of generic `flags' setters, specific functions for each option.</li>
+<li>A couple of fixes for MSVC from the nested_bundles branch.</li>
+<li>Merge branch 'nested_bundles'</li>
+<li>Remove premake4.exe from the repository -- MSVC users should download latest.</li>
+<li>Move variable declarations to top of scope for MSVC 2008.</li>
+<li>Add missing recently-added defines for MSVC config.</li>
+<li>Add missing iphlapi library to MSVC project.</li>
+</ul>
+<p>2013-05-06 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>A better place in autogen.sh to copy the README file.</li>
+</ul>
+<p>2013-04-15 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Reformat the main README in Markdown and rename it for the benefit of github.</li>
+<li>Add a README to the build directory, exclude premake4.exe binary from tarball.</li>
+<li>Write lo.h when configuring using premake4.</li>
+</ul>
+<p>2013-04-10 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Ensure pad memory is zeroed when serialising a char.</li>
+<li>Don't point to freed memory after coercion.</li>
+<li>Fix a memory leak from getaddrinfo() if server tries to bind more than once.</li>
+<li>Check all server resources for successful allocation.</li>
+</ul>
+<p>2013-04-08 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add new lo_server_set_flags() function to .def file.</li>
+</ul>
+<p>2013-04-03 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Expose refcount mechanism publicly and use it for freeing.</li>
+<li>Add new bundle functions to export list.</li>
+<li>Add a test for a simple case of nested bundles.</li>
+<li>Add back the lo_bundle_free_messages() function for ABI backward-compatibility.</li>
+<li>Update comment for lo_bundle_count().</li>
+</ul>
+<p>2013-03-26 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>New API to set a server's options, lo_server_set_flags.</li>
+</ul>
+<p>2013-03-16 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Resolve lo_address hostname in send_data() if necessary.</li>
+</ul>
+<p>2013-03-15 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Merge branch 'udp_resolve_enable'</li>
+</ul>
+<p>2013-03-14 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Only call getnameinfo() when lo_address_get_hostname() et al are called.</li>
+<li>Move lo_server_thread_pp() prototype to lo_serverthread.h.</li>
+</ul>
+<p>2013-03-13 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>UDP resolve enable in lo_server struct</li>
+<li>support for creating and sending nested bundles</li>
+</ul>
+<p>2013-03-11 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix a doxygen reference due to badly-placed group ending.</li>
+<li>Update doxygen file according to 'doxygen -u' for doxygen 1.8.1.2.</li>
+<li>Update configure.ac according to autoupdate 2.69.</li>
+</ul>
+<p>2013-03-06 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Some changes to support automake-1.13.</li>
+<li>For compatibility with MingW-w64, gcc 4.7.1, add LIBRARY line to .def file.</li>
+</ul>
+<p>2013-02-18 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Merge pull request #6 from ventosus/clone_message</li>
+</ul>
+<p>2013-02-02 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Cloning of lo_message objects</li>
+</ul>
+<p>2013-01-21 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Resolve some errors that occur when compiling examples using g++</li>
+<li>Fix non-blocking semantics of lo_server_recv_noblock() for TCP.</li>
+<li>Add an external context pointer that can be accessed by error handlers.</li>
+<li>Initialize extended part of socket array to zero on realloc.</li>
+<li>Fix: If multiple calls to recv() were needed, message size was wrong.</li>
+<li>Changes to compile without warnings with MingW.</li>
+</ul>
+<p>2013-01-14 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<pre><code>Add new bundle-related functions to Windows .def file.</code></pre>
+<p>2013-01-14 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Avoid including netinet/tcp.h on Windows.</li>
+</ul>
+<p>2012-11-28 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Merge pull request #4 from tuscland/master</li>
+<li>go further in dispatch_method to avoid another allocation of zero bytes.</li>
+<li>tell the static analyzer that lo_address_init_with_sockaddr is not meant to be called with a NULL lo_address argument.</li>
+<li>fix a logic error where a null pointer could be dereferenced.</li>
+<li>fix a memory leak happening when calling lo_server_add_method with a path that contains invalid characters.</li>
+<li>in dispatch_method, when a message with no argument is received, don't call malloc with a zero byte count.</li>
+<li>removed assignment to a variable that is never read again.</li>
+<li>call freeaddrinfo only when a call to getaddrinfo succeeds, free lo_server if it fails.</li>
+<li>fix potential memory leak.</li>
+<li>removed a couple of dead stores. (value written to ret is never read again)</li>
+<li>ensure we compare integers of same signedness.</li>
+<li>adjust argument to pthread_create so it is a valid function pointer cast.</li>
+</ul>
+<p>2012-11-15 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Correct printing of blob bytes.</li>
+</ul>
+<p>2012-11-10 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>fix crash on 64-bit Mac due to uninitialised int</li>
+</ul>
+<p>2012-10-24 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Merge pull request #1 from tuscland/master</li>
+<li>Free queue memory in lo_server_free() (ref. bug report by Sebastien Bourdeauducq 2010-11-09)</li>
+</ul>
+<p>2012-10-19 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>When a TCP message has been received, use the actual read message length to allocate the buffer and return its size.</li>
+</ul>
+<p>2012-09-11 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add bundle functions for getting the count and accessing messages.</li>
+</ul>
+<p>2012-09-04 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add maintainer mode and silent rules macros.</li>
+<li>Add a debug mode to disable optimisation and enable all warnings as errors.</li>
+</ul>
+<p>2012-09-04 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix a printf type warning for printing size_t.</li>
+</ul>
+<p>2012-09-03 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add a protocol flag to allow enabling TCP_NODELAY option.</li>
+<li>Remove sensitivity to trailing slash when dealing with Unix socket URLs.</li>
+</ul>
+<p>2012-08-30 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Optionally perform SLIP encoding/decoding.</li>
+</ul>
+<p>2012-08-28 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Merge branch 'camille'</li>
+<li>Change formatting of broadcast patch.</li>
+</ul>
+<p>2012-08-22 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>fixed a number of typos reported by the clang compiler.</li>
+<li>Ensure SO_BROADCAST is set on the server socket when the protocol is UDP.</li>
+</ul>
+<p>2012-07-11 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix endianness on little-endian machines for lo_message_pp(). (Camille Troillard)</li>
+<li>Set SO_REUSEPORT on TCP server ports (Camille Troillard)</li>
+</ul>
+<p>2012-06-08 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add an option to the premake configuration to disable threads.</li>
+<li>Move some variables to top of scope for MSVC compatibility.</li>
+<li>Make server_thread functions conditional in Windows .def file.</li>
+<li>Conditional for including pthread.h</li>
+<li>Replace inet_ntop() calls during address initialization with getnameinfo().</li>
+<li>Fix call to lo_server_add_socket() in case select() is used.</li>
+<li>Zero memory after freeing address resources in order to invalidate the struct.</li>
+<li>Fix indexing of sources during removal from server socket list.</li>
+<li>An example &quot;echo&quot; server for bidirectional TCP messaging.</li>
+<li>Address removes TCP socket from source server's list if send fails.</li>
+<li>When address sends TCP from a server, server should own the socket.</li>
+<li>Retry stream recv until all bytes are read.</li>
+</ul>
+<p>2012-06-04 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add support for bidirectional TCP.</li>
+<li>Error in length given to getnameinfo(), found by Pete Goodeve.</li>
+</ul>
+<p>2012-05-09 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Function lo_address_get_iface() was missing from Windows .def file.</li>
+<li>Fix a call to dispatch_queued() due to modified arguments in a Windows-only code block.</li>
+<li>Add a missing include for <sys/types.h>.</li>
+<li>Warn on configuration if getifaddr not found. (Ignore on Windows.)</li>
+<li>Move lo_server_thread_* to their own header, include it conditionally.</li>
+<li>Add a configure flag to disable dependency on pthread.</li>
+</ul>
+<p>2012-04-06 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Don't let &quot;none required&quot; get into CFLAGS on OS X.</li>
+<li>Ignore ENOPROTOOPT as a result of disabling IPV6_V6ONLY.</li>
+<li>Expose a flag to disable lo_server message queue.</li>
+</ul>
+<p>2012-03-05 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Also don't build lo_server_new_multicast_iface() if getifaddrs() is not present.</li>
+<li>Add a rudimentary script for configuring &amp; compiling for Android.</li>
+<li>Add top of source tree for oscdump and oscsend include paths.</li>
+<li>Don't add &quot;-lpthread&quot; to dependencies unless it is found.</li>
+<li>Check that getifaddrs() is available.</li>
+</ul>
+<p>2012-03-02 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Accept new connections in lo_server_wait(), block until data ready.</li>
+<li>Check for Windows before calling initWSock() and define SOCKET_ERROR.</li>
+</ul>
+<p>2012-02-24 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add some items to TODO.</li>
+</ul>
+<p>2012-02-23 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Everywhere that we check for WIN32, also check <em>MSC</em>VER.</li>
+</ul>
+<p>2011-11-21 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Set SO_REUSEADDR and SO_REUSEPORT before bind().</li>
+<li>Iterating over addrinfo should not occur for UNIX sockets.</li>
+<li>Cache the result after iterating over addrinfo for send()/sendto().</li>
+<li>Fix a couple of stylistic issues with previous patch.</li>
+<li>Improve IPv6 support by using PF_UNSPEC and fixing dotted-quad hostnames (Camille Troillard)</li>
+</ul>
+<p>2011-05-05 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Detect Windows Server 2003 or later, and use IP_ADD_MEMBERSHIP accordingly.</li>
+</ul>
+<p>2011-05-05 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Removing &quot;inline&quot; was problematic since it causes a &quot;defined but not used&quot; warning for swap64.</li>
+</ul>
+<p>2011-05-03 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Improve Windows support.</li>
+</ul>
+<p>2011-04-01 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Call shutdown before closing a sending socket to ensure all data was sent.</li>
+<li>Fix a check on s-&gt;sockets[i] for lo_client_sockets.tcp. (rjvbertin)</li>
+</ul>
+<p>2011-02-16 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix compilation for IPv6, broken in r186. (SF user h3xx, patch tracker 3181851)</li>
+</ul>
+<p>2011-02-09 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add lo_server_new_multicast_iface() to allow specifying a network interface during server initialization.</li>
+</ul>
+<p>2010-10-07 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Remove some development code that snuck itself into the last commit.</li>
+</ul>
+<p>2010-10-04 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add functions lo_address_set_iface() and lo_address_get_iface().</li>
+<li>Make the --disable-ipv6 configure option work.</li>
+</ul>
+<p>2010-02-27 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Whitespace fixes from indent.</li>
+<li>socket created in Windows must be closed with closesocket. (Mok Keith)</li>
+<li>Provide callbacks for identifying the beginning and end of a bundle. (David Robillard)</li>
+</ul>
+<p>2010-01-25 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix padding for blobs. (John McFerran)</li>
+</ul>
+<p>2009-12-10 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add optional multicast group to oscdump's command line. (SS)</li>
+</ul>
+<p>2009-09-17 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix all whitespace inconsistancies using 'indent -kr -nut'. (SS)</li>
+<li>Fix warnings from the XCode static analyser. (Camille Troillard)</li>
+<li>Fix bug in LO_MARKER_A/_B for 64-bit platforms. (Camille Troillard)</li>
+</ul>
+<p>2009-03-07 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix some typos, grammar, and links in the documentation.</li>
+<li>Remove TCP from TODO list.</li>
+<li>Add recent contributors to the AUTHORS list.</li>
+<li>Add previous release notes to the NEWS file.</li>
+<li>Add note about MSVC in README.</li>
+<li>Release 0.26.</li>
+</ul>
+<p>2009-03-06 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add a return value to lo_bundle_add_message().</li>
+<li>Avoid pointer arithmetic on void* types for compilers that can't handle it.</li>
+<li>Move all local variable declarations to the top of the scope.</li>
+<li>Conditionally avoid the use of variable-argument macros if not GCC.</li>
+<li>Fix multicast on Windows: join multicast group after bind() instead of before.</li>
+<li>Avoid the use of C99 struct literals when giving timetag arguments.</li>
+<li>Add premake4, used to generate MSVC project/solution files.</li>
+<li>Add numerous typical kludges necessary to cover differences in MSVC.</li>
+<li>Use log() instead of a while loop to calculate new data size.</li>
+<li>Add return values for all functions that can potentially fail.</li>
+<li>Add premake4-related files to the dist build.</li>
+</ul>
+<p>2009-02-17 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Don't attempt to dispatch data if TCP connection was closed.</li>
+</ul>
+<p>2009-02-17 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>For multicast, enable SO_REUSEPORT as well as SO_REUSEADDR. (Mike Wozniewski)</li>
+</ul>
+<p>2009-02-12 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix the definition of LO_TT_IMMEDIATE per the OSC spec. (Dominic Sacré)</li>
+</ul>
+<p>2009-02-01 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add function lo_message_get_timestamp(). (Alex McLean)</li>
+<li>Fix magic constant in lo_timetag_diff. (Dominic Sacré)</li>
+<li>Bump the LO_SO_VERSION version major number to resolve ABI incompatibilities with previous versions. In particular, the addition of 'const' to an argument of lo_blob_new() in r80 constituted an API add and removal, hence the reset of the 3rd number ('age') according to the libtool manual. (SS)</li>
+</ul>
+<p>2009-01-04 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add checks to configure.ac for select() and poll().</li>
+<li>Use inet_addr if inet_aton is not available. (i.e., on Windows)</li>
+<li>Retry a TCP connection once if it failed to connect on send.</li>
+<li>Remove useless conditional call to freeaddrinfo().</li>
+<li>Only implement gai_strerrorA if gai_strerror was not already defined.</li>
+<li>Make the TCP protocol retain session information for multiple connections.</li>
+</ul>
+<p>2008-12-23 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added a function called lo_server_wait() which waits for a message to be received.</li>
+</ul>
+<p>2008-11-23 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Use the Doxygen command to hide internal functions.</li>
+</ul>
+<p>2008-10-11 Kentaro Fukuchi <script type="text/javascript">
+<!--
+h='&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;&#32;&#x61;&#116;&#32;&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>lo_url_get_protocol_id() has been added.</li>
+<li>lo_address_new_with_proto() has been added.</li>
+<li>Changed lo_address_new_from_url() to use lo_url_get_protocol_id().</li>
+</ul>
+<p>2008-10-09 Kentaro Fukuchi <script type="text/javascript">
+<!--
+h='&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;&#32;&#x61;&#116;&#32;&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>src/tools/oscsend.c: Fixed compile-time error on OS X. (thanks to Koichiro Ozaki)</li>
+</ul>
+<p>2008-10-07 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Move lo_arg_size(), lo_get_path(), lo_arg_host/network_endian() back to lo_lowlevel.h.</li>
+<li>Expose the lo_server_dispatch_data() function as public.</li>
+<li>Fix zero-padding of path and type strings in lo_message_deserialise().</li>
+</ul>
+<p>2008-09-07 Kentaro Fukuchi <script type="text/javascript">
+<!--
+h='&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;&#32;&#x61;&#116;&#32;&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>Memory leak in lo_address_new_from_url() has been fixed.</li>
+<li>Memory leak in dispatch_method() has been fixed.</li>
+<li>Fix a typo and some missing free() in testlo.c.</li>
+</ul>
+<p>2008-09-04 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Change license of LibLo to LGPL 2.1 or later. (With permission of all authors.)</li>
+</ul>
+<p>2008-07-11 Kentaro Fukuchi <script type="text/javascript">
+<!--
+h='&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#102;&#x75;&#x6b;&#x75;&#x63;&#104;&#x69;&#32;&#x61;&#116;&#32;&#x6d;&#x65;&#x67;&#x61;&#x75;&#x69;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>Some error checks have been added.</li>
+<li>oscsend now uses strtod() instead of strtof(). strtof of glibc returned buggy results when --std=c99 is not given. (strtof is described in C99)</li>
+</ul>
+<p>2008-06-18 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Update AUTHORS</li>
+<li>Release version 0.25</li>
+</ul>
+<p>2008-06-05 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix autogen.sh: Use glibtoolize if it exists, for OS X.</li>
+<li>Fix undefined MSG_NOSIGNAL in testlo.c.</li>
+<li>Fix warning on lo_message_deserialize().</li>
+</ul>
+<p>2008-05-05 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix invalid pointer in lo_server_del_method() when doing pattern matching. (Camille Troillard)</li>
+</ul>
+<p>2008-04-28 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Add support for multicast groups to LibLo.</li>
+<li>Add test case for sending a crafted packet that would crash a lo_server without validation.</li>
+<li>Make validation-related functions internal to liblo.</li>
+<li>Add server input validation along with a function to deserialise an OSC message. (Chris Hixon)</li>
+<li>Fix bad socket number in lo_client_sockets when a server is freed.</li>
+</ul>
+<p>2008-04-21 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added Daniel Lacroix's patch for level 2 broadcast support.</li>
+<li>Use resolved IP address to detect broadcast address.</li>
+</ul>
+<p>2008-02-25 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix bug where curly brackets didn't match the last item in the comma-separated list.</li>
+</ul>
+<p>2008-02-20 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added lo_bundle_free_messages() to free a bundle and the messages it points to. (Kentaro Fukuchi)</li>
+</ul>
+<p>2008-01-27 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fix for lo_message_add(), wrong argument order for lo_message_add_varargs_internal(). (Dave Robillard)</li>
+<li>Added test case for lo_message_add().</li>
+</ul>
+<p>2008-01-20 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added lo_message_add_varargs() to play well with C functions taking a variable number of arguments. (Dave Robillard)</li>
+<li>Avoid unnecessary repetitive reallocation on lo_message_add_*(). (Dave Robillard)</li>
+<li>Fixed errors related to 64-bit in packing blob and MIDI messages. (Dave Robillard)</li>
+</ul>
+<p>2008-01-13 Stephen Sinclair <script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#114;&#x61;&#100;&#x61;&#114;&#x73;&#x61;&#116;&#x31;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<pre><code>    * Fixed index increment in sendosc.c for string and symbol types</code></pre>
+<p>2008-01-12 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added tools from Kentaro Fukuchi</li>
+</ul>
+<p>2007-03-19 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Applied patch from Chris Hixon to check for buffer overflows</li>
+</ul>
+<p>2007-03-16 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fixed several compiler warnings</li>
+<li>Changed address for package bug reports</li>
+<li>Released version 0.24</li>
+</ul>
+<p>2007-03-09 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Changed lo_blob_new() to take const void* (thanks to Lars Luthman)</li>
+<li>Disable getnameinfo() method of getting hostname, when IPv6 is disabled</li>
+<li>Unlink Unix server socket when it is close (thanks to Dominic Sacr)</li>
+<li>Checks size of unix socket path properly</li>
+<li>Now accepts unix socket format osc.unix://localhost/tmp/mysocket.sock</li>
+<li>Released version 0.24pre1</li>
+</ul>
+<p>2007-03-08 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added lo_server_thread_new_with_proto(), as suggested by Dave Robillard</li>
+<li>Applied patch from Aron Stansvik to fix bug with FreeBSD/NetBSD systems</li>
+<li>Removed freeaddrinfo() from resolve_address() error case (thanks to Anthony Green)</li>
+<li>Only call connect() for TCP sessions (thanks to Roger B. Dannenberg)</li>
+</ul>
+<p>2006-03-29 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Applied lo_address_get_url() patch from Sze'kelyi Szabolcs</li>
+<li>Added lo_server_get_protocol() and lo_address_get_protocol()</li>
+<li>Added tests for lo_address_get_* tests to test tool</li>
+</ul>
+<p>2006-01-26 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>IPv6 is now disabled by default</li>
+<li>Released version 0.23</li>
+</ul>
+<p>2005-12-29 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fixed pthread resource leak, when stopping thread</li>
+</ul>
+<p>2005-12-21 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Fixed bug where sockets weren't closed when replying to messages</li>
+<li>Split off resolve_address into seperate create_socket function</li>
+<li>Only creates new sockets when needed</li>
+</ul>
+<p>2005-12-05 Nicholas Humfrey <script type="text/javascript">
+<!--
+h='&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#110;&#106;&#104;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#110;&#106;&#104;&#32;&#x61;&#116;&#32;&#x61;&#x65;&#108;&#x69;&#x75;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript></p>
+<ul>
+<li>Added lo_send_from, lo_send_message_from and lo_send_bundle_from</li>
+<li>Merged guts of lo_send_message and lo_send_bundle into new static send_data()</li>
+</ul>
+<p>2005-09-04 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>Released 0.22</li>
+</ul>
+<p>2005-09-02 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>address.c, server.c: Added patch from Martin Habets that redoes parts of previous patches...</li>
+</ul>
+<p>2005-09-01 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>address.c, server.c: Added patches from Jesse Chappell and Dave Robillard to close various sockets when there no longer used.</li>
+</ul>
+<p>2005-08-19 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>address.c, testlo.c: Added patch from Dave Robillard to fix parsing of IPV6 addresses in URLs.</li>
+</ul>
+<p>2005-08-11 Martin Habets <script type="text/javascript">
+<!--
+h='&#x75;&#x73;&#x65;&#114;&#x73;&#46;&#x73;&#x6f;&#x75;&#114;&#x63;&#x65;&#102;&#x6f;&#114;&#x67;&#x65;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#x6d;&#104;&#x61;&#98;&#x65;&#116;&#x73;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x6d;&#104;&#x61;&#98;&#x65;&#116;&#x73;&#32;&#x61;&#116;&#32;&#x75;&#x73;&#x65;&#114;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x73;&#x6f;&#x75;&#114;&#x63;&#x65;&#102;&#x6f;&#114;&#x67;&#x65;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>message.c: Fix LO_CHAR sending on big endian architectures.</li>
+</ul>
+<p>2005-08-09 Martin Habets <script type="text/javascript">
+<!--
+h='&#x75;&#x73;&#x65;&#114;&#x73;&#46;&#x73;&#x6f;&#x75;&#114;&#x63;&#x65;&#102;&#x6f;&#114;&#x67;&#x65;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#x6d;&#104;&#x61;&#98;&#x65;&#116;&#x73;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x6d;&#104;&#x61;&#98;&#x65;&#116;&#x73;&#32;&#x61;&#116;&#32;&#x75;&#x73;&#x65;&#114;&#x73;&#32;&#100;&#x6f;&#116;&#32;&#x73;&#x6f;&#x75;&#114;&#x63;&#x65;&#102;&#x6f;&#114;&#x67;&#x65;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>server.c: Add lo_server_del_method()</li>
+<li>server_thread.c: Add lo_server_thread_del_method()</li>
+</ul>
+<p>2005-07-26 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li><p>bundle.c, server.c: Endianess fixed from Topher Cyll for bundle timestamps.</p>
+<p># Bundle delivery timing is still not right, theres an arithmetic # errorsomewhere, but I cant see it.</p></li>
+</ul>
+<p>2005-06-05 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: Patch from Lorenz Schori to optionally disable IPV6 support with --disable-ipv6</li>
+</ul>
+<p>2005-03-31 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: Patch from Martin Habets that expands wildcarded patch to the matching path where possible (eg. not when using the NULL wildcard path).</li>
+</ul>
+<p>2005-03-04 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: try to fix the global struct thing that keeps track of server sockets.</li>
+</ul>
+<p>2005-02-03 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: made UDP messages resolve back to thier originating server, or something close to it.</li>
+</ul>
+<p>2005-02-03 Taybin Rutkin <script type="text/javascript">
+<!--
+h='&#x65;&#x61;&#114;&#116;&#104;&#108;&#x69;&#110;&#x6b;&#46;&#110;&#x65;&#116;';a='&#64;';n='&#116;&#x61;&#x79;&#98;&#x69;&#110;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#116;&#x61;&#x79;&#98;&#x69;&#110;&#32;&#x61;&#116;&#32;&#x65;&#x61;&#114;&#116;&#104;&#108;&#x69;&#110;&#x6b;&#32;&#100;&#x6f;&#116;&#32;&#110;&#x65;&#116;</noscript></p>
+<ul>
+<li>server.c: commited resource leak fix from Jesse Chappell</li>
+</ul>
+<p>2005-01-22 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>address.c: fixed bug when determining protocol of URL with unspecified sub-protocol. Reported by Pix.</li>
+</ul>
+<p>2005-01-13 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>bundle.c: patch from Dave Robillard that fixes bundles of more than 4 messages.</li>
+</ul>
+<p>2005-01-13 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>message.c: made the arguments to <em>add</em>string and <em>add</em>symbol const char * for C++ compatibility.</li>
+</ul>
+<p>2005-01-10 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>message.c: added a source field that represents the source from which a message was received. Useful in method handlers to determine which client sent the message.</li>
+</ul>
+<p>2004-12-21 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: added patch from Walco van Loon and Pix that fixes a bug in the hostname detection fallback code</li>
+</ul>
+<p>2004-11-19 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>send.c: added lo_send_timestamped()</li>
+</ul>
+<p>2004-11-17 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: added code to handle bundle reception</li>
+<li>bundle.c: code to build bundle objects</li>
+<li>timetag.c: code to manipulate and test timetags</li>
+</ul>
+<p>2004-10-19 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<pre><code>Release 0.13</code></pre>
+<ul>
+<li>lo.h: removed reference to obsolete header lo_backcompat.h</li>
+</ul>
+<p>2004-10-17 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>lo_server.c: added code to allow servers to poll() on the server socket, if available. From Sean Bolton.</li>
+</ul>
+<p>2004-08-27 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>lo_lowlevel.h, send.c: added OSX compatibility fixes from Taybin Rutkin.</li>
+</ul>
+<p>2004-08-19 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<pre><code>Release 0.9</code></pre>
+<ul>
+<li>testlo.c: added more URL tests</li>
+</ul>
+<p>2004-08-19 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>address.c: more bugfixes to URL handling</li>
+</ul>
+<p>2004-08-02 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c, address.c: fixed bugs and ommisions in URL handling</li>
+</ul>
+<p>2004-07-28 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>send.c, server.c: added code to handle UNIX domain sockets.</li>
+</ul>
+<p>2004-07-12 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server_thread.c: added a lo_server_thread_stop() function for symmetry with lo_server_thread_start()</li>
+</ul>
+<p>2004-06-07 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: added a lo_server_recv_noblock() that will not wait for a packet to be received</li>
+</ul>
+<p>2004-03-26 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>doc/, *.h: added doxygen documentation</li>
+<li>address.c: changed URL methods to accept/expect protocol specifiers (eg. osc.udp://...)</li>
+<li>examples/*.c: added comments, slightly simplified</li>
+</ul>
+<p>2004-03-21 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>server.c: made binding to unspecified ports work</li>
+</ul>
+<p>2004-03-21 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>message.c: fixed coercion type bugs</li>
+<li>server.c: fixed endian conversion bug</li>
+<li>testlo.c: added lots of tests</li>
+<li>send.c: added implicit guard variable to end of send arguments</li>
+</ul>
+<p>2004-03-20 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>message.c, send.c: added support for the remaining types OSC</li>
+</ul>
+<p>2004-03-15 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li><p>message.c: changed the definition of the string argument accessor member (it was wrong before).</p></li>
+<li><p>target.c, <em>.[ch]: lo_target</em> is now called lo_address*, this makes the api much clearer, %s/lo_target/lo_address/g, should bring all source files up to date.</p></li>
+</ul>
+<p>2004-02-29 Steve Harris <script type="text/javascript">
+<!--
+h='&#112;&#108;&#x75;&#x67;&#x69;&#110;&#46;&#x6f;&#114;&#x67;&#46;&#x75;&#x6b;';a='&#64;';n='&#x73;&#116;&#x65;&#118;&#x65;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x73;&#116;&#x65;&#118;&#x65;&#32;&#x61;&#116;&#32;&#112;&#108;&#x75;&#x67;&#x69;&#110;&#32;&#100;&#x6f;&#116;&#32;&#x6f;&#114;&#x67;&#32;&#100;&#x6f;&#116;&#32;&#x75;&#x6b;</noscript></p>
+<ul>
+<li>configure.in, Makefile.am: added auto* stuff</li>
+</ul>
+</div></body>
+</html>
