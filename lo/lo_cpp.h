@@ -379,7 +379,7 @@ namespace lo {
             : Server(lo_server_new(port,
               [](int num, const char *msg, const char *where){
                 auto h = static_cast<handler_error*>(lo_error_get_context());
-                (*h)(num, msg, where);
+                if (h) (*h)(num, msg, where);
               }))
         {
             if (server) {
@@ -587,11 +587,12 @@ namespace lo {
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new(port,
-                  [](int num, const char *msg, const char *where){
-                      auto h = static_cast<handler_error*>(lo_error_get_context());
-                      (*h)(num, msg, where);})))
+            : Server(
+		     (server_thread = lo_server_thread_new(port,
+                       [](int num, const char *msg, const char *where){
+                       auto h = static_cast<handler_error*>(lo_error_get_context());
+		       if (h) (*h)(num, msg, where);}))
+		     ? lo_server_thread_get_server(server_thread) : 0)
             {
                 if (server_thread) {
                     auto h = new handler_error(e);
