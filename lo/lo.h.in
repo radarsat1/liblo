@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Steve Harris
+ *  Copyright (C) 2014 Steve Harris et al. (see AUTHORS)
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -215,6 +215,37 @@ uint32_t lo_blob_datasize(lo_blob b);
  * be changed.
  */
 void *lo_blob_dataptr(lo_blob b);
+
+/**
+ * \brief Get information on the version of liblo current in use.
+ *
+ * All parameters are optional and can be given the value of 0 if that
+ * information is not desired.  For example, to get just the version
+ * as a string, call lo_version(str, size, 0, 0, 0, 0, 0, 0, 0);
+ *
+ * The "lt" fields, called the ABI version, corresponds to libtool's
+ * versioning system for binary interface compatibility, and is not
+ * related to the library version number.  This information is usually
+ * encoded in the filename of the shared library.
+ *
+ * Typically the string returned in 'verstr' should correspond with
+ * $major.$minor$extra, e.g., "0.28rc".  If no 'extra' information is
+ * present, e.g., "0.28", extra will given the null string.
+ *
+ * \param verstr       A buffer to receive a string describing the
+ *                     library version.
+ * \param verstr_size  Size of the buffer pointed to by string.
+ * \param major        Location to receive the library major version.
+ * \param minor        Location to receive the library minor version.
+ * \param extra        Location to receive the library version extra string.
+ * \param extra_size   Size of the buffer pointed to by extra.
+ * \param lt_major     Location to receive the ABI major version.
+ * \param lt_minor     Location to receive the ABI minor version.
+ * \param lt_bug       Location to receive the ABI 'bugfix' version.
+ */
+void lo_version(char *verstr, int verstr_size,
+                int *major, int *minor, char *extra, int extra_size,
+                int *lt_major, int *lt_minor, int *lt_bug);
 
 /** @} */
 

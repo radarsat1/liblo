@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 
-AC_INIT([liblo],[0.28rc],[liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo],[0.28],[liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
@@ -15,9 +15,9 @@ AC_INIT([liblo],[0.28rc],[liblo-devel@lists.sourceforge.net])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-m4_define([lt_current], 8)
+m4_define([lt_current], 9)
 m4_define([lt_revision], 0)
-m4_define([lt_age], 1)
+m4_define([lt_age], 2)
 
 m4_define([lt_version_info], [lt_current:lt_revision:lt_age])
 m4_define([lt_current_minus_age], [m4_eval(lt_current - lt_age)])
@@ -39,6 +39,9 @@ AC_SUBST(LT_CURRENT_MINUS_AGE)
 DLL_NAME=liblo-${LT_CURRENT_MINUS_AGE}.dll
 AC_SUBST(DLL_NAME)
 
+AC_DEFINE(LO_SO_VERSION, [{lt_current, lt_revision, lt_age}],
+          [Libtool compatibility version])
+
 # disable support for ipv6.
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           Enable ipv6 support],[want_ipv6=$enableval],)
 if test "$want_ipv6" = "yes"; then
@@ -55,7 +58,7 @@ AC_SUBST(DOXYGEN)
 
 # If we can add -Qunused-arguments, add it.
 # This error occurs when ccache and clang are used together.
-AC_MSG_CHECKING([whether to add -Qunused-arguments])
+AC_MSG_CHECKING([whether to add -Qunused-arguments (C)])
 _CFLAGS="$CFLAGS"
 CFLAGS="$_CFLAGS -Qunused-arguments"
 AC_COMPILE_IFELSE(
@@ -84,9 +87,9 @@ CFLAGS="$_CFLAGS"
 # Check for C++11 features
 AC_PROG_CXX
 _CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
 
 AC_MSG_CHECKING([whether C++11 lambdas are supported])
-AC_LANG(C++)
 CXXFLAGS="$_CXXFLAGS -std=c++11"
 AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM([#include <functional>],[[[]](std::function<void()> f){f();}([[]](){0;});])],
@@ -106,8 +109,19 @@ AC_COMPILE_IFELSE(
      HAVE_LAMBDA=yes],
     [AC_MSG_RESULT([no])
      CXXFLAGS="$_CXXFLAGS"])])])
-AC_LANG(C)
 AM_CONDITIONAL([HAVE_LAMBDA],[test x$HAVE_LAMBDA = xyes])
+
+# If we can add -Qunused-arguments, add it.
+# This error occurs when ccache and clang are used together.
+AC_MSG_CHECKING([whether to add -Qunused-arguments (C++)])
+_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$_CXXFLAGS -Qunused-arguments"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([],[])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+   CXXFLAGS="$_CXXFLAGS"])
+AC_LANG_POP([C++])
 
 # Check if threads are wanted
 AC_ARG_ENABLE(threads,
@@ -200,15 +214,52 @@ if test x"$enable_debug" = "xyes"; then
             CF="$CF $i"
         fi
     done
-	CFLAGS="$CF -O0 -g -Wall -Werror"
+	CFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
     CF=""
     for i in $CXXFLAGS; do
         if ! ((test x"$i" = x-g) || (test x"$i" = x-O2)); then
             CF="$CF $i"
         fi
     done
-	CXXFLAGS="$CF -O0 -g -Wall -Werror"
+	CXXFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
 fi
+
+AC_ARG_ENABLE(tests, [  --disable-tests         Disable compiling test programs])
+AC_ARG_ENABLE(network-tests, [  --disable-network-tests Disable compiling network-based tests])
+AC_ARG_ENABLE(tools, [  --disable-tools         Disable compiling tools])
+AC_ARG_ENABLE(examples, [  --disable-examples      Disable compiling examples])
+
+AM_CONDITIONAL([COMPILE_TESTS],[test x$enable_tests != xno])
+AM_CONDITIONAL([COMPILE_TOOLS],[test x$enable_tools != xno])
+AM_CONDITIONAL([COMPILE_EXAMPLES],[test x$enable_examples != xno])
+AM_CONDITIONAL([ENABLE_NETWORK_TESTS],[test x$enable_network_tests != xno])
+
+if ! test x$enable_network_tests = xno; then
+  AC_DEFINE(ENABLE_NETWORK_TESTS, [1],
+    [Define this to enable network tests.])
+fi
+
+# Display some information about this build
+echo
+echo About this liblo build:
+echo
+echo CC=\"$CC\"
+echo CXX=\"$CXX\"
+echo CFLAGS=\"$CFLAGS\"
+echo CXXFLAGS=\"$CXXFLAGS\"
+echo LDFLAGS=\"$LDFLAGS\"
+echo LIBS=\"$LIBS\"
+echo
+test x$LO_BIGENDIAN = x0 && echo '== Building for little-endian architecture'
+test x$LO_BIGENDIAN = x1 && echo '== Building for big-endian architecture'
+test x$enable_debug = xyes && echo '== Compiling in debug mode'
+test x$enable_tests = xno && echo '== Disabled tests'
+test x$enable_network_tests = xno && echo '== Disabled network-based tests'
+test x$enable_tools = xno && echo '== Disabled tools'
+test x$enable_examples = xno && echo '== Disabled examples'
+test x$HAVE_LAMBDA = xyes && echo '== Compiling C++ bindings' || echo '== Not compiling C++ bindings'
+test x$DOXYGEN = x && echo '== Disabled documentation (no doxygen found)'
+echo
 
 AC_CONFIG_FILES([
 	Makefile

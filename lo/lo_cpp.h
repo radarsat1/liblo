@@ -379,7 +379,7 @@ namespace lo {
             : Server(lo_server_new(port,
               [](int num, const char *msg, const char *where){
                 auto h = static_cast<handler_error*>(lo_error_get_context());
-                (*h)(num, msg, where);
+                if (h) (*h)(num, msg, where);
               }))
         {
             if (server) {
@@ -587,11 +587,12 @@ namespace lo {
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new(port,
-                  [](int num, const char *msg, const char *where){
-                      auto h = static_cast<handler_error*>(lo_error_get_context());
-                      (*h)(num, msg, where);})))
+            : Server(
+		     (server_thread = lo_server_thread_new(port,
+                       [](int num, const char *msg, const char *where){
+                       auto h = static_cast<handler_error*>(lo_error_get_context());
+		       if (h) (*h)(num, msg, where);}))
+		     ? lo_server_thread_get_server(server_thread) : 0)
             {
                 if (server_thread) {
                     auto h = new handler_error(e);
@@ -802,6 +803,15 @@ namespace lo {
       protected:
         lo_bundle bundle;
     };
+
+    std::string version() {
+        char str[32];
+        lo_version(str, 32, 0, 0, 0, 0, 0, 0, 0);
+        return std::string(str);
+    }
+
+    lo_timetag now() { lo_timetag tt; lo_timetag_now(&tt); return tt; }
+    lo_timetag immediate() { return LO_TT_IMMEDIATE; }
 };
 
 #endif // _LO_CPP_H_

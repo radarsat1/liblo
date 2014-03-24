@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Steve Harris
+ *  Copyright (C) 2014 Steve Harris et al. (see AUTHORS)
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -27,11 +27,11 @@
 #include <float.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <time.h>
 
 #ifdef _MSC_VER
 #define _WINSOCKAPI_
 #define snprintf _snprintf
-#include <time.h>
 #else
 #include <unistd.h>
 #include <sys/time.h>
@@ -78,6 +78,7 @@ typedef struct {
 } queued_msg_list;
 
 struct lo_cs lo_client_sockets = { -1, -1 };
+static int reuseport_supported = 1;
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
@@ -189,26 +190,28 @@ static unsigned int get_family_PF(const char *ip, const char *port)
 }
 #endif
 
-static int lo_server_setsock_reuseaddr(lo_server s)
+static int lo_server_setsock_reuseaddr(lo_server s, int do_throw)
 {
     unsigned int yes = 1;
     if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEADDR,
                    (char*)&yes, sizeof(yes)) < 0) {
         int err = geterror();
-        lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEADDR)");
+		if (do_throw)
+			lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEADDR)");
         return err;
     }
     return 0;
 }
 
-static int lo_server_setsock_reuseport(lo_server s)
+static int lo_server_setsock_reuseport(lo_server s, int do_throw)
 {
 #ifdef SO_REUSEPORT
     unsigned int yes = 1;
     if (setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_REUSEPORT,
                    &yes, sizeof(yes)) < 0) {
         int err = geterror();
-        lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEPORT)");
+		if (do_throw)
+			lo_throw(s, err, strerror(err), "setsockopt(SO_REUSEPORT)");
         return err;
     }
 #endif
@@ -485,17 +488,18 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         if (group != NULL
             || proto == LO_TCP)
         {
-            err = lo_server_setsock_reuseaddr(s);
+            err = lo_server_setsock_reuseaddr(s, 1);
             if (err) {
                 lo_server_free(s);
                 return NULL;
             }
         }
 
-        if (group != NULL)
+        if (group != NULL && reuseport_supported)
         {
             /* Ignore the error if SO_REUSEPORT wasn't successful. */
-            lo_server_setsock_reuseport(s);
+            if (lo_server_setsock_reuseport(s, 0))
+				reuseport_supported = 0;
         }
 
 #if defined(WIN32) || defined(_MSC_VER)
@@ -1156,7 +1160,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 
     poll(s->sockets, s->sockets_len, -1);
 
-    for (i = (s->sockets_len - 1) && !data; i >= 0; --i) {
+    for (i = data ? 0 : (s->sockets_len - 1); i >= 0; --i) {
         if (s->sockets[i].revents == POLLERR
             || s->sockets[i].revents == POLLHUP) {
             if (i > 0) {

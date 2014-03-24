@@ -6,6 +6,9 @@
 *.so
 *.dylib
 *.dll
+*~
+.deps
+.libs
 Makefile
 Makefile.in
 aclocal.m4
@@ -36,6 +39,7 @@ examples/example_client
 examples/example_server
 examples/example_tcp_echo_server
 examples/nonblocking_server_example
+examples/cpp_example
 install-sh
 liblo.pc
 libtool
@@ -50,13 +54,11 @@ src/.deps/
 src/.libs/
 src/Makefile
 src/Makefile.in
+src/cpp_test
 src/liblo.def
-src/liblo.la
 src/subtest
 src/test_bidirectional_tcp
 src/testlo
-src/tools/.deps/
-src/tools/.libs/
 src/tools/Makefile
 src/tools/Makefile.in
 src/tools/oscdump

@@ -4,6 +4,9 @@
 /* Define this to enable ipv6. */
 /* #undef ENABLE_IPV6 */
 
+/* Define this to enable network tests. */
+#define ENABLE_NETWORK_TESTS 1
+
 /* Define this to enable threads. */
 @DEFTHREADS@#define ENABLE_THREADS 1
 
@@ -60,6 +63,9 @@
 
 /* If machine is bigendian */
 #define LO_BIGENDIAN "0"
+
+/* Libtool compatibility version */
+#define LO_SO_VERSION @LO_SO_VERSION@
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 /* #undef NO_MINUS_C_MINUS_O */

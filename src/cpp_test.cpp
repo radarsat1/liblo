@@ -39,6 +39,14 @@ void init(lo::Server &s)
 {
     int j = 234;
 
+    std::cout << "liblo version: " << lo::version() << std::endl;
+
+    lo_timetag now = lo::now();
+    std::cout << "now: " << now.sec << "," << now.frac << std::endl;
+
+    lo_timetag imm = lo::immediate();
+    std::cout << "immediate: " << imm.sec << "," << imm.frac << std::endl;
+
     std::cout << "URL: " << s.url() << std::endl;
 
     class test3

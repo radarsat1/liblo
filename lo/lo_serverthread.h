@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 (See AUTHORS file)
+ *  Copyright (C) 2014 Steve Harris et al. (see AUTHORS)
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * \file lo.h The liblo main headerfile and high-level API functions.
+ * \file lo_serverthread.h The liblo headerfile declaring thread-related functions.
  */
 
 
