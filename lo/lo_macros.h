@@ -23,9 +23,19 @@
 extern "C" {
 #endif
 
-/* \brief Maximum length of UDP messages in bytes
+/* \brief Left for backward-compatibility.  See
+ * LO_DEFAULT_MAX_MSG_SIZE below, and lo_server_max_msg_size().
  */
 #define LO_MAX_MSG_SIZE 32768
+
+/* \brief Maximum length of incoming UDP messages in bytes.
+ */
+#define LO_MAX_UDP_MSG_SIZE 65535
+
+/* \brief Default maximum length of incoming messages in bytes,
+ * corresponds to max UDP message size.
+ */
+#define LO_DEFAULT_MAX_MSG_SIZE LO_MAX_UDP_MSG_SIZE
 
 /* \brief A set of macros to represent different communications transports
  */
