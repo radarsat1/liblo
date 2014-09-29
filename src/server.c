@@ -1011,8 +1011,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         // size as in UDP, however we leave it for security
         // reasons--an unterminated SLIP stream would consume memory
         // indefinitely.
-        if (s->max_msg_size != -1 && size > s->max_msg_size)
+        if (s->max_msg_size != -1 && size > s->max_msg_size) {
             size = s->max_msg_size;
+            break;
+        }
 
         buffer_bytes_left = size - sc->buffer_read_offset;
     }
