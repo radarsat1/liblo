@@ -609,7 +609,8 @@ ssize_t lo_validate_blob(void *data, ssize_t size)
         return -LO_ESIZE;       // invalid size
     }
     dsize = lo_otoh32(*(uint32_t *) data);
-    if (dsize > LO_MAX_MSG_SIZE) {      // avoid int overflow in next step
+    // described size must fit within the buffer
+    if (dsize > size) {      // avoid int overflow in next step
         return -LO_ESIZE;
     }
     end = sizeof(uint32_t) + dsize;     // end of data
