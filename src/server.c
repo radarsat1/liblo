@@ -848,6 +848,7 @@ static int slip_decode(unsigned char **buffer, unsigned char *from,
                 return 0;
             case SLIP_ESC:
                 *state = 1;
+                from++;
                 continue;
             default:
                 *(*buffer)++ = *from++;
@@ -858,9 +859,11 @@ static int slip_decode(unsigned char **buffer, unsigned char *from,
             switch (*from) {
             case SLIP_ESC_END:
                 *(*buffer)++ = SLIP_END;
+                from++;
                 break;
             case SLIP_ESC_ESC:
                 *(*buffer)++ = SLIP_ESC;
+                from++;
                 break;
             }
             *state = 0;
