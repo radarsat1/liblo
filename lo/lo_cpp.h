@@ -164,7 +164,9 @@ namespace lo {
         int send_from(lo_server from, const string_type &path, lo_message m) const
             { return lo_send_message_from(address, from, path, m); }
 
-        int send(lo_server from, lo_bundle b) const
+        int send_from(lo::ServerThread &from, lo_bundle b) const;
+
+        int send_from(lo_server from, lo_bundle b) const
             { return lo_send_bundle_from(address, from, b); }
 
         int get_errno() const
@@ -641,6 +643,12 @@ namespace lo {
 		int r = lo_send_message_from(address, s, path, m);
 		lo_message_free(m);
 		return r;
+	}
+
+	int Address::send_from(lo::ServerThread &from, lo_bundle b) const
+	{
+		lo_server s = static_cast<lo::Server&>(from);
+		return lo_send_bundle_from(address, s, b);
 	}
 
     class Blob

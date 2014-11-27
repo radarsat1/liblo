@@ -287,6 +287,49 @@ lo_server lo_server_new_from_url(const char *url,
     return s;
 }
 
+static
+void lo_server_resolve_hostname(lo_server s)
+{
+    char hostname[LO_HOST_SIZE];
+
+    /* Set hostname to empty string */
+    hostname[0] = '\0';
+
+#ifdef ENABLE_IPV6
+    /* Try it the IPV6 friendly way first */
+    for (it = ai; it; it = it->ai_next) {
+        if (getnameinfo(it->ai_addr, it->ai_addrlen, hostname,
+                        sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0) {
+            break;
+        }
+    }
+
+    /* check to make sure getnameinfo() didn't just set the hostname to "::".
+       Needed on Darwin. */
+    if (hostname[0] == ':') {
+        hostname[0] = '\0';
+    }
+#endif
+
+    /* Fallback to the oldschool (i.e. more reliable) way */
+    if (!hostname[0]) {
+        struct hostent *he;
+
+        gethostname(hostname, sizeof(hostname));
+        he = gethostbyname(hostname);
+        if (he) {
+            strncpy(hostname, he->h_name, sizeof(hostname));
+        }
+    }
+
+    /* somethings gone really wrong, just hope its local only */
+    if (!hostname[0]) {
+        strcpy(hostname, "localhost");
+    }
+
+    s->hostname = strdup(hostname);
+}
+
 lo_server lo_server_new_with_proto_internal(const char *group,
                                             const char *port,
                                             const char *iface,
@@ -300,7 +343,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     int tries = 0;
     char pnum[16];
     const char *service;
-    char hostname[LO_HOST_SIZE];
     int err = 0;
 
 #if defined(WIN32) || defined(_MSC_VER)
@@ -552,43 +594,6 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     } else if (proto == LO_TCP) {
         lo_client_sockets.tcp = s->sockets[0].fd;
     }
-
-    /* Set hostname to empty string */
-    hostname[0] = '\0';
-
-#ifdef ENABLE_IPV6
-    /* Try it the IPV6 friendly way first */
-    for (it = ai; it; it = it->ai_next) {
-        if (getnameinfo(it->ai_addr, it->ai_addrlen, hostname,
-                        sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0) {
-            break;
-        }
-    }
-
-    /* check to make sure getnameinfo() didn't just set the hostname to "::".
-       Needed on Darwin. */
-    if (hostname[0] == ':') {
-        hostname[0] = '\0';
-    }
-#endif
-
-
-    /* Fallback to the oldschool (i.e. more reliable) way */
-    if (!hostname[0]) {
-        struct hostent *he;
-
-        gethostname(hostname, sizeof(hostname));
-        he = gethostbyname(hostname);
-        if (he) {
-            strncpy(hostname, he->h_name, sizeof(hostname));
-        }
-    }
-
-    /* soethings gone really wrong, just hope its local only */
-    if (!hostname[0]) {
-        strcpy(hostname, "localhost");
-    }
-    s->hostname = strdup(hostname);
 
     if (used->ai_family == PF_INET6) {
         struct sockaddr_in6 *addr = (struct sockaddr_in6 *) used->ai_addr;
@@ -843,6 +848,7 @@ static int slip_decode(unsigned char **buffer, unsigned char *from,
                 return 0;
             case SLIP_ESC:
                 *state = 1;
+                from++;
                 continue;
             default:
                 *(*buffer)++ = *from++;
@@ -853,9 +859,11 @@ static int slip_decode(unsigned char **buffer, unsigned char *from,
             switch (*from) {
             case SLIP_ESC_END:
                 *(*buffer)++ = SLIP_END;
+                from++;
                 break;
             case SLIP_ESC_ESC:
                 *(*buffer)++ = SLIP_ESC;
+                from++;
                 break;
             }
             *state = 0;
@@ -2088,6 +2096,9 @@ char *lo_server_get_url(lo_server s)
 
     if (s->protocol == LO_UDP || s->protocol == LO_TCP) {
         const char *proto = s->protocol == LO_UDP ? "udp" : "tcp";
+
+        if (!s->hostname)
+            lo_server_resolve_hostname(s);
 
 #ifndef _MSC_VER
         ret =
