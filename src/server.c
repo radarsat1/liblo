@@ -400,6 +400,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     }
 
     s->sockets[0].fd = -1;
+    s->max_msg_size = LO_DEFAULT_MAX_MSG_SIZE;
 
     memset(&hints, 0, sizeof(hints));
 
@@ -798,20 +799,39 @@ int lo_server_enable_queue(lo_server s, int enable,
 
 void *lo_server_recv_raw(lo_server s, size_t * size)
 {
-    char buffer[LO_MAX_MSG_SIZE];
-    int ret;
+    char *buffer = NULL;
+    int ret, heap_buffer = 0;
     void *data = NULL;
 
-#if defined(WIN32) || defined(_MSC_VER)
-    if (!initWSock())
+    if (s->max_msg_size > 4096) {
+        buffer = malloc(s->max_msg_size);
+        heap_buffer = 1;
+    }
+    else if (buffer > 0) {
+        buffer = alloca(s->max_msg_size);
+    }
+
+    if (!buffer)
         return NULL;
+
+    if (s->max_msg_size<=0) {
+        if (heap_buffer) free(buffer);
+        return NULL;
+    }
+
+#if defined(WIN32) || defined(_MSC_VER)
+    if (!initWSock()) {
+        if (heap_buffer) free(buffer);
+        return NULL;
+    }
 #endif
 
     s->addr_len = sizeof(s->addr);
 
-    ret = recvfrom(s->sockets[0].fd, buffer, LO_MAX_MSG_SIZE, 0,
+    ret = recvfrom(s->sockets[0].fd, buffer, s->max_msg_size, 0,
                    (struct sockaddr *) &s->addr, &s->addr_len);
     if (ret <= 0) {
+        if (heap_buffer) free(buffer);
         return NULL;
     }
     data = malloc(ret);
@@ -820,6 +840,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
     if (size)
         *size = ret;
 
+    if (heap_buffer) free(buffer);
     return data;
 }
 
@@ -990,8 +1011,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         // size as in UDP, however we leave it for security
         // reasons--an unterminated SLIP stream would consume memory
         // indefinitely.
-        if (size > LO_MAX_MSG_SIZE)
-            size = LO_MAX_MSG_SIZE;
+        if (s->max_msg_size != -1 && size > s->max_msg_size) {
+            size = s->max_msg_size;
+            break;
+        }
 
         buffer_bytes_left = size - sc->buffer_read_offset;
     }
@@ -2196,6 +2219,31 @@ void *lo_error_get_context()
 void lo_server_set_error_context(lo_server s, void *user_data)
 {
     s->error_user_data = user_data;
+}
+
+int lo_server_max_msg_size(lo_server s, int req_size)
+{
+    if (req_size == 0)
+        return s->max_msg_size;
+
+    if (s->protocol == LO_UDP) {
+        if (req_size > 65535)
+            req_size = 65535;
+
+        if (req_size < 0)
+            return s->max_msg_size;
+    }
+    else if (s->protocol == LO_TCP)
+    {
+        // TODO: We could potentially shrink the TCP buffers here
+        // if req_size < buffer_size for any open sockets, but
+        // care must be taken to clean up any data already in the
+        // buffers.
+    }
+
+    s->max_msg_size = req_size;
+
+    return s->max_msg_size;
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

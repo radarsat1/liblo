@@ -23,9 +23,19 @@
 extern "C" {
 #endif
 
-/* \brief Maximum length of UDP messages in bytes
+/* \brief Left for backward-compatibility.  See
+ * LO_DEFAULT_MAX_MSG_SIZE below, and lo_server_max_msg_size().
  */
 #define LO_MAX_MSG_SIZE 32768
+
+/* \brief Maximum length of incoming UDP messages in bytes.
+ */
+#define LO_MAX_UDP_MSG_SIZE 65535
+
+/* \brief Default maximum length of incoming messages in bytes,
+ * corresponds to max UDP message size.
+ */
+#define LO_DEFAULT_MAX_MSG_SIZE LO_MAX_UDP_MSG_SIZE
 
 /* \brief A set of macros to represent different communications transports
  */
@@ -36,8 +46,8 @@ extern "C" {
 
 /* an internal value, ignored in transmission but check against LO_MARKER in the
  * argument list. Used to do primitive bounds checking */
-#	define LO_MARKER_A (void *)0xdeadbeefdeadbeefL
-#	define LO_MARKER_B (void *)0xf00baa23f00baa23L
+#	define LO_MARKER_A (void *)0xdeadbeefdeadbeefLLU
+#	define LO_MARKER_B (void *)0xf00baa23f00baa23LLU
 
 #define LO_ARGS_END LO_MARKER_A, LO_MARKER_B
 

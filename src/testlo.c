@@ -765,6 +765,7 @@ void *test_tcp_thread(void *context)
         recv_times += 1;
         if (!lo_server_recv_noblock(s, 0))
             SLEEP_MS(300);
+        lo_server_max_msg_size(s, 1024);
     }
 
     printf("Freeing.\n");

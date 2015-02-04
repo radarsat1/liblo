@@ -435,7 +435,7 @@ static int send_data(lo_address a, lo_server from, char *data,
         return -1;
 #endif
 
-    if (data_len > LO_MAX_MSG_SIZE) {
+    if (a->protocol == LO_UDP && data_len > LO_MAX_UDP_MSG_SIZE) {
         a->errnum = 99;
         a->errstr = "Attempted to send message in excess of maximum "
             "message size";
