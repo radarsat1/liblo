@@ -631,6 +631,7 @@ namespace lo {
 	// This function needed since lo::ServerThread doesn't
 	// properly auto-upcast to lo::Server -> lo_server.  (Because
 	// both lo_server and lo_serverthread are typedef'd as void*)
+	inline
 	int Address::send_from(lo::ServerThread &from, const string_type &path,
 						   const string_type &type, ...) const
 	{
@@ -645,6 +646,7 @@ namespace lo {
 		return r;
 	}
 
+	inline
 	int Address::send_from(lo::ServerThread &from, lo_bundle b) const
 	{
 		lo_server s = static_cast<lo::Server&>(from);
@@ -812,14 +814,14 @@ namespace lo {
         lo_bundle bundle;
     };
 
-    std::string version() {
+    inline std::string version() {
         char str[32];
         lo_version(str, 32, 0, 0, 0, 0, 0, 0, 0);
         return std::string(str);
     }
 
-    lo_timetag now() { lo_timetag tt; lo_timetag_now(&tt); return tt; }
-    lo_timetag immediate() { return LO_TT_IMMEDIATE; }
+    inline lo_timetag now() { lo_timetag tt; lo_timetag_now(&tt); return tt; }
+    inline lo_timetag immediate() { return LO_TT_IMMEDIATE; }
 };
 
 #endif // _LO_CPP_H_
