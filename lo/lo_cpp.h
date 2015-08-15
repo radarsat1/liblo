@@ -481,6 +481,26 @@ namespace lo {
             lo_server_del_method(server, path, typespec);
         }
 
+        std::string added_paths_str( void ) const
+        {
+            std::ostringstream added_paths;
+            for(auto it = _handlers.begin(); it!=_handlers.end(); ++it )
+                added_paths << it->first << std::endl;
+
+            return added_paths.str();
+        }
+
+        std::list<std::pair<std::string,std::string>>
+                                added_paths_list( void ) const
+        {
+            std::list<std::pair<std::string,std::string>> added_paths;
+            for(auto it = _handlers.begin(); it!=_handlers.end(); ++it )
+                added_paths.push_back(std::pair<std::string,std::string>(
+                                    it->first.substr(0,it->first.find(',')),
+                                    it->first.substr(it->first.find(',')+1) ));
+            return added_paths;
+        }
+
         int dispatch_data(void *data, size_t size)
             { return lo_server_dispatch_data(server, data, size); }
 
