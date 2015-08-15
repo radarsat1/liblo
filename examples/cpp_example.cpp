@@ -54,6 +54,12 @@ int main()
     st.start();
 
     /*
+     * Display the paths and type specifications of added methods
+     */
+    std::cout << "Added methods [path,types]:" << std::endl
+              << st.added_paths_str() << std::endl;
+
+    /*
      * Send some messages to the server we just created on localhost.
      */
     lo::Address a("localhost", "9000");
