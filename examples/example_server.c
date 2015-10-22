@@ -30,6 +30,9 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 int foo_handler(const char *path, const char *types, lo_arg ** argv,
                 int argc, void *data, void *user_data);
 
+int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
+                     int argc, void *data, void *user_data);
+
 int quit_handler(const char *path, const char *types, lo_arg ** argv,
                  int argc, void *data, void *user_data);
 
@@ -44,6 +47,9 @@ int main()
     /* add method that will match the path /foo/bar, with two numbers, coerced
      * to float and int */
     lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler, NULL);
+
+    /* add method that will match the path /blobtest with one blob arg */
+    lo_server_thread_add_method(st, "/blobtest", "b", blobtest_handler, NULL);
 
     /* add method that will match the path /quit with no args */
     lo_server_thread_add_method(st, "/quit", "", quit_handler, NULL);
@@ -93,6 +99,36 @@ int foo_handler(const char *path, const char *types, lo_arg ** argv,
 {
     /* example showing pulling the argument values out of the argv array */
     printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
+    fflush(stdout);
+
+    return 0;
+}
+
+int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
+                     int argc, void *data, void *user_data)
+{
+    /* example showing how to get data for a blob */
+    int i, size = argv[0]->blob.size;
+    char mydata[6];
+
+    unsigned char *blobdata = lo_blob_dataptr((lo_blob)argv[0]);
+    int blobsize = lo_blob_datasize((lo_blob)argv[0]);
+
+    /* Alternatively:
+     * blobdata = &argv[0]->blob.data;
+     * blobsize = argv[0]->blob.size;
+     */
+
+    /* Don't trust network input! Blob can be anything, so check if
+       each character is a letter A-Z. */
+    for (i=0; i<6 && i<blobsize; i++)
+        if (blobdata[i] >= 'A' && blobdata[i] <= 'Z')
+            mydata[i] = blobdata[i];
+        else
+            mydata[i] = '.';
+    mydata[5] = 0;
+
+    printf("%s <- length:%d '%s'\n", path, size, mydata);
     fflush(stdout);
 
     return 0;

@@ -54,6 +54,9 @@ int main(int argc, char *argv[])
         /* send a 'blob' object to /a/b/c/d */
         lo_send(t, "/a/b/c/d", "b", btest);
 
+        /* send a 'blob' object to /blobtest */
+        lo_send(t, "/blobtest", "b", btest);
+
         /* send a jamin scene change instruction with a 32bit integer argument */
         lo_send(t, "/jamin/scene", "i", 2);
     }
