@@ -812,7 +812,16 @@ lo_method lo_server_add_method(lo_server s, const char *path,
  * \param typespec The typespec the method accepts.
  */
 void lo_server_del_method(lo_server s, const char *path,
-                               const char *typespec);
+                          const char *typespec);
+
+/**
+ * \brief Delete a specific OSC method from the specified server.
+ *
+ * \param s The server the method is to be removed from.
+ * \param method The method to delete.  If not found or NULL, no action is taken.
+ * \return 0 if no errors occurred, 1 if the method was not found.
+ */
+int lo_server_del_lo_method(lo_server s, lo_method method);
 
 /**
  * \brief Add bundle notification handlers to the specified server.

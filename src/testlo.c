@@ -1209,6 +1209,14 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler,
                                 lo_server_thread_get_server(st));
 
+    /* add it again.. this will be removed later for testing
+     * del_lo_method, /foo/bar should still work after it was
+     * successfully removed, since the other handler is still
+     * registered */
+    lo_method foobarmethod =
+    lo_server_thread_add_method(st, "/foo/bar", "fi", foo_handler,
+                                lo_server_thread_get_server(st));
+
     lo_server_thread_add_method(st, "/reply", "s", reply_handler, NULL);
 
     lo_server_thread_add_method(st, "/lotsofformats", "fisbmhtdSccTFNI",
@@ -1218,6 +1226,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
                                 coerce_handler, NULL);
 
     lo_server_thread_add_method(st, "/bundle", NULL, bundle_handler, NULL);
+
     lo_server_thread_add_method(st, "/timestamp", NULL,
                                 timestamp_handler, NULL);
     lo_server_thread_add_method(st, "/jitter", "ti", jitter_handler, NULL);
@@ -1276,6 +1285,10 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 
     /* Delete methods */
     lo_server_thread_del_method(st, "/coerce", "dfhiSs");
+
+    TEST(lo_server_thread_del_lo_method(st, foobarmethod) == 0);
+    TEST(lo_server_thread_del_lo_method(st, foobarmethod) == 1);
+    TEST(lo_server_thread_del_lo_method(st, NULL) == 1);
 
     {
         lo_server s = lo_server_new(NULL, error);

@@ -127,6 +127,11 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
     lo_server_del_method(st->s, path, typespec);
 }
 
+int lo_server_thread_del_lo_method(lo_server_thread st, lo_method method)
+{
+    return lo_server_del_lo_method(st->s, method);
+}
+
 int lo_server_thread_start(lo_server_thread st)
 {
     int result;

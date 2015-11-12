@@ -2066,6 +2066,41 @@ void lo_server_del_method(lo_server s, const char *path,
     }
 }
 
+int lo_server_del_lo_method(lo_server s, lo_method method)
+{
+    lo_method it, prev;
+    int found = 0;
+
+    if (!method)
+        return 0;
+
+    if (!s->first)
+        return 1;
+
+    it = s->first;
+    prev = it;
+    while (it) {
+        /* If we found it */
+        if (it == method) {
+            found = 1;
+            /* Take care when removing the head. */
+            if (it == s->first) {
+                s->first = it->next;
+            } else {
+                prev->next = it->next;
+            }
+            free((void *) it->path);
+            free((void *) it->typespec);
+            free(it);
+            it = prev;
+        }
+        prev = it;
+        if (it)
+            it = it->next;
+    }
+    return !found;
+}
+
 int lo_server_add_bundle_handlers(lo_server s,
                                   lo_bundle_start_handler sh,
                                   lo_bundle_end_handler eh,
