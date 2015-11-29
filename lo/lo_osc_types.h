@@ -140,6 +140,11 @@ typedef union {
     uint8_t    m[4];
 	/** OSC TimeTag value. */
     lo_timetag t;
+    /** Blob **/
+    struct {
+        int32_t size;
+        char data;
+    } blob;
 } lo_arg;
 
 /* Note: No struct literals in MSVC */
