@@ -589,17 +589,20 @@ namespace lo {
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
-            : Server(
-		     (server_thread = lo_server_thread_new(port,
-                       [](int num, const char *msg, const char *where){
-                       auto h = static_cast<handler_error*>(lo_error_get_context());
-		       if (h) (*h)(num, msg, where);}))
-		     ? lo_server_thread_get_server(server_thread) : 0)
+            : Server(0)
             {
+                server_thread = lo_server_thread_new(port,
+                    [](int num, const char *msg, const char *where){
+                    auto h = static_cast<handler_error*>(lo_error_get_context());
+                    if (h) (*h)(num, msg, where);});
                 if (server_thread) {
+                    server = lo_server_thread_get_server(server_thread);
                     auto h = new handler_error(e);
                     _error_handler.reset(h);
                     lo_server_thread_set_error_context(server_thread, h);
+                    lo_server_set_error_context(server,
+					    (_error_handler = std::unique_ptr<handler>(
+                            new handler_error(e))).get());
                 }
             }
 
