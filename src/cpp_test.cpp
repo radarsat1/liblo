@@ -168,7 +168,7 @@ int main()
     a.send("test7", "i", 140);
     a.send("test8", "i", 160);
     a.send("test9", "i", 180);
-    a.send("test10", "i", 200);
+    a.send("test10", std::string("i"), 200);
 
     lo::Message m;
     m.add("i", 220);

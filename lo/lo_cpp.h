@@ -96,7 +96,7 @@ namespace lo {
         // In these functions we append "$$" to the type string, which
         // simply instructs lo_message_add_varargs() not to use
         // LO_MARKER checking at the end of the argument list.
-        int send(const string_type &path, const string_type &type, ...) const
+        int send(const string_type &path, const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -109,7 +109,7 @@ namespace lo {
         }
 
         int send(lo_timetag ts, const string_type &path,
-                 const string_type &type, ...) const
+                 const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -130,10 +130,10 @@ namespace lo {
             { return lo_send_bundle(address, b); }
 
         int send_from(lo::ServerThread &from, const string_type &path,
-                      const string_type &type, ...) const;
+                      const string_type type, ...) const;
 
         int send_from(lo_server from, const string_type &path,
-                      const string_type &type, ...) const
+                      const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -147,7 +147,7 @@ namespace lo {
 
         int send_from(lo_server from, lo_timetag ts, 
                       const string_type &path,
-                      const string_type &type, ...) const
+                      const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -220,7 +220,7 @@ namespace lo {
             : message(m.message) { if (m.message)
                                        lo_message_incref(m.message); }
 
-        Message(const string_type &types, ...)
+        Message(const string_type types, ...)
         {
             message = lo_message_new();
             lo_message_incref(message);
@@ -236,7 +236,7 @@ namespace lo {
         Message& operator=(Message m) { m.swap(*this); return *this; }
         void swap(Message& m) throw () { std::swap(this->message, m.message); }
 
-        int add(const string_type &types, ...)
+        int add(const string_type types, ...)
         {
             va_list q;
             va_start(q, types);
@@ -633,7 +633,7 @@ namespace lo {
 	// both lo_server and lo_serverthread are typedef'd as void*)
 	inline
 	int Address::send_from(lo::ServerThread &from, const string_type &path,
-						   const string_type &type, ...) const
+						   const string_type type, ...) const
 	{
 		va_list q;
 		va_start(q, type);
