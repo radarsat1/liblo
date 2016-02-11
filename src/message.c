@@ -997,8 +997,8 @@ void lo_message_pp(lo_message m)
     putchar('\n');
     if (d != end) {
         fprintf(stderr,
-                "liblo warning: type and data do not match (off by %d) in message %p\n",
-                abs((char *) d - (char *) end), m);
+                "liblo warning: type and data do not match (off by %ld) in message %p\n",
+                labs((char *) d - (char *) end), m);
     }
 }
 
