@@ -774,7 +774,7 @@ void *test_tcp_thread(void *context)
     return 0;
 }
 
-#define SLIP_END        0300    /* indicates end of packet */
+#define SLIP_END        '\xC0'    /* indicates end of packet */
 
 void test_tcp_halfsend(int stream_type)
 {
