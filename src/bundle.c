@@ -364,7 +364,7 @@ void lo_bundle_free_recursive(lo_bundle b)
 
 static void offset_pp(int offset, int *state)
 {
-    size_t i;
+    int i;
 
     for (i=0; i < offset; i++) {
 	if (!state[i])
@@ -379,7 +379,8 @@ static void offset_pp(int offset, int *state)
 	printf("└─");
 }
 
-static int *lo_bundle_pp_internal(lo_bundle b, int offset, int *state, size_t *len)
+static int *lo_bundle_pp_internal(lo_bundle b, unsigned int offset,
+                                  int *state, size_t *len)
 {
     size_t i;
    

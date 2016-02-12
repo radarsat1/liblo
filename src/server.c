@@ -987,8 +987,8 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     struct socket_context *sc = &s->contexts[isock];
     char *stack_buffer = 0, *read_into;
     uint32_t msg_len;
-	int buffer_bytes_left, size, bytes_recv;
-	size_t bytes_wrote;
+	int buffer_bytes_left, bytes_recv;
+	ssize_t bytes_wrote, size;
     *pdata = 0;
 
   again:
@@ -1021,7 +1021,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         buffer_bytes_left = size - sc->buffer_read_offset;
     }
 
-    if (size > sc->buffer_size)
+    if ((size_t)size > sc->buffer_size)
     {
         sc->buffer_size = size;
         sc->buffer = (char*) realloc(sc->buffer, sc->buffer_size);
