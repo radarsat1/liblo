@@ -180,7 +180,7 @@ int main()
     test_pattern(a);
     test_subtest(st);
     test_bundle(st, a);
-    test_nonblock(st);
+    test_nonblock();
     test_unix_sockets();
     test_tcp();
     test_tcp_nonblock();
