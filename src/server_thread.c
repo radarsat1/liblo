@@ -119,7 +119,8 @@ void lo_server_thread_free(lo_server_thread st)
 lo_method lo_server_thread_add_method(lo_server_thread st,
                                       const char *path,
                                       const char *typespec,
-                                      lo_method_handler h, void *user_data)
+                                      lo_method_handler h,
+                                      const void *user_data)
 {
     return lo_server_add_method(st->s, path, typespec, h, user_data);
 }

@@ -118,7 +118,7 @@ void lo_server_thread_free(lo_server_thread st);
  */
 lo_method lo_server_thread_add_method(lo_server_thread st, const char *path,
                                const char *typespec, lo_method_handler h,
-                               void *user_data);
+                               const void *user_data);
 /**
  * \brief Delete an OSC method from the specifed server thread.
  *

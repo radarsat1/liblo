@@ -1985,7 +1985,7 @@ static int dispatch_queued(lo_server s, int dispatch_all)
 
 lo_method lo_server_add_method(lo_server s, const char *path,
                                const char *typespec, lo_method_handler h,
-                               void *user_data)
+                               const void *user_data)
 {
     lo_method m = (lo_method) calloc(1, sizeof(struct _lo_method));
     lo_method it;

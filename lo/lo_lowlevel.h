@@ -801,7 +801,7 @@ int lo_server_recv(lo_server s);
  */
 lo_method lo_server_add_method(lo_server s, const char *path,
                                const char *typespec, lo_method_handler h,
-                               void *user_data);
+                               const void *user_data);
 
 /**
  * \brief Delete an OSC method from the specifed server.
