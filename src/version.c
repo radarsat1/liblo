@@ -22,6 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "lo_types_internal.h"
+#include "lo_internal.h"
+#include "lo/lo.h"
+#include "lo/lo_throw.h"
+
 void lo_version(char *verstr, int verstr_size,
                 int *major, int *minor, char *extra, int extra_size,
                 int *lt_major, int *lt_minor, int *lt_bug)
