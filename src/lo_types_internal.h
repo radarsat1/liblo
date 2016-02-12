@@ -185,14 +185,14 @@ typedef void *lo_server_thread;
 typedef struct _lo_bundle *lo_bundle;
 
 typedef struct _lo_element {
-	lo_element_type type;
-	union {
-		lo_bundle bundle;
-		struct {
-			lo_message msg;
-			const char *path;
-		} message;
-	} content;
+    lo_element_type type;
+    union {
+        lo_bundle bundle;
+        struct {
+            lo_message msg;
+            const char *path;
+        } message;
+    } content;
 } lo_element;
 
 struct _lo_bundle {

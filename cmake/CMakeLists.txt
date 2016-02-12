@@ -11,7 +11,6 @@ project(${PROJECT})
 
 set(PACKAGE_NAME "${PROJECT}")
 
-set(LANGUAGE C)
 if(NOT CMAKE_VERSION VERSION_LESS 3.1.0)
     set_property(TARGET ${LIBRARY} PROPERTY C_STANDARD 11)
     set_property(TARGET ${LIBRARY} PROPERTY CXX_STANDARD 11)
@@ -53,10 +52,6 @@ set(LIBRARY_HEADERS
 set(OSCDUMP_SOURCES ../src/tools/oscdump.c)
 set(OSCSEND_SOURCES ../src/tools/oscsend.c)
 
-set_source_files_properties(
-    ${LIBRARY_SOURCES} ${OSCDUMP_SOURCES} ${OSCSEND_SOURCES}
-    PROPERTIES LANGUAGE ${LANGUAGE})
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     list(APPEND LIBRARY_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def)
 endif()
@@ -70,6 +65,12 @@ set(THREADING ON CACHE BOOL "Build with threading support.")
 if(THREADING)
     set(LIBRARY_SOURCES ${LIBRARY_SOURCES} ../src/server_thread.c)
 endif()
+
+set(BUILD_LANGUAGE C CACHE STRING "Build language (C or CXX)")
+mark_as_advanced(BUILD_LANGUAGE)
+set_source_files_properties(
+    ${LIBRARY_SOURCES} ${OSCDUMP_SOURCES} ${OSCSEND_SOURCES}
+    PROPERTIES LANGUAGE ${BUILD_LANGUAGE})
 
 add_library(${LIBRARY_STATIC} STATIC ${LIBRARY_SOURCES})
 add_library(${LIBRARY_SHARED} SHARED ${LIBRARY_SOURCES})

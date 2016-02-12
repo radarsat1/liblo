@@ -86,7 +86,7 @@ static int subtest_reply_count = 0;
 static int error_okay = 0;
 static int tcp_done = 0;
 
-char testdata[5] = "ABCDE";
+char testdata[5] = "ABCD";
 
 static int jitter_count = 0;
 static float jitter_total = 0.0f;
@@ -227,7 +227,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
     printf("path: <%s>\n", path);
     for (i = 0; i < argc; i++) {
         printf("arg %d '%c' ", i, types[i]);
-        lo_arg_pp(types[i], argv[i]);
+        lo_arg_pp((lo_type) types[i], argv[i]);
         printf("\n");
     }
     printf("\n");
@@ -288,7 +288,7 @@ int lots_handler(const char *path, const char *types, lo_arg ** argv,
     TEST(types[1] == 'i' && argv[1]->i == 123);
     TEST(types[2] == 's' && !strcmp(&argv[2]->s, "123"));
     b = (lo_blob) argv[3];
-    d = lo_blob_dataptr(b);
+    d = (unsigned char *) lo_blob_dataptr(b);
     TEST(types[3] == 'b' && lo_blob_datasize(b) == 5);
     TEST(d[0] == 'A' && d[1] == 'B' && d[2] == 'C' && d[3] == 'D' &&
          d[4] == 'E');
@@ -386,7 +386,7 @@ int pattern_handler(const char *path, const char *types, lo_arg ** argv,
     HANDLER("pattern");
 
     pattern_count++;
-    printf("pattern matched %s\n", (char *) user_data);
+    printf("pattern matched %s\n", (char*) user_data);
 
     return 0;
 }
@@ -400,7 +400,7 @@ int subtest_handler(const char *path, const char *types, lo_arg ** argv,
     a = lo_message_get_source(data);
 
     subtest_count++;
-    lo_send_from(a, lo_server_thread_get_server(user_data),
+    lo_send_from(a, lo_server_thread_get_server((lo_server_thread)user_data),
                  LO_TT_IMMEDIATE, "/subtest", "i", subtest_count);
 
     return 0;
@@ -541,9 +541,9 @@ void test_deserialise()
     // serialise it
     len = lo_message_length(msg, "/foo");
     printf("serialise message_length=%d\n", (int) len);
-    buf = calloc(len, sizeof(char));
+    buf = (char*) calloc(len, sizeof(char));
     size = 0;
-    tmp = lo_message_serialise(msg, "/foo", buf, &size);
+    tmp = (char*) lo_message_serialise(msg, "/foo", buf, &size);
     TEST(tmp == buf && size == len && 92 == len);
     lo_message_free(msg);
 
@@ -584,9 +584,9 @@ void test_deserialise()
     // serialise it again, compare
     len = lo_message_length(msg, "/foo");
     printf("serialise message_length=%d\n", (int) len);
-    buf2 = calloc(len, sizeof(char));
+    buf2 = (char*) calloc(len, sizeof(char));
     size = 0;
-    tmp = lo_message_serialise(msg, "/foo", buf2, &size);
+    tmp = (char*) lo_message_serialise(msg, "/foo", buf2, &size);
     TEST(tmp == buf2 && size == len && 92 == len);
     TEST(!memcmp(buf, buf2, len));
     lo_message_free(msg);

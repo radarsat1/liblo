@@ -47,7 +47,8 @@ lo_server_thread lo_server_thread_new_multicast(const char *group,
                                                 const char *port,
                                                 lo_err_handler err_h)
 {
-    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
+    lo_server_thread st = (lo_server_thread)
+        malloc(sizeof(struct _lo_server_thread));
     st->s = lo_server_new_multicast(group, port, err_h);
     st->active = 0;
     st->done = 0;
@@ -65,7 +66,8 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
                                                  int proto,
                                                  lo_err_handler err_h)
 {
-    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
+    lo_server_thread st = (lo_server_thread)
+        malloc(sizeof(struct _lo_server_thread));
     st->s = lo_server_new_with_proto(port, proto, err_h);
     st->active = 0;
     st->done = 0;
@@ -82,7 +84,8 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
 lo_server_thread lo_server_thread_new_from_url(const char *url,
                                                lo_err_handler err_h)
 {
-    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
+    lo_server_thread st = (lo_server_thread)
+        malloc(sizeof(struct _lo_server_thread));
     st->s = lo_server_new_from_url(url, err_h);
     st->active = 0;
     st->done = 0;
