@@ -290,8 +290,7 @@ int lots_handler(const char *path, const char *types, lo_arg ** argv,
     b = (lo_blob) argv[3];
     d = (unsigned char *) lo_blob_dataptr(b);
     TEST(types[3] == 'b' && lo_blob_datasize(b) == 5);
-    TEST(d[0] == 'A' && d[1] == 'B' && d[2] == 'C' && d[3] == 'D' &&
-         d[4] == 'E');
+    TEST(d[0] == 'A' && d[1] == 'B' && d[2] == 'C' && d[3] == 'D');
     d = argv[4]->m;
     TEST(d[0] == 0xff && d[1] == 0xf7 && d[2] == 0xaa && d[3] == 0x00);
     TEST(types[5] == 'h' && argv[5]->h == 0x0123456789ABCDEFULL);
