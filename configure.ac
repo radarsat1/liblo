@@ -146,23 +146,39 @@ AC_CHECK_FUNCS([getifaddrs])
 # Check for whether threads are wanted, and if so, did we find libpthread.
 if test "x$want_threads" = "xyes"; then
   AC_SEARCH_LIBS([pthread_create], [c pthread],
-    [AS_IF([! test "$ac_res" = "-lc" && ! test "$ac_res" = "none required"],
+    [AS_IF([! test x"$ac_res" = x"-lc" && ! test x"$ac_res" = x"none required"],
            [LIBPTHREAD="$ac_res"])
      have_threads=yes;
      AC_DEFINE(ENABLE_THREADS, 1, [Define this to enable threads.])],
     [AC_MSG_ERROR(pthread not found. Try option --disable-threads.)])
 fi
 
+# For now, only implementation of threading is pthread, so indicate
+# its availablility.  Later, possibly HAVE_LIBPTHREAD may be false,
+# while ENABLE_THREADS may be true, and another threading
+# implementation may be used.  (e.g. Windows threads, C11 threads..)
+if test x"$have_threads" == xyes; then
+    HAVE_LIBPTHREAD=1
+    AC_DEFINE([HAVE_LIBPTHREAD],[1],
+      [Define to use the pthread library for threading.])
+fi
+
 # Add back -Werror if it was there before
 CFLAGS="$CFLAGS""$CFLAGS_werror"
 
+# Optional threads support
+THREADS_ENABLER='#include "lo/lo_serverthread.h"'
+THREADS_DISABLER='/* lo/lo_serverthread.h unavailable (--disable-threads) */'
 AC_SUBST(LIBPTHREAD)
 AC_SUBST(DEFTHREADS)
+AC_SUBST(THREADS_INCLUDE)
 AM_CONDITIONAL([ENABLE_THREADS], [test "x$have_threads" = xyes])
 AS_IF([test x"$have_threads" = xyes],
       [AC_SUBST(ENABLE_THREADS,1)
+       AC_SUBST(THREADS_INCLUDE,["$THREADS_ENABLER"])
        AC_SUBST(DEFTHREADS,)],
       [AC_SUBST(ENABLE_THREADS,0)
+       AC_SUBST(THREADS_INCLUDE,["$THREADS_DISABLER"])
        AC_SUBST(DEFTHREADS,[';;'])])
 
 # Checks for header files.

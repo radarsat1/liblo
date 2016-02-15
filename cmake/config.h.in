@@ -8,6 +8,6 @@
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_INET_PTON
 #cmakedefine01 HAVE_LIBPTHREAD
-#cmakedefine01 ENABLE_THREADS
+#cmakedefine ENABLE_THREADS
 
 #define PRINTF_LL "l"

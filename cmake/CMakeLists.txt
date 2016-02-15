@@ -86,6 +86,13 @@ if(THREADING)
     find_package(Threads)
 
     target_link_libraries(${LIBRARY_SHARED} Threads::Threads)
+
+    set(THREADS_INCLUDE
+      "#include \"lo/lo_serverthread.h\"")
+
+else()
+    set(THREADS_INCLUDE
+      "/* lo/lo_serverthread.h unavailable (THREADING=OFF) */")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

@@ -30,10 +30,7 @@ extern "C" {
 #include "lo/lo_osc_types.h"
 #include "lo/lo_errors.h"
 #include "lo/lo_lowlevel.h"
-
-#if @ENABLE_THREADS@+0
-#include "lo/lo_serverthread.h"
-#endif
+@THREADS_INCLUDE@
 
 /**
  * \defgroup liblo High-level OSC API

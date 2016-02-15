@@ -10,6 +10,9 @@
 /* Define this to enable threads. */
 @DEFTHREADS@#define ENABLE_THREADS 1
 
+/* Define this to use pthreads for threading. */
+@DEFTHREADS@#define HAVE_LIBPTHREADS 1
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
