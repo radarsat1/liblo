@@ -381,7 +381,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->queued = NULL;
     s->sockets_len = 1;
     s->sockets_alloc = 2;
-    s->sockets = (struct pollfd *) calloc(2, sizeof(*(s->sockets)));
+    s->sockets = (lo_server_fd_type *) calloc(2, sizeof(*(s->sockets)));
     s->contexts = (struct socket_context *) calloc(2, sizeof(*(s->contexts)));
     s->sources = (lo_address)calloc(2, sizeof(struct _lo_address));
     s->sources_len = 2;
@@ -1564,7 +1564,7 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
                            sizeof(*(s->sockets)) * (s->sockets_alloc * 2));
         if (!sp)
             return -1;
-        s->sockets = (struct pollfd *) sp;
+        s->sockets = (lo_server_fd_type *) sp;
         memset((char*)sp + s->sockets_alloc*sizeof(*s->sockets),
                0, s->sockets_alloc*sizeof(*s->sockets));
 

@@ -134,6 +134,12 @@ struct socket_context {
     int slip_state;                     //<! state variable for slip decoding
 };
 
+#ifdef HAVE_POLL
+    typedef struct pollfd lo_server_fd_type;
+#else
+    typedef struct { int fd; } lo_server_fd_type;
+#endif
+
 typedef struct _lo_server {
     struct addrinfo *ai;
     lo_method first;
@@ -148,13 +154,7 @@ typedef struct _lo_server {
     socklen_t addr_len;
     int sockets_len;
     int sockets_alloc;
-#ifdef HAVE_POLL
-    struct pollfd *sockets;
-#else
-    struct {
-        int fd;
-    } *sockets;
-#endif
+    lo_server_fd_type *sockets;
 
     // Some extra data needed per open socket.  Note that we don't put
     // it in the socket struct, because that layout is needed for
