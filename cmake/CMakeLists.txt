@@ -159,7 +159,7 @@ set_target_properties(${LIBRARY_STATIC} PROPERTIES
     )
 
 if(NOT DEFINED PRINTF_LL)
-    message(STATUS "Checking for how to print long long int")
+    message(STATUS "Check how to print long long int")
     try_compile(PRINTF_LL_AVAILABLE ${CMAKE_CURRENT_BINARY_DIR}
         SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test-printf-ll.c")
     if(PRINTF_LL_AVAILABLE)
