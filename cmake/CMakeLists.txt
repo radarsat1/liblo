@@ -158,19 +158,23 @@ set_target_properties(${LIBRARY_STATIC} PROPERTIES
     OUTPUT_NAME "lo"
     )
 
-try_compile(PRINTF_LL_AVAILABLE ${CMAKE_CURRENT_BINARY_DIR}
-    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test-printf-ll.c")
-if(PRINTF_LL_AVAILABLE)
-    set(PRINTF_LL "ll")
-else()
+if(NOT DEFINED PRINTF_LL)
+    message(STATUS "Checking for how to print long long int")
     try_compile(PRINTF_LL_AVAILABLE ${CMAKE_CURRENT_BINARY_DIR}
-        SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test-printf-I64.c")
+        SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test-printf-ll.c")
     if(PRINTF_LL_AVAILABLE)
-        set(PRINTF_LL "I64")
+        set(PRINTF_LL "ll" CACHE INTERNAL "")
     else()
-        message(FATAL_ERROR "printf doesn't support long long int")
+        try_compile(PRINTF_LL_AVAILABLE ${CMAKE_CURRENT_BINARY_DIR}
+            SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test-printf-I64.c")
+        if(PRINTF_LL_AVAILABLE)
+            set(PRINTF_LL "I64" CACHE INTERNAL "")
+        else()
+            message(FATAL_ERROR "printf doesn't support long long int")
+        endif()
     endif()
 endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(VERSION "${CONFIGURE_AC_CURRENT}.${CONFIGURE_AC_REVISION}")
     configure_file(
