@@ -10,4 +10,4 @@
 #cmakedefine01 HAVE_LIBPTHREAD
 #cmakedefine ENABLE_THREADS
 
-#define PRINTF_LL "l"
+#define PRINTF_LL "@PRINTF_LL@"

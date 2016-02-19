@@ -89,7 +89,7 @@
 #define PACKAGE_VERSION "@VERSION@"
 
 /* printf code for type long long int */
-#define PRINTF_LL "ll"
+#define PRINTF_LL "@PRINTF_LL@"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
