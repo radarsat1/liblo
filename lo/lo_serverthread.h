@@ -131,17 +131,20 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
 				 const char *typespec);
 
 /**
- * \brief Add an init and/or a cleanup function to the specifed server thread.
+ * \brief Set an init and/or a cleanup function to the specifed server thread.
  *
  * To have any effect, it must be called before the server thread is started.
  *
- * \param st The server thread the method is to be added to.
- * \param ifn The init callback function that will be called just after thread start
- * \param cfn The init callback function that will be called just before thread exit
- * \param user_data A value that will be passed to the callback functions
+ * \param st The server thread to which the method is to be added.
+ * \param init The init function to be called just after thread start.
+ *             May be NULL.
+ * \param cleanup The cleanup function to be called just before thread
+ *                exit.  May be NULL.
+ * \param user_data A value that will be passed to the callback functions.
  */
-void lo_server_thread_add_functions(lo_server_thread st,
-                                    lo_thread_init_function ifn, lo_thread_cleanup_function cfn,
+void lo_server_thread_set_callbacks(lo_server_thread st,
+                                    lo_server_thread_init_callback init,
+                                    lo_server_thread_cleanup_callback cleanup,
                                     void *user_data);
 
 /**

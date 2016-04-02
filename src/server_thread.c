@@ -43,17 +43,33 @@ lo_server_thread lo_server_thread_new(const char *port,
     return lo_server_thread_new_with_proto(port, LO_DEFAULT, err_h);
 }
 
+static lo_server_thread alloc_server_thread(lo_server s)
+{
+    if (!s)
+        return NULL;
+    lo_server_thread st = (lo_server_thread)
+        malloc(sizeof(struct _lo_server_thread));
+    st->s = s;
+    st->active = 0;
+    st->done = 0;
+    st->cb_init = NULL;
+    st->cb_cleanup = NULL;
+    st->user_data = NULL;
+    return st;
+}
+
 lo_server_thread lo_server_thread_new_multicast(const char *group,
                                                 const char *port,
                                                 lo_err_handler err_h)
 {
+    alloc_server_thread(0);
     lo_server_thread st = (lo_server_thread)
         malloc(sizeof(struct _lo_server_thread));
     st->s = lo_server_new_multicast(group, port, err_h);
     st->active = 0;
     st->done = 0;
-    st->init_function = NULL;
-    st->cleanup_function = NULL;
+    st->cb_init = NULL;
+    st->cb_cleanup = NULL;
     st->user_data = NULL;
 
     if (!st->s) {
@@ -74,8 +90,8 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
     st->s = lo_server_new_with_proto(port, proto, err_h);
     st->active = 0;
     st->done = 0;
-    st->init_function = NULL;
-    st->cleanup_function = NULL;
+    st->cb_init = NULL;
+    st->cb_cleanup = NULL;
     st->user_data = NULL;
 
     if (!st->s) {
@@ -95,8 +111,8 @@ lo_server_thread lo_server_thread_new_from_url(const char *url,
     st->s = lo_server_new_from_url(url, err_h);
     st->active = 0;
     st->done = 0;
-    st->init_function = NULL;
-    st->cleanup_function = NULL;
+    st->cb_init = NULL;
+    st->cb_cleanup = NULL;
     st->user_data = NULL;
 
     if (!st->s) {
@@ -140,12 +156,13 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
     lo_server_del_method(st->s, path, typespec);
 }
 
-void lo_server_thread_add_functions(lo_server_thread st,
-                                    lo_thread_init_function ifn, lo_thread_cleanup_function cfn,
+void lo_server_thread_set_callbacks(lo_server_thread st,
+                                    lo_server_thread_init_callback init,
+                                    lo_server_thread_cleanup_callback cleanup,
                                     void *user_data)
 {
-    st->init_function = ifn;
-    st->cleanup_function = cfn;
+    st->cb_init = init;
+    st->cb_cleanup = cleanup;
     st->user_data = user_data;
 }
 
@@ -216,8 +233,13 @@ static void thread_func(void *data)
 {
     lo_server_thread st = (lo_server_thread) data;
 
-    if (st->init_function) {
-        (st->init_function)(st->user_data);
+    if (st->cb_init) {
+        if ( (st->cb_init)(st, st->user_data) )
+        {
+            st->done = 1;
+            pthread_exit(NULL);
+            return;
+        }
     }
 
     while (st->active) {
@@ -225,8 +247,8 @@ static void thread_func(void *data)
     }
     st->done = 1;
 
-    if (st->cleanup_function) {
-        (st->cleanup_function)(st->user_data);
+    if (st->cb_cleanup) {
+        (st->cb_cleanup)(st, st->user_data);
     }
 
     pthread_exit(NULL);
