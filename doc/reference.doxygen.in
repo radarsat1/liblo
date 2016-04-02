@@ -737,7 +737,13 @@ INPUT                  = @top_srcdir@/lo/lo.h \
                          @top_srcdir@/lo/lo_types.h \
                          @top_srcdir@/lo/lo_osc_types.h \
                          @top_srcdir@/lo/lo_lowlevel.h \
-                         @top_srcdir@/lo/lo_serverthread.h
+                         @top_srcdir@/lo/lo_serverthread.h \
+                         @top_srcdir@/lo/lo_cpp.h \
+                         @top_srcdir@/examples/cpp_example.cpp \
+                         @top_srcdir@/examples/example_client.c \
+                         @top_srcdir@/examples/example_server.c \
+                         @top_srcdir@/examples/example_tcp_echo_server.c \
+                         @top_srcdir@/examples/nonblocking_server_example.c
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -886,7 +892,7 @@ USE_MDFILE_AS_MAINPAGE =
 # also VERBATIM_HEADERS is set to NO.
 # The default value is: NO.
 
-SOURCE_BROWSER         = NO
+SOURCE_BROWSER         = YES
 
 # Setting the INLINE_SOURCES tag to YES will include the body of functions,
 # classes and enums directly into the documentation.
