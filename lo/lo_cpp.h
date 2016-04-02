@@ -661,6 +661,45 @@ namespace lo {
             { server = 0;
               if (server_thread) lo_server_thread_free(server_thread); }
 
+        template <typename I, typename C>
+        auto set_callbacks(I&& init, C&& cleanup)
+            -> typename std::enable_if<
+                std::is_same<decltype(init()), int>::value, void>::type
+            {
+                if (server_thread) {
+                    _cb_handlers.reset(new handler_cb_pair(init, cleanup));
+                    lo_server_thread_set_callbacks(server_thread,
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair*)c;
+                           return (cb->first)();
+                        },
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair*)c;
+                           (cb->second)();
+                        }, _cb_handlers.get());
+                }
+            }
+
+        template <typename I, typename C>
+        auto set_callbacks(I&& init, C&& cleanup)
+            -> typename std::enable_if<
+                std::is_same<decltype(init()), void>::value, void>::type
+            {
+                if (server_thread) {
+                    _cb_handlers.reset(
+                        (handler_cb_pair*)new handler_cb_pair_void(init, cleanup));
+                    lo_server_thread_set_callbacks(server_thread,
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair_void*)c;
+                           (cb->first)(); return 0;
+                        },
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair_void*)c;
+                           (cb->second)();
+                        }, _cb_handlers.get());
+                }
+            }
+
         void start() { lo_server_thread_start(server_thread); }
         void stop() { lo_server_thread_stop(server_thread); }
 
@@ -669,6 +708,10 @@ namespace lo {
 
       protected:
         lo_server_thread server_thread;
+
+        typedef std::pair<handler_type<int()>,handler_type<void()>> handler_cb_pair;
+        typedef std::pair<handler_type<void()>,handler_type<void()>> handler_cb_pair_void;
+        std::unique_ptr<handler_cb_pair> _cb_handlers;
 
         // Regular old liblo method handlers
         virtual void _add_method(const char *path, const char *types,
