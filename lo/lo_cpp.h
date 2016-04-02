@@ -13,6 +13,29 @@
 #include <sstream>
 #include <initializer_list>
 
+/**
+ * \file lo_cpp.h The liblo C++ wrapper
+ */
+
+/**
+ * \defgroup liblocpp C++ wrapper
+ *
+ * This is a header-only C++11 wrapper defining a set of classes that
+ * wrap liblo functionality in an object-oriented way.
+ *
+ * The classes are meant to be used instead of the C structs defined
+ * by liblo, and can be used to do nice C++11 things like assigning
+ * methods as lambda functions and other types of callbacks,
+ * supporting a variety of parameter combinations, as well as to
+ * create messages and bundles of messages using a nice initializer
+ * list syntax.
+ *
+ * Please see examples/cpp_example.cpp for more information on how to
+ * use it.
+ *
+ * @{
+ */
+
 #define LO_ADD_METHOD_RT(ht, argtypes, args, rt, r, r1, r2)             \
     template <typename H>                                               \
     auto add_method(const string_type path, const string_type types, H&& h) \
@@ -65,6 +88,8 @@ namespace lo {
 
     class ServerThread;
 
+    /** \brief Class representing an OSC destination address, proxy
+     * for \ref lo_address. */
     class Address
     {
       public:
@@ -207,6 +232,7 @@ namespace lo {
         bool owned;
     };
 
+    /** \brief Class representing an OSC message, proxy for \ref lo_message. */
     class Message
     {
       public:
@@ -371,11 +397,14 @@ namespace lo {
         lo_message message;
     };
 
+    /** \brief Class representing a local OSC server, proxy for \ref lo_server. */
     class Server
     {
       public:
+        /** Constructor. */
         Server(lo_server s) : server(s) {}
 
+        /** Constructor taking an error handler. */
         template <typename E>
         Server(const num_string_type &port, E&& e)
             : Server(lo_server_new(port,
@@ -391,6 +420,7 @@ namespace lo {
             }
         }
 
+        /** Constructor taking a port number and error handler. */
         template <typename E>
         Server(const num_string_type &port, int proto, E&& e=0)
             : Server(lo_server_new_with_proto(port, proto,
@@ -406,6 +436,8 @@ namespace lo {
             }
         }
 
+        /** Constructor taking a multicast group, port number,
+         * interface identifier or IP, and error handler. */
         template <typename E>
         Server(const string_type &group, const num_string_type &port,
                const string_type &iface=0, const string_type &ip=0, E&& e=0)
@@ -428,12 +460,16 @@ namespace lo {
             }
         }
 
+        /** Constructor taking a port number and error handler. */
         Server(const num_string_type &port, lo_err_handler err_h=0)
             : Server(lo_server_new(port, err_h)) {}
 
+        /** Constructor taking a port number, protocol, and error handler. */
         Server(const num_string_type &port, int proto, lo_err_handler err_h=0)
             : Server(lo_server_new_with_proto(port, proto, err_h)) {}
 
+        /** Constructor taking a multicast group, port number,
+         * interface identifier or IP, and error handler. */
         Server(const string_type &group, const num_string_type &port,
                const string_type &iface="", const string_type &ip="", lo_err_handler err_h=0)
             : Server((iface._s || ip._s)
@@ -442,20 +478,30 @@ namespace lo {
                                                      ip._s?:0, err_h)
                      : lo_server_new_multicast(group, port, err_h)) {}
 
+        /** Destructor */
         virtual ~Server()
             { if (server) lo_server_free(server); }
 
         bool is_valid() const { return server!=nullptr; }
 
         // Regular old liblo method handlers
+
+        /** Add a method to handle a given path and type, with a
+         * handler and user data pointer. */
         void add_method(const string_type &path, const string_type &types,
                         lo_method_handler h, void *data) const
             { _add_method(path, types, h, data); }
 
         // Alternative callback prototypes
+
+        /** Add a method to handle a given path and type, with a
+         * handler taking (argv, argc), user data. */
         LO_ADD_METHOD( (const char*, const char*, lo_arg**, int),
                        ((char*)0, (char*)0, (lo_arg**)0, (int)0),
                        (path, types, argv, argc) );
+
+        /** Add a method to handle a given path and type, with a
+         * handler taking (types, argv, argc), user data. */
         LO_ADD_METHOD( (const char*, lo_arg**, int),
                        ((char*)0, (lo_arg**)0, (int)0),
                        (types, argv, argc) );
@@ -580,6 +626,7 @@ namespace lo {
         }
     };
 
+    /** \brief Class representing a server thread, proxy for \ref lo_server_thread. */
     class ServerThread : public Server
     {
       public:
@@ -656,6 +703,7 @@ namespace lo {
 		return lo_send_bundle_from(address, s, b);
 	}
 
+    /** \brief Class representing an OSC blob, proxy for \ref lo_blob. */
     class Blob
     {
       public:
@@ -688,6 +736,7 @@ namespace lo {
         lo_blob blob;
     };
 
+    /** \brief Class representing an OSC path (std::string) and lo::Message pair. */
     struct PathMsg
     {
         PathMsg() {}
@@ -697,6 +746,7 @@ namespace lo {
         Message msg;
     };
 
+    /** \brief Class representing an OSC bundle, proxy for \ref lo_bundle. */
     class Bundle
     {
       public:
@@ -817,14 +867,20 @@ namespace lo {
         lo_bundle bundle;
     };
 
+    /** \brief Return the library version as an std::string. */
     inline std::string version() {
         char str[32];
         lo_version(str, 32, 0, 0, 0, 0, 0, 0, 0);
         return std::string(str);
     }
 
+    /** \brief Return the current time in lo_timetag format. */
     inline lo_timetag now() { lo_timetag tt; lo_timetag_now(&tt); return tt; }
+
+    /** \brief Return the OSC timetag representing "immediately". */
     inline lo_timetag immediate() { return LO_TT_IMMEDIATE; }
 };
+
+/** @} */
 
 #endif // _LO_CPP_H_
