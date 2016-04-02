@@ -172,11 +172,16 @@ typedef struct _lo_server {
 } *lo_server;
 
 #ifdef ENABLE_THREADS
+typedef int (*lo_thread_init_function) (void *user_data);
+typedef int (*lo_thread_cleanup_function) (void *user_data);
 typedef struct _lo_server_thread {
     lo_server s;
     pthread_t thread;
     volatile int active;
     volatile int done;
+    lo_thread_init_function init_function;
+    lo_thread_cleanup_function cleanup_function;
+    void *user_data;
 } *lo_server_thread;
 #else
 typedef void *lo_server_thread;

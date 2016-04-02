@@ -165,6 +165,28 @@ typedef int (*lo_bundle_start_handler)(lo_timetag time, void *user_data);
  */
 typedef int (*lo_bundle_end_handler)(void *user_data);
 
+/**
+ * \brief A callback function to perform initialization when the server
+ * thread is started.
+ *
+ * If installed with lo_server_thread_add_functions, this callback will be
+ * called in the server thread, just before the server starts listening
+ * for events. \a user_data is set to the user_data parameter passed to
+ * lo_server_thread_add_functions.
+ */
+typedef int (*lo_thread_init_function)(void *user_data);
+
+/**
+ * \brief A callback function to perform cleanup when the server
+ * thread is started.
+ *
+ * If installed with lo_server_thread_add_functions, this callback will be
+ * called in the server thread, after the server have stopped listening
+ * and processing events, before it quits. \a user_data is set to the
+ * user_data parameter passed to lo_server_thread_add_functions.
+ */
+typedef int (*lo_thread_cleanup_function)(void *user_data);
+
 #ifdef __cplusplus
 }
 #endif
