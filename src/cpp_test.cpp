@@ -145,6 +145,12 @@ int main()
         return 1;
     }
 
+    st.set_callbacks([&st](){printf("Thread init: %p.\n",&st); return 0;},
+                     [](){printf("Thread cleanup.\n");});
+
+    st.set_callbacks([](){printf("Thread init.\n");},
+                     [](){printf("Thread cleanup.\n");});
+
     std::cout << "URL: " << st.url() << std::endl;
 
     init(st);
