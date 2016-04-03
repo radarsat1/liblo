@@ -62,22 +62,8 @@ lo_server_thread lo_server_thread_new_multicast(const char *group,
                                                 const char *port,
                                                 lo_err_handler err_h)
 {
-    alloc_server_thread(0);
-    lo_server_thread st = (lo_server_thread)
-        malloc(sizeof(struct _lo_server_thread));
-    st->s = lo_server_new_multicast(group, port, err_h);
-    st->active = 0;
-    st->done = 0;
-    st->cb_init = NULL;
-    st->cb_cleanup = NULL;
-    st->user_data = NULL;
-
-    if (!st->s) {
-        free(st);
-
-        return NULL;
-    }
-
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_multicast(group, port, err_h));
     return st;
 }
 
@@ -85,42 +71,16 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
                                                  int proto,
                                                  lo_err_handler err_h)
 {
-    lo_server_thread st = (lo_server_thread)
-        malloc(sizeof(struct _lo_server_thread));
-    st->s = lo_server_new_with_proto(port, proto, err_h);
-    st->active = 0;
-    st->done = 0;
-    st->cb_init = NULL;
-    st->cb_cleanup = NULL;
-    st->user_data = NULL;
-
-    if (!st->s) {
-        free(st);
-
-        return NULL;
-    }
-
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_with_proto(port, proto, err_h));
     return st;
 }
 
 lo_server_thread lo_server_thread_new_from_url(const char *url,
                                                lo_err_handler err_h)
 {
-    lo_server_thread st = (lo_server_thread)
-        malloc(sizeof(struct _lo_server_thread));
-    st->s = lo_server_new_from_url(url, err_h);
-    st->active = 0;
-    st->done = 0;
-    st->cb_init = NULL;
-    st->cb_cleanup = NULL;
-    st->user_data = NULL;
-
-    if (!st->s) {
-        free(st);
-
-        return NULL;
-    }
-
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_from_url(url, err_h));
     return st;
 }
 
