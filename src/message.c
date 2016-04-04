@@ -116,7 +116,7 @@ lo_message lo_message_clone(lo_message m)
     c->argv = NULL;
     c->ts = LO_TT_IMMEDIATE;
     c->refcount = 0;
-    
+
     return c;
 }
 
@@ -260,8 +260,8 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
     }
 #ifndef USE_ANSI_C
     void *i = va_arg(ap, void *);
-    if (((unsigned long)i & 0xFFFFFFFFUL)
-	!= ((unsigned long)LO_MARKER_A & 0xFFFFFFFFUL))
+    if (((uintptr_t)i & 0xFFFFFFFFUL)
+	!= ((uintptr_t)LO_MARKER_A & 0xFFFFFFFFUL))
     {
         ret = -2;               // bad format/args
         fprintf(stderr,
@@ -272,8 +272,8 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         return ret;
     }
     i = va_arg(ap, void *);
-    if (((unsigned long)i & 0xFFFFFFFFUL)
-	!= ((unsigned long)LO_MARKER_B & 0xFFFFFFFFUL))
+    if (((uintptr_t)i & 0xFFFFFFFFUL)
+	!= ((uintptr_t)LO_MARKER_B & 0xFFFFFFFFUL))
     {
         ret = -2;               // bad format/args
         fprintf(stderr,
