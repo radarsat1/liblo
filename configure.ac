@@ -191,6 +191,7 @@ AC_TYPE_SIZE_T
 AC_TYPE_UINTPTR_T
 
 # Check for features
+AC_CHECK_FUNC([inet_pton], [AC_DEFINE(HAVE_INET_PTON, [1], [Define to 1 if inet_pton() is available.])])
 AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])], [
      AC_MSG_CHECKING([for select in ws2_32])
      extralibs="-lws2_32 -liphlpapi"
@@ -202,7 +203,6 @@ AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is
                  is_windows=yes],[AC_MSG_RESULT(no)])
 ])
 AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
-AC_CHECK_FUNC([inet_pton], [AC_DEFINE(HAVE_INET_PTON, [1], [Define to 1 if inet_pton() is available.])])
 
 AM_CONDITIONAL(WINDOWS, test x$is_windows = xyes)
 AM_CONDITIONAL(WINDOWS_DLL, test x$is_windows = xyes && test x$enable_shared = xyes)
