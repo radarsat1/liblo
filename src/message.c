@@ -1010,7 +1010,7 @@ void lo_arg_pp(lo_type type, void *data)
 void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
 {
     lo_pcast32 val32;
-    lo_pcast64 val64;
+    lo_pcast64 val64 = {0};
     lo_timetag valtt = { 0, 1 };
     int size;
     int i;
