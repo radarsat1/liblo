@@ -138,10 +138,12 @@
   io.input("../lo/lo.h.in")
   local text = io.read("*all")
 
+  threads_enabler='#include "lo/lo_serverthread.h"'
+  threads_disabler='/* lo/lo_serverthread.h unavailable (--without-threads) */'
   if _OPTIONS["without-threads"] then
-    text = string.gsub(text, '@ENABLE_THREADS@', '0')
+    text = string.gsub(text, '@THREADS_INCLUDE@', threads_disabler)
   else
-    text = string.gsub(text, '@ENABLE_THREADS@', '1')
+    text = string.gsub(text, '@THREADS_INCLUDE@', threads_enabler)
   end
 
   io.output("../lo/lo.h")

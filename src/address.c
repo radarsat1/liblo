@@ -56,7 +56,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     if (proto != LO_UDP && proto != LO_TCP && proto != LO_UNIX)
         return NULL;
 
-    a = calloc(1, sizeof(struct _lo_address));
+    a = (lo_address) calloc(1, sizeof(struct _lo_address));
     if (a == NULL)
         return NULL;
 
@@ -65,7 +65,7 @@ lo_address lo_address_new_with_proto(int proto, const char *host,
     a->socket = -1;
     a->ownsocket = 1;
     a->protocol = proto;
-    a->flags = 0;
+    a->flags = (lo_proto_flags) 0;
     switch (proto) {
     default:
     case LO_UDP:
@@ -272,7 +272,7 @@ char *lo_address_get_url(lo_address a)
         /* this libc is not C99 compliant, guess a size */
         ret = 1023;
     }
-    buf = malloc((ret + 2) * sizeof(char));
+    buf = (char*) malloc((ret + 2) * sizeof(char));
     snprintf(buf, ret + 1, fmt,
              get_protocol_name(a->protocol), a->host, a->port);
 
@@ -348,7 +348,7 @@ char *lo_url_get_protocol(const char *url)
         return NULL;
     }
 
-    protocol = malloc(strlen(url));
+    protocol = (char*) malloc(strlen(url));
 
     if (sscanf(url, "osc://%s", protocol)) {
         fprintf(stderr,
@@ -389,7 +389,7 @@ int lo_url_get_protocol_id(const char *url)
 
 char *lo_url_get_hostname(const char *url)
 {
-    char *hostname = malloc(strlen(url));
+    char *hostname = (char*) malloc(strlen(url));
 
     if (sscanf(url, "osc://%[^[:/]", hostname)) {
         return hostname;
@@ -409,7 +409,7 @@ char *lo_url_get_hostname(const char *url)
 
 char *lo_url_get_port(const char *url)
 {
-    char *port = malloc(strlen(url));
+    char *port = (char*) malloc(strlen(url));
 
     if (sscanf(url, "osc://%*[^:]:%[0-9]", port)) {
         return port;
@@ -438,7 +438,7 @@ char *lo_url_get_port(const char *url)
 
 char *lo_url_get_path(const char *url)
 {
-    char *path = malloc(strlen(url));
+    char *path = (char*) malloc(strlen(url));
 
     if (sscanf(url, "osc://%*[^:]:%*[0-9]%s", path)) {
         return path;
@@ -505,7 +505,7 @@ void lo_address_set_flags(lo_address t, int flags)
                    (const char*)&option, sizeof(option));
     }
 
-    t->flags = flags;
+    t->flags = (lo_proto_flags) flags;
 }
 
 #ifdef ENABLE_IPV6
@@ -544,8 +544,8 @@ void lo_address_init_with_sockaddr(lo_address a,
     int err = 0;
     assert(a != NULL);
     lo_address_free_mem(a);
-    a->host = malloc(INET_ADDRSTRLEN);
-    a->port = malloc(8);
+    a->host = (char*) malloc(INET_ADDRSTRLEN);
+    a->port = (char*) malloc(8);
 
     err = getnameinfo((struct sockaddr *)sa, sa_len,
                       a->host, INET_ADDRSTRLEN, a->port, 8,

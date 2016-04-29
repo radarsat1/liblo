@@ -402,7 +402,7 @@ static unsigned char *slip_encode(const unsigned char *data,
                                   size_t *data_len)
 {
     size_t i, j = 0, len=*data_len;
-    unsigned char *slipdata = malloc(len*2);
+    unsigned char *slipdata = (unsigned char *) malloc(len*2);
     for (i=0; i<len; i++) {
         switch (data[i])
         {
@@ -558,7 +558,7 @@ int lo_send_message_from(lo_address a, lo_server from, const char *path,
                          lo_message msg)
 {
     const size_t data_len = lo_message_length(msg, path);
-    char *data = lo_message_serialise(msg, path, NULL, NULL);
+    char *data = (char*) lo_message_serialise(msg, path, NULL, NULL);
 
     // Send the message
     int ret = send_data(a, from, data, data_len);
@@ -586,7 +586,7 @@ int lo_send_bundle(lo_address a, lo_bundle b)
 int lo_send_bundle_from(lo_address a, lo_server from, lo_bundle b)
 {
     size_t data_len;
-    char *data = lo_bundle_serialise(b, NULL, &data_len);
+    char *data = (char*) lo_bundle_serialise(b, NULL, &data_len);
 
     // Send the bundle
     int ret = send_data(a, from, data, data_len);

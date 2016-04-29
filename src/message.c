@@ -65,12 +65,12 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian);
 
 lo_message lo_message_new()
 {
-    lo_message m = malloc(sizeof(struct _lo_message));
+    lo_message m = (lo_message) malloc(sizeof(struct _lo_message));
     if (!m) {
         return m;
     }
 
-    m->types = calloc(LO_DEF_TYPE_SIZE, sizeof(char));
+    m->types = (char*) calloc(LO_DEF_TYPE_SIZE, sizeof(char));
     m->types[0] = ',';
     m->types[1] = '\0';
     m->typelen = 1;
@@ -99,12 +99,12 @@ lo_message lo_message_clone(lo_message m)
 	return NULL;
     }
 
-    c = malloc(sizeof(struct _lo_message));
+    c = (lo_message) malloc(sizeof(struct _lo_message));
     if (!c) {
 	return NULL;
     }
 
-    c->types = calloc(m->typesize, sizeof(char));
+    c->types = (char*) calloc(m->typesize, sizeof(char));
     strcpy (c->types, m->types);
     c->typelen = m->typelen;
     c->typesize = m->typesize;
@@ -161,7 +161,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         case LO_STRING:{
                 char *s = va_arg(ap, char *);
 #ifndef USE_ANSI_C
-                if (s == (char *) LO_MARKER_A) {
+                if (s == (char*) LO_MARKER_A) {
                     fprintf(stderr,
                             "liblo error: lo_send or lo_message_add called with "
                             "invalid string pointer for arg %d, probably arg mismatch\n"
@@ -199,7 +199,7 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         case LO_SYMBOL:{
                 char *s = va_arg(ap, char *);
 #ifndef USE_ANSI_C
-                if (s == (char *) LO_MARKER_A) {
+                if (s == (char*) LO_MARKER_A) {
                     fprintf(stderr,
                             "liblo error: lo_send or lo_message_add called with "
                             "invalid symbol pointer for arg %d, probably arg mismatch\n"
@@ -312,7 +312,7 @@ int lo_message_add_internal(lo_message msg, const char *file,
 int lo_message_add_int32(lo_message m, int32_t a)
 {
     lo_pcast32 b;
-    int32_t *nptr = lo_message_add_data(m, sizeof(a));
+    int32_t *nptr = (int32_t*) lo_message_add_data(m, sizeof(a));
     if (!nptr)
         return -1;
     b.i = a;
@@ -326,7 +326,7 @@ int lo_message_add_int32(lo_message m, int32_t a)
 int lo_message_add_float(lo_message m, float a)
 {
     lo_pcast32 b;
-    int32_t *nptr = lo_message_add_data(m, sizeof(a));
+    int32_t *nptr = (int32_t*) lo_message_add_data(m, sizeof(a));
     if (!nptr)
         return -1;
     b.f = a;
@@ -340,7 +340,7 @@ int lo_message_add_float(lo_message m, float a)
 int lo_message_add_string(lo_message m, const char *a)
 {
     const int size = lo_strsize(a);
-    char *nptr = lo_message_add_data(m, size);
+    char *nptr = (char*) lo_message_add_data(m, size);
     if (!nptr)
         return -1;
 
@@ -354,7 +354,7 @@ int lo_message_add_blob(lo_message m, lo_blob a)
 {
     const uint32_t size = lo_blobsize(a);
     const uint32_t dsize = lo_blob_datasize(a);
-    char *nptr = lo_message_add_data(m, size);
+    char *nptr = (char*) lo_message_add_data(m, size);
     if (!nptr)
         return -1;
 
@@ -371,7 +371,7 @@ int lo_message_add_blob(lo_message m, lo_blob a)
 int lo_message_add_int64(lo_message m, int64_t a)
 {
     lo_pcast64 b;
-    uint64_t *nptr = lo_message_add_data(m, sizeof(a));
+    uint64_t *nptr = (uint64_t*) lo_message_add_data(m, sizeof(a));
     if (!nptr)
         return -1;
     b.i = a;
@@ -384,7 +384,7 @@ int lo_message_add_int64(lo_message m, int64_t a)
 
 int lo_message_add_timetag(lo_message m, lo_timetag a)
 {
-    uint32_t *nptr = lo_message_add_data(m, sizeof(a));
+    uint32_t *nptr = (uint32_t*) lo_message_add_data(m, sizeof(a));
     if (!nptr)
         return -1;
 
@@ -399,7 +399,7 @@ int lo_message_add_timetag(lo_message m, lo_timetag a)
 int lo_message_add_double(lo_message m, double a)
 {
     lo_pcast64 b;
-    uint64_t *nptr = lo_message_add_data(m, sizeof(a));
+    uint64_t *nptr = (uint64_t*) lo_message_add_data(m, sizeof(a));
     if (!nptr)
         return -1;
     b.f = a;
@@ -413,7 +413,7 @@ int lo_message_add_double(lo_message m, double a)
 int lo_message_add_symbol(lo_message m, const char *a)
 {
     const int size = lo_strsize(a);
-    char *nptr = lo_message_add_data(m, size);
+    char *nptr = (char*) lo_message_add_data(m, size);
     if (!nptr)
         return -1;
 
@@ -426,7 +426,7 @@ int lo_message_add_symbol(lo_message m, const char *a)
 int lo_message_add_char(lo_message m, char a)
 {
     lo_pcast32 b;
-    int32_t *nptr = lo_message_add_data(m, sizeof(int32_t));
+    int32_t *nptr = (int32_t*) lo_message_add_data(m, sizeof(int32_t));
     if (!nptr)
         return -1;
 
@@ -441,7 +441,7 @@ int lo_message_add_char(lo_message m, char a)
 
 int lo_message_add_midi(lo_message m, uint8_t a[4])
 {
-    char *nptr = lo_message_add_data(m, 4);
+    char *nptr = (char*) lo_message_add_data(m, 4);
     if (!nptr)
         return -1;
 
@@ -479,7 +479,7 @@ static int lo_message_add_typechar(lo_message m, char t)
         char *new_types = 0;
         if (!new_typesize)
             new_typesize = LO_DEF_TYPE_SIZE;
-        new_types = realloc(m->types, new_typesize);
+        new_types = (char*) realloc(m->types, new_typesize);
         if (!new_types)
             return -1;
         m->types = new_types;
@@ -519,7 +519,7 @@ static void *lo_message_add_data(lo_message m, size_t s)
         m->argv = NULL;
     }
 
-    return (void *) ((char *) m->data + old_dlen);
+    return (void *) ((char*) m->data + old_dlen);
 }
 
 int lo_strsize(const char *s)
@@ -549,7 +549,7 @@ size_t lo_arg_size(lo_type type, void *data)
 
     case LO_STRING:
     case LO_SYMBOL:
-        return lo_strsize((char *) data);
+        return lo_strsize((char*) data);
 
     case LO_BLOB:
         return lo_blobsize((lo_blob) data);
@@ -567,13 +567,13 @@ size_t lo_arg_size(lo_type type, void *data)
 char *lo_get_path(void *data, ssize_t size)
 {
     ssize_t result = lo_validate_string(data, size);
-    return (result >= 4) ? (char *) data : NULL;
+    return (result >= 4) ? (char*) data : NULL;
 }
 
 ssize_t lo_validate_string(void *data, ssize_t size)
 {
     ssize_t i = 0, len = 0;
-    char *pos = data;
+    char *pos = (char*) data;
 
     if (size < 0) {
         return -LO_ESIZE;       // invalid size
@@ -603,7 +603,7 @@ ssize_t lo_validate_blob(void *data, ssize_t size)
 {
     ssize_t i, end, len;
     uint32_t dsize;
-    char *pos = (char *) data;
+    char *pos = (char*) data;
 
     if (size < 0) {
         return -LO_ESIZE;       // invalid size
@@ -630,14 +630,14 @@ ssize_t lo_validate_blob(void *data, ssize_t size)
 ssize_t lo_validate_bundle(void *data, ssize_t size)
 {
     ssize_t len = 0, remain = size;
-    char *pos = data;
+    char *pos = (char*) data;
     ssize_t elem_len;
 
     len = lo_validate_string(data, size);
     if (len < 0) {
         return -LO_ESIZE;       // invalid size
     }
-    if (0 != strcmp(data, "#bundle")) {
+    if (0 != strcmp((const char*) data, "#bundle")) {
         return -LO_EINVALIDBUND;        // not a bundle
     }
     pos += len;
@@ -692,7 +692,7 @@ ssize_t lo_validate_arg(lo_type type, void *data, ssize_t size)
 
     case LO_STRING:
     case LO_SYMBOL:
-        return lo_validate_string((char *) data, size);
+        return lo_validate_string((char*) data, size);
 
     case LO_BLOB:
         return lo_validate_blob((lo_blob) data, size);
@@ -815,11 +815,11 @@ lo_arg **lo_message_get_argv(lo_message m)
 
     argc = m->typelen - 1;
     types = m->types + 1;
-    ptr = m->data;
+    ptr = (char*) m->data;
 
-    argv = calloc(argc, sizeof(lo_arg *));
+    argv = (lo_arg**) calloc(argc, sizeof(lo_arg *));
     for (i = 0; i < argc; ++i) {
-        size_t len = lo_arg_size(types[i], ptr);
+        size_t len = lo_arg_size((lo_type) types[i], ptr);
         argv[i] = len ? (lo_arg *) ptr : NULL;
         ptr += len;
     }
@@ -846,20 +846,20 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     if (!to) {
         to = calloc(1, s);
     }
-    memset((char *) to + lo_strsize(path) - 4, 0, 4);   // ensure zero-padding
-    strcpy(to, path);
-    memset((char *) to + lo_strsize(path) + lo_strsize(m->types) - 4, 0,
+    memset((char*) to + lo_strsize(path) - 4, 0, 4);   // ensure zero-padding
+    strcpy((char*) to, path);
+    memset((char*) to + lo_strsize(path) + lo_strsize(m->types) - 4, 0,
            4);
-    strcpy((char *) to + lo_strsize(path), m->types);
+    strcpy((char*) to + lo_strsize(path), m->types);
 
     types = m->types + 1;
-    ptr = (char *) to + lo_strsize(path) + lo_strsize(m->types);
+    ptr = (char*) to + lo_strsize(path) + lo_strsize(m->types);
     memcpy(ptr, m->data, m->datalen);
 
     argc = m->typelen - 1;
     for (i = 0; i < argc; ++i) {
-        size_t len = lo_arg_size(types[i], ptr);
-        lo_arg_network_endian(types[i], ptr);
+        size_t len = lo_arg_size((lo_type) types[i], ptr);
+        lo_arg_network_endian((lo_type) types[i], ptr);
         ptr += len;
     }
     return to;
@@ -877,7 +877,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
         goto fail;
     }
 
-    msg = malloc(sizeof(struct _lo_message));
+    msg = (lo_message) malloc(sizeof(struct _lo_message));
     if (!msg) {
         res = LO_EALLOC;
         goto fail;
@@ -907,7 +907,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
         res = LO_ENOTYPE;       // no type tag string
         goto fail;
     }
-    types = (char *) data + len;
+    types = (char*) data + len;
     len = lo_validate_string(types, remain);
     if (len < 0) {
         res = LO_EINVALIDTYPE;  // invalid type tag string
@@ -921,7 +921,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
 
     msg->typelen = strlen(types);
     msg->typesize = len;
-    msg->types = malloc(msg->typesize);
+    msg->types = (char*) malloc(msg->typesize);
     if (NULL == msg->types) {
         res = LO_EALLOC;
         goto fail;
@@ -936,12 +936,12 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     }
     memcpy(msg->data, types + len, remain);
     msg->datalen = msg->datasize = remain;
-    ptr = msg->data;
+    ptr = (char*) msg->data;
 
     ++types;
     argc = msg->typelen - 1;
     if (argc) {
-        msg->argv = calloc(argc, sizeof(lo_arg *));
+        msg->argv = (lo_arg **) calloc(argc, sizeof(lo_arg *));
         if (NULL == msg->argv) {
             res = LO_EALLOC;
             goto fail;
@@ -982,7 +982,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
 void lo_message_pp(lo_message m)
 {
     void *d = m->data;
-    void *end = (char *) m->data + m->datalen;
+    void *end = (char*) m->data + m->datalen;
     int i;
 
     printf("%s ", m->types);
@@ -991,14 +991,14 @@ void lo_message_pp(lo_message m)
             printf(" ");
         }
 
-        lo_arg_pp_internal(m->types[i], d, 0);
-        d = (char *) d + lo_arg_size(m->types[i], d);
+        lo_arg_pp_internal((lo_type) m->types[i], d, 0);
+        d = (char*) d + lo_arg_size((lo_type) m->types[i], d);
     }
     putchar('\n');
     if (d != end) {
         fprintf(stderr,
-                "liblo warning: type and data do not match (off by %d) in message %p\n",
-                abs((char *) d - (char *) end), m);
+                "liblo warning: type and data do not match (off by %ld) in message %p\n",
+                labs((char*) d - (char*) end), m);
     }
 }
 
@@ -1046,7 +1046,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
         break;
 
     case LO_STRING:
-        printf("\"%s\"", (char *) data);
+        printf("\"%s\"", (char*) data);
         break;
 
     case LO_BLOB:
@@ -1077,7 +1077,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
         break;
 
     case LO_SYMBOL:
-        printf("'%s", (char *) data);
+        printf("'%s", (char*) data);
         break;
 
     case LO_CHAR:
@@ -1136,7 +1136,7 @@ int lo_coerce(lo_type type_to, lo_arg * to, lo_type type_from,
     }
 
     if (lo_is_string_type(type_to) && lo_is_string_type(type_from)) {
-        strcpy((char *) to, (char *) from);
+        strcpy((char*) to, (char*) from);
 
         return 1;
     }

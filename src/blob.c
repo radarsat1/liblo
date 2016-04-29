@@ -28,12 +28,12 @@ lo_blob lo_blob_new(int32_t size, const void *data)
         return NULL;
     }
 
-    b = malloc(sizeof(size) + size);
+    b = (lo_blob) malloc(sizeof(size) + size);
 
     b->size = size;
 
     if (data) {
-        memcpy((char *) b + sizeof(uint32_t), data, size);
+        memcpy((char*) b + sizeof(uint32_t), data, size);
     }
 
     return b;
@@ -51,7 +51,7 @@ uint32_t lo_blob_datasize(lo_blob b)
 
 void *lo_blob_dataptr(lo_blob b)
 {
-    return (char *) b + sizeof(uint32_t);
+    return (char*) b + sizeof(uint32_t);
 }
 
 uint32_t lo_blobsize(lo_blob b)

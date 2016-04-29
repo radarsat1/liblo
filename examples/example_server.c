@@ -111,7 +111,7 @@ int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
     int i, size = argv[0]->blob.size;
     char mydata[6];
 
-    unsigned char *blobdata = lo_blob_dataptr((lo_blob)argv[0]);
+    unsigned char *blobdata = (unsigned char*)lo_blob_dataptr((lo_blob)argv[0]);
     int blobsize = lo_blob_datasize((lo_blob)argv[0]);
 
     /* Alternatively:

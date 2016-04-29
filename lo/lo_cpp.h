@@ -13,6 +13,29 @@
 #include <sstream>
 #include <initializer_list>
 
+/**
+ * \file lo_cpp.h The liblo C++ wrapper
+ */
+
+/**
+ * \defgroup liblocpp C++ wrapper
+ *
+ * This is a header-only C++11 wrapper defining a set of classes that
+ * wrap liblo functionality in an object-oriented way.
+ *
+ * The classes are meant to be used instead of the C structs defined
+ * by liblo, and can be used to do nice C++11 things like assigning
+ * methods as lambda functions and other types of callbacks,
+ * supporting a variety of parameter combinations, as well as to
+ * create messages and bundles of messages using a nice initializer
+ * list syntax.
+ *
+ * Please see examples/cpp_example.cpp for more information on how to
+ * use it.
+ *
+ * @{
+ */
+
 #define LO_ADD_METHOD_RT(ht, argtypes, args, rt, r, r1, r2)             \
     template <typename H>                                               \
     auto add_method(const string_type path, const string_type types, H&& h) \
@@ -65,6 +88,8 @@ namespace lo {
 
     class ServerThread;
 
+    /** \brief Class representing an OSC destination address, proxy
+     * for \ref lo_address. */
     class Address
     {
       public:
@@ -96,7 +121,7 @@ namespace lo {
         // In these functions we append "$$" to the type string, which
         // simply instructs lo_message_add_varargs() not to use
         // LO_MARKER checking at the end of the argument list.
-        int send(const string_type &path, const string_type &type, ...) const
+        int send(const string_type &path, const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -109,7 +134,7 @@ namespace lo {
         }
 
         int send(lo_timetag ts, const string_type &path,
-                 const string_type &type, ...) const
+                 const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -130,10 +155,10 @@ namespace lo {
             { return lo_send_bundle(address, b); }
 
         int send_from(lo::ServerThread &from, const string_type &path,
-                      const string_type &type, ...) const;
+                      const string_type type, ...) const;
 
         int send_from(lo_server from, const string_type &path,
-                      const string_type &type, ...) const
+                      const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -147,7 +172,7 @@ namespace lo {
 
         int send_from(lo_server from, lo_timetag ts, 
                       const string_type &path,
-                      const string_type &type, ...) const
+                      const string_type type, ...) const
         {
             va_list q;
             va_start(q, type);
@@ -207,6 +232,7 @@ namespace lo {
         bool owned;
     };
 
+    /** \brief Class representing an OSC message, proxy for \ref lo_message. */
     class Message
     {
       public:
@@ -220,7 +246,7 @@ namespace lo {
             : message(m.message) { if (m.message)
                                        lo_message_incref(m.message); }
 
-        Message(const string_type &types, ...)
+        Message(const string_type types, ...)
         {
             message = lo_message_new();
             lo_message_incref(message);
@@ -236,7 +262,7 @@ namespace lo {
         Message& operator=(Message m) { m.swap(*this); return *this; }
         void swap(Message& m) throw () { std::swap(this->message, m.message); }
 
-        int add(const string_type &types, ...)
+        int add(const string_type types, ...)
         {
             va_list q;
             va_start(q, types);
@@ -371,11 +397,14 @@ namespace lo {
         lo_message message;
     };
 
+    /** \brief Class representing a local OSC server, proxy for \ref lo_server. */
     class Server
     {
       public:
+        /** Constructor. */
         Server(lo_server s) : server(s) {}
 
+        /** Constructor taking an error handler. */
         template <typename E>
         Server(const num_string_type &port, E&& e)
             : Server(lo_server_new(port,
@@ -391,6 +420,7 @@ namespace lo {
             }
         }
 
+        /** Constructor taking a port number and error handler. */
         template <typename E>
         Server(const num_string_type &port, int proto, E&& e=0)
             : Server(lo_server_new_with_proto(port, proto,
@@ -406,6 +436,8 @@ namespace lo {
             }
         }
 
+        /** Constructor taking a multicast group, port number,
+         * interface identifier or IP, and error handler. */
         template <typename E>
         Server(const string_type &group, const num_string_type &port,
                const string_type &iface=0, const string_type &ip=0, E&& e=0)
@@ -428,12 +460,16 @@ namespace lo {
             }
         }
 
+        /** Constructor taking a port number and error handler. */
         Server(const num_string_type &port, lo_err_handler err_h=0)
             : Server(lo_server_new(port, err_h)) {}
 
+        /** Constructor taking a port number, protocol, and error handler. */
         Server(const num_string_type &port, int proto, lo_err_handler err_h=0)
             : Server(lo_server_new_with_proto(port, proto, err_h)) {}
 
+        /** Constructor taking a multicast group, port number,
+         * interface identifier or IP, and error handler. */
         Server(const string_type &group, const num_string_type &port,
                const string_type &iface="", const string_type &ip="", lo_err_handler err_h=0)
             : Server((iface._s || ip._s)
@@ -442,20 +478,30 @@ namespace lo {
                                                      ip._s?:0, err_h)
                      : lo_server_new_multicast(group, port, err_h)) {}
 
+        /** Destructor */
         virtual ~Server()
             { if (server) lo_server_free(server); }
 
         bool is_valid() const { return server!=nullptr; }
 
         // Regular old liblo method handlers
+
+        /** Add a method to handle a given path and type, with a
+         * handler and user data pointer. */
         void add_method(const string_type &path, const string_type &types,
                         lo_method_handler h, void *data) const
             { _add_method(path, types, h, data); }
 
         // Alternative callback prototypes
+
+        /** Add a method to handle a given path and type, with a
+         * handler taking (argv, argc), user data. */
         LO_ADD_METHOD( (const char*, const char*, lo_arg**, int),
                        ((char*)0, (char*)0, (lo_arg**)0, (int)0),
                        (path, types, argv, argc) );
+
+        /** Add a method to handle a given path and type, with a
+         * handler taking (types, argv, argc), user data. */
         LO_ADD_METHOD( (const char*, lo_arg**, int),
                        ((char*)0, (lo_arg**)0, (int)0),
                        (types, argv, argc) );
@@ -580,6 +626,7 @@ namespace lo {
         }
     };
 
+    /** \brief Class representing a server thread, proxy for \ref lo_server_thread. */
     class ServerThread : public Server
     {
       public:
@@ -589,17 +636,20 @@ namespace lo {
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
-            : Server(
-		     (server_thread = lo_server_thread_new(port,
-                       [](int num, const char *msg, const char *where){
-                       auto h = static_cast<handler_error*>(lo_error_get_context());
-		       if (h) (*h)(num, msg, where);}))
-		     ? lo_server_thread_get_server(server_thread) : 0)
+            : Server(0)
             {
+                server_thread = lo_server_thread_new(port,
+                    [](int num, const char *msg, const char *where){
+                    auto h = static_cast<handler_error*>(lo_error_get_context());
+                    if (h) (*h)(num, msg, where);});
                 if (server_thread) {
+                    server = lo_server_thread_get_server(server_thread);
                     auto h = new handler_error(e);
                     _error_handler.reset(h);
                     lo_server_thread_set_error_context(server_thread, h);
+                    lo_server_set_error_context(server,
+					    (_error_handler = std::unique_ptr<handler>(
+                            new handler_error(e))).get());
                 }
             }
 
@@ -611,6 +661,45 @@ namespace lo {
             { server = 0;
               if (server_thread) lo_server_thread_free(server_thread); }
 
+        template <typename I, typename C>
+        auto set_callbacks(I&& init, C&& cleanup)
+            -> typename std::enable_if<
+                std::is_same<decltype(init()), int>::value, void>::type
+            {
+                if (server_thread) {
+                    _cb_handlers.reset(new handler_cb_pair(init, cleanup));
+                    lo_server_thread_set_callbacks(server_thread,
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair*)c;
+                           return (cb->first)();
+                        },
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair*)c;
+                           (cb->second)();
+                        }, _cb_handlers.get());
+                }
+            }
+
+        template <typename I, typename C>
+        auto set_callbacks(I&& init, C&& cleanup)
+            -> typename std::enable_if<
+                std::is_same<decltype(init()), void>::value, void>::type
+            {
+                if (server_thread) {
+                    _cb_handlers.reset(
+                        (handler_cb_pair*)new handler_cb_pair_void(init, cleanup));
+                    lo_server_thread_set_callbacks(server_thread,
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair_void*)c;
+                           (cb->first)(); return 0;
+                        },
+                        [](lo_server_thread s, void *c){
+                           auto cb = (handler_cb_pair_void*)c;
+                           (cb->second)();
+                        }, _cb_handlers.get());
+                }
+            }
+
         void start() { lo_server_thread_start(server_thread); }
         void stop() { lo_server_thread_stop(server_thread); }
 
@@ -619,6 +708,10 @@ namespace lo {
 
       protected:
         lo_server_thread server_thread;
+
+        typedef std::pair<handler_type<int()>,handler_type<void()>> handler_cb_pair;
+        typedef std::pair<handler_type<void()>,handler_type<void()>> handler_cb_pair_void;
+        std::unique_ptr<handler_cb_pair> _cb_handlers;
 
         // Regular old liblo method handlers
         virtual void _add_method(const char *path, const char *types,
@@ -633,7 +726,7 @@ namespace lo {
 	// both lo_server and lo_serverthread are typedef'd as void*)
 	inline
 	int Address::send_from(lo::ServerThread &from, const string_type &path,
-						   const string_type &type, ...) const
+						   const string_type type, ...) const
 	{
 		va_list q;
 		va_start(q, type);
@@ -653,6 +746,7 @@ namespace lo {
 		return lo_send_bundle_from(address, s, b);
 	}
 
+    /** \brief Class representing an OSC blob, proxy for \ref lo_blob. */
     class Blob
     {
       public:
@@ -685,6 +779,7 @@ namespace lo {
         lo_blob blob;
     };
 
+    /** \brief Class representing an OSC path (std::string) and lo::Message pair. */
     struct PathMsg
     {
         PathMsg() {}
@@ -694,6 +789,7 @@ namespace lo {
         Message msg;
     };
 
+    /** \brief Class representing an OSC bundle, proxy for \ref lo_bundle. */
     class Bundle
     {
       public:
@@ -814,14 +910,20 @@ namespace lo {
         lo_bundle bundle;
     };
 
+    /** \brief Return the library version as an std::string. */
     inline std::string version() {
         char str[32];
         lo_version(str, 32, 0, 0, 0, 0, 0, 0, 0);
         return std::string(str);
     }
 
+    /** \brief Return the current time in lo_timetag format. */
     inline lo_timetag now() { lo_timetag tt; lo_timetag_now(&tt); return tt; }
+
+    /** \brief Return the OSC timetag representing "immediately". */
     inline lo_timetag immediate() { return LO_TT_IMMEDIATE; }
 };
+
+/** @} */
 
 #endif // _LO_CPP_H_

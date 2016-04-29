@@ -140,3 +140,4 @@ EXPORTS
     lo_version                             @137
     lo_server_enable_queue                 @138
     lo_server_max_msg_size                 @139
+@DEFTHREADS@    lo_server_thread_set_callbacks         @140

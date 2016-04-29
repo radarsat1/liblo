@@ -134,6 +134,12 @@ struct socket_context {
     int slip_state;                     //<! state variable for slip decoding
 };
 
+#ifdef HAVE_POLL
+    typedef struct pollfd lo_server_fd_type;
+#else
+    typedef struct { int fd; } lo_server_fd_type;
+#endif
+
 typedef struct _lo_server {
     struct addrinfo *ai;
     lo_method first;
@@ -148,13 +154,7 @@ typedef struct _lo_server {
     socklen_t addr_len;
     int sockets_len;
     int sockets_alloc;
-#ifdef HAVE_POLL
-    struct pollfd *sockets;
-#else
-    struct {
-        int fd;
-    } *sockets;
-#endif
+    lo_server_fd_type *sockets;
 
     // Some extra data needed per open socket.  Note that we don't put
     // it in the socket struct, because that layout is needed for
@@ -172,11 +172,19 @@ typedef struct _lo_server {
 } *lo_server;
 
 #ifdef ENABLE_THREADS
+struct _lo_server_thread;
+typedef int (*lo_server_thread_init_callback)(struct _lo_server_thread *s,
+                                              void *user_data);
+typedef void (*lo_server_thread_cleanup_callback)(struct _lo_server_thread *s,
+                                                  void *user_data);
 typedef struct _lo_server_thread {
     lo_server s;
     pthread_t thread;
     volatile int active;
     volatile int done;
+    lo_server_thread_init_callback cb_init;
+    lo_server_thread_cleanup_callback cb_cleanup;
+    void *user_data;
 } *lo_server_thread;
 #else
 typedef void *lo_server_thread;
@@ -185,14 +193,14 @@ typedef void *lo_server_thread;
 typedef struct _lo_bundle *lo_bundle;
 
 typedef struct _lo_element {
-	lo_element_type type;
-	union {
-		lo_bundle bundle;
-		struct {
-			lo_message msg;
-			const char *path;
-		} message;
-	} content;
+    lo_element_type type;
+    union {
+        lo_bundle bundle;
+        struct {
+            lo_message msg;
+            const char *path;
+        } message;
+    } content;
 } lo_element;
 
 struct _lo_bundle {

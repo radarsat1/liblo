@@ -43,21 +43,27 @@ lo_server_thread lo_server_thread_new(const char *port,
     return lo_server_thread_new_with_proto(port, LO_DEFAULT, err_h);
 }
 
+static lo_server_thread alloc_server_thread(lo_server s)
+{
+    if (!s)
+        return NULL;
+    lo_server_thread st = (lo_server_thread)
+        malloc(sizeof(struct _lo_server_thread));
+    st->s = s;
+    st->active = 0;
+    st->done = 0;
+    st->cb_init = NULL;
+    st->cb_cleanup = NULL;
+    st->user_data = NULL;
+    return st;
+}
+
 lo_server_thread lo_server_thread_new_multicast(const char *group,
                                                 const char *port,
                                                 lo_err_handler err_h)
 {
-    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
-    st->s = lo_server_new_multicast(group, port, err_h);
-    st->active = 0;
-    st->done = 0;
-
-    if (!st->s) {
-        free(st);
-
-        return NULL;
-    }
-
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_multicast(group, port, err_h));
     return st;
 }
 
@@ -65,34 +71,16 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port,
                                                  int proto,
                                                  lo_err_handler err_h)
 {
-    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
-    st->s = lo_server_new_with_proto(port, proto, err_h);
-    st->active = 0;
-    st->done = 0;
-
-    if (!st->s) {
-        free(st);
-
-        return NULL;
-    }
-
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_with_proto(port, proto, err_h));
     return st;
 }
 
 lo_server_thread lo_server_thread_new_from_url(const char *url,
                                                lo_err_handler err_h)
 {
-    lo_server_thread st = malloc(sizeof(struct _lo_server_thread));
-    st->s = lo_server_new_from_url(url, err_h);
-    st->active = 0;
-    st->done = 0;
-
-    if (!st->s) {
-        free(st);
-
-        return NULL;
-    }
-
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_from_url(url, err_h));
     return st;
 }
 
@@ -116,7 +104,8 @@ void lo_server_thread_free(lo_server_thread st)
 lo_method lo_server_thread_add_method(lo_server_thread st,
                                       const char *path,
                                       const char *typespec,
-                                      lo_method_handler h, void *user_data)
+                                      lo_method_handler h,
+                                      const void *user_data)
 {
     return lo_server_add_method(st->s, path, typespec, h, user_data);
 }
@@ -125,6 +114,16 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
                                  const char *typespec)
 {
     lo_server_del_method(st->s, path, typespec);
+}
+
+void lo_server_thread_set_callbacks(lo_server_thread st,
+                                    lo_server_thread_init_callback init,
+                                    lo_server_thread_cleanup_callback cleanup,
+                                    void *user_data)
+{
+    st->cb_init = init;
+    st->cb_cleanup = cleanup;
+    st->user_data = user_data;
 }
 
 int lo_server_thread_start(lo_server_thread st)
@@ -194,10 +193,23 @@ static void thread_func(void *data)
 {
     lo_server_thread st = (lo_server_thread) data;
 
+    if (st->cb_init) {
+        if ( (st->cb_init)(st, st->user_data) )
+        {
+            st->done = 1;
+            pthread_exit(NULL);
+            return;
+        }
+    }
+
     while (st->active) {
         lo_server_recv_noblock(st->s, 10);
     }
     st->done = 1;
+
+    if (st->cb_cleanup) {
+        (st->cb_cleanup)(st, st->user_data);
+    }
 
     pthread_exit(NULL);
 }
