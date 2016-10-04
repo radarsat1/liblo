@@ -137,7 +137,7 @@ static int lo_bundle_add_element(lo_bundle b, int type, const char *path, void *
 	    lo_message msg = (lo_message) elmnt;
         lo_message_incref(msg);
 	    b->elmnts[b->len].content.message.msg = msg;
-	    b->elmnts[b->len].content.message.path = path;
+	    b->elmnts[b->len].content.message.path = strdup(path);
 	    (b->len)++;
 	    break;
 	}
@@ -328,6 +328,7 @@ static void collect_element(lo_element *elmnt)
 	case LO_ELEMENT_MESSAGE: {
 	    lo_message msg = elmnt->content.message.msg;
 		lo_message_free(msg);
+        free((char*)elmnt->content.message.path);
 	    break;
 	}
 
