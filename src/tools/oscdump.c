@@ -29,6 +29,8 @@
 #include <config.h>
 #include <lo/lo.h>
 
+int done = 0;
+
 void usage(void)
 {
     printf("oscdump version %s\n"
@@ -63,6 +65,11 @@ int messageHandler(const char *path, const char *types, lo_arg ** argv,
     printf("\n");
 
     return 0;
+}
+
+void ctrlc(int sig)
+{
+    done = 1;
 }
 
 int main(int argc, char **argv)
@@ -100,9 +107,10 @@ int main(int argc, char **argv)
 
     lo_server_add_method(server, NULL, NULL, messageHandler, NULL);
 
+    signal(SIGINT, ctrlc);
 
-    for (;;) {
-        lo_server_recv(server);
+    while (!done) {
+        lo_server_recv_noblock(server, 1);
     }
 
     return 0;
