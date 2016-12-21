@@ -631,8 +631,10 @@ namespace lo {
     {
       public:
         ServerThread(const num_string_type &port, lo_err_handler err_h=0)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new(port, err_h))) {}
+          : Server(0)
+        { server_thread = lo_server_thread_new(port, err_h);
+          if (server_thread)
+            server = lo_server_thread_get_server(server_thread); }
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
@@ -654,8 +656,10 @@ namespace lo {
             }
 
         ServerThread(const num_string_type &port, int proto, lo_err_handler err_h)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new_with_proto(port, proto, err_h))) {}
+          : Server(0)
+        { server_thread = lo_server_thread_new_with_proto(port, proto, err_h);
+          if (server_thread)
+            server = lo_server_thread_get_server(server_thread); }
 
         virtual ~ServerThread()
             { server = 0;
