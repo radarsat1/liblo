@@ -631,8 +631,10 @@ namespace lo {
     {
       public:
         ServerThread(const num_string_type &port, lo_err_handler err_h=0)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new(port, err_h))) {}
+          : Server(0)
+        { server_thread = lo_server_thread_new(port, err_h);
+          if (server_thread)
+            server = lo_server_thread_get_server(server_thread); }
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
@@ -641,6 +643,8 @@ namespace lo {
                 server_thread = lo_server_thread_new(port,
                     [](int num, const char *msg, const char *where){
                     auto h = static_cast<handler_error*>(lo_error_get_context());
+                    // TODO: Can't call "e" yet since error context is not yet
+                    // provided, port unavailable errors will not be reported!
                     if (h) (*h)(num, msg, where);});
                 if (server_thread) {
                     server = lo_server_thread_get_server(server_thread);
@@ -654,8 +658,31 @@ namespace lo {
             }
 
         ServerThread(const num_string_type &port, int proto, lo_err_handler err_h)
-            : Server(lo_server_thread_get_server(
-                  server_thread = lo_server_thread_new_with_proto(port, proto, err_h))) {}
+          : Server(0)
+        { server_thread = lo_server_thread_new_with_proto(port, proto, err_h);
+          if (server_thread)
+            server = lo_server_thread_get_server(server_thread); }
+
+        template <typename E>
+        ServerThread(const num_string_type &port, int proto, E&& e)
+            : Server(0)
+            {
+                server_thread = lo_server_thread_new_with_proto(port, proto,
+                    [](int num, const char *msg, const char *where){
+                    auto h = static_cast<handler_error*>(lo_error_get_context());
+                    // TODO: Can't call "e" yet since error context is not yet
+                    // provided, port unavailable errors will not be reported!
+                    if (h) (*h)(num, msg, where);});
+                if (server_thread) {
+                    server = lo_server_thread_get_server(server_thread);
+                    auto h = new handler_error(e);
+                    _error_handler.reset(h);
+                    lo_server_thread_set_error_context(server_thread, h);
+                    lo_server_set_error_context(server,
+					    (_error_handler = std::unique_ptr<handler>(
+                            new handler_error(e))).get());
+                }
+            }
 
         virtual ~ServerThread()
             { server = 0;
