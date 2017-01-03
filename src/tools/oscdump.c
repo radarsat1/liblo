@@ -30,6 +30,9 @@
 #include <lo/lo.h>
 
 int done = 0;
+int bundled = 0;
+lo_timetag tt_now;
+lo_timetag tt_bundle;
 
 void usage(void)
 {
@@ -46,6 +49,27 @@ void usage(void)
            "               TCP        \"osc.tcp://:9000\"\n\n", VERSION);
 }
 
+int bundleStartHandler(lo_timetag tt, void *user_data)
+{
+    if (memcmp(&tt, &LO_TT_IMMEDIATE, sizeof(lo_timetag))==0) {
+        lo_timetag_now(&tt_now);
+        tt_bundle.sec = tt_now.sec;
+        tt_bundle.frac = tt_now.frac;
+    }
+    else {
+        tt_bundle.sec = tt.sec;
+        tt_bundle.frac = tt.frac;
+    }
+    bundled = 1;
+    return 0;
+}
+
+int bundleEndHandler(void *user_data)
+{
+    bundled = 0;
+    return 0;
+}
+
 void errorHandler(int num, const char *msg, const char *where)
 {
     printf("liblo server error %d in path %s: %s\n", num, where, msg);
@@ -56,7 +80,18 @@ int messageHandler(const char *path, const char *types, lo_arg ** argv,
 {
     int i;
 
-    printf("%s %s", path, types);
+    if (bundled) {
+        printf("%08x.%08x %s %s", tt_bundle.sec, tt_bundle.frac, path, types);
+    }
+    else {
+        lo_timetag tt = lo_message_get_timestamp(msg);
+        if (memcmp(&tt, &LO_TT_IMMEDIATE, sizeof(lo_timetag))==0) {
+            lo_timetag_now(&tt_now);
+            printf("%08x.%08x %s %s", tt_now.sec, tt_now.frac, path, types);
+        }
+        else
+            printf("%08x.%08x %s %s", tt.sec, tt.frac, path, types);
+    }
 
     for (i = 0; i < argc; i++) {
         printf(" ");
@@ -106,6 +141,8 @@ int main(int argc, char **argv)
     }
 
     lo_server_add_method(server, NULL, NULL, messageHandler, NULL);
+    lo_server_add_bundle_handlers(server, bundleStartHandler, bundleEndHandler,
+                                  NULL);
 
     signal(SIGINT, ctrlc);
 
