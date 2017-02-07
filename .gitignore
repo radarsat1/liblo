@@ -1,7 +1,12 @@
 *.o
-*~
-*.lo
+*.class
+*.a
 *.la
+*.lo
+*.so
+*.dylib
+*.dll
+*~
 .deps
 .libs
 /Makefile
