@@ -63,6 +63,7 @@ int messageHandler(const char *path, const char *types, lo_arg ** argv,
         lo_arg_pp((lo_type) types[i], argv[i]);
     }
     printf("\n");
+    fflush(stdout);
 
     return 0;
 }
