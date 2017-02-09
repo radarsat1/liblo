@@ -204,7 +204,7 @@ void exitcheck(void)
 
 void error(int num, const char *msg, const char *path)
 {
-    printf("liblo server error %d in %s: %s", num, path, msg);
+    fprintf(stderr, "liblo server error %d in %s: %s", num, path, msg);
     if (!error_okay)
         exit(1);
     else

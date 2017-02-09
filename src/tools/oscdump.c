@@ -97,11 +97,11 @@ int main(int argc, char **argv)
     }
 
     if (server == NULL) {
-        printf("Could not start a server with port %s", port);
+        fprintf(stderr, "Could not start a server with port %s", port);
         if (group)
-            printf(", multicast group %s\n", group);
+            fprintf(stderr, ", multicast group %s\n", group);
         else
-            printf("\n");
+            fprintf(stderr, "\n");
         exit(1);
     }
 
