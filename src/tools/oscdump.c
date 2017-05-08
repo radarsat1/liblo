@@ -115,11 +115,14 @@ int main(int argc, char **argv)
     int i=1;
 
     if (argc > i && argv[i][0]=='-') {
+#ifdef HAVE_SETVBUF
         if (argv[i][1]=='L') { // line buffering
             setvbuf(stdout, 0, _IOLBF, BUFSIZ);
             i++;
         }
-        else if (argv[i][1]=='h') {
+        else
+#endif
+        if (argv[i][1]=='h') {
             usage();
             exit(0);
         }
