@@ -52,7 +52,9 @@ void usage(void)
 
 int bundleStartHandler(lo_timetag tt, void *user_data)
 {
-    if (memcmp(&tt, &LO_TT_IMMEDIATE, sizeof(lo_timetag))==0) {
+    if (tt.sec == LO_TT_IMMEDIATE.sec &&
+        tt.frac == LO_TT_IMMEDIATE.frac)
+    {
         lo_timetag_now(&tt_now);
         tt_bundle.sec = tt_now.sec;
         tt_bundle.frac = tt_now.frac;
@@ -86,7 +88,9 @@ int messageHandler(const char *path, const char *types, lo_arg ** argv,
     }
     else {
         lo_timetag tt = lo_message_get_timestamp(msg);
-        if (memcmp(&tt, &LO_TT_IMMEDIATE, sizeof(lo_timetag))==0) {
+        if (tt.sec == LO_TT_IMMEDIATE.sec &&
+            tt.frac == LO_TT_IMMEDIATE.frac)
+        {
             lo_timetag_now(&tt_now);
             printf("%08x.%08x %s %s", tt_now.sec, tt_now.frac, path, types);
         }
