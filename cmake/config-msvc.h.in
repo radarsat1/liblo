@@ -8,7 +8,7 @@
 #define ENABLE_NETWORK_TESTS 1
 
 /* Define this to enable threads. */
-#cmakedefine01 ENABLE_THREADS
+#cmakedefine ENABLE_THREADS
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */

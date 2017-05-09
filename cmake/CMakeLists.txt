@@ -52,10 +52,6 @@ set(LIBRARY_HEADERS
 set(OSCDUMP_SOURCES ../src/tools/oscdump.c)
 set(OSCSEND_SOURCES ../src/tools/oscsend.c)
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    list(APPEND LIBRARY_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def)
-endif()
-
 check_symbol_exists(poll poll.h HAVE_POLL)
 check_symbol_exists(select sys/select.h HAVE_SELECT)
 check_symbol_exists(getifaddrs sys/types.h ifaddrs.h HAVE_GETIFADDRS)
@@ -82,8 +78,8 @@ if(THREADING)
     check_include_files(pthread.h HAVE_LIBPTHREAD)
 
     include(FindThreads)
-    set(CMAKE_THREAD_PREFER_PTHREAD ON)
-    find_package(Threads)
+    set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+    find_package(Threads REQUIRED)
 
     target_link_libraries(${LIBRARY_SHARED} Threads::Threads)
 
@@ -97,7 +93,9 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(${LIBRARY_SHARED} "user32" "wsock32" "ws2_32" "iphlpapi")
-    target_link_libraries(${LIBRARY_SHARED} "pthreadVC2")
+    if(THREADING)
+        target_link_libraries(${LIBRARY_SHARED} "pthreadVC2")
+    endif()
 
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
         COMPILE_DEFINITIONS "-DLIBLO_DLL")
@@ -183,6 +181,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/liblo.def.in
         ${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def)
+    set_target_properties(${LIBRARY_STATIC} PROPERTIES
+        LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
+    set_target_properties(${LIBRARY_SHARED} PROPERTIES
+        LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
 else()
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
