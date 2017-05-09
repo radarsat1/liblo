@@ -91,6 +91,7 @@ lo_message create_message(char **argv)
     }
 
     argi = 1;
+    arg = NULL;
     for (i = 0; i < values; i++) {
 		switch(types[i]) {
 		case LO_INT32:

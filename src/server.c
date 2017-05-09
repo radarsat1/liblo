@@ -41,6 +41,9 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <malloc.h>
+// TODO: Does this make sense on any platform? At least mingw defines
+// both EADDRINUSE and WSAEADDRINUSE and the values differ. We need to
+// check for WSAEADDRINUSE though on Windows.
 #ifndef EADDRINUSE
 #define EADDRINUSE WSAEADDRINUSE
 #endif
@@ -101,7 +104,7 @@ static int lo_server_join_multicast_group(lo_server s, const char *group,
 
 #if defined(WIN32) || defined(_MSC_VER)
 #ifndef gai_strerror
-// Copied from the Win32 SDK 
+// Copied from the Win32 SDK
 
 // WARNING: The gai_strerror inline functions below use static buffers,
 // and hence are not thread-safe.  We'll use buffers long enough to hold
@@ -167,8 +170,8 @@ static int detect_windows_server_2003_or_later()
     VER_SET_CONDITION( dwlConditionMask, VER_MINORVERSION, op );
 
     return VerifyVersionInfo(
-        &osvi, 
-        VER_MAJORVERSION | VER_MINORVERSION | 
+        &osvi,
+        VER_MAJORVERSION | VER_MINORVERSION |
         VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
         dwlConditionMask);
 }
@@ -558,7 +561,11 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
              0)) {
             err = geterror();
+#ifdef WIN32
+            if (err == EINVAL || err == WSAEADDRINUSE) {
+#else
             if (err == EINVAL || err == EADDRINUSE) {
+#endif
                 used = NULL;
                 continue;
             }
