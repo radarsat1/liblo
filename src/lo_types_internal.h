@@ -32,6 +32,17 @@ typedef __int64 int64_t;
 typedef __int32 int32_t;
 #endif
 
+#ifndef UINT_PTR
+#ifdef HAVE_UINTPTR_T
+#include <stdint.h>
+#else
+#ifndef uintptr_t
+#define UINT_PTR unsigned long
+#endif
+#endif
+#define UINT_PTR uintptr_t
+#endif
+
 #ifdef ENABLE_THREADS
 #include <pthread.h>
 #endif

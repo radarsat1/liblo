@@ -260,8 +260,8 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
     }
 #ifndef USE_ANSI_C
     void *i = va_arg(ap, void *);
-    if (((uintptr_t)i & 0xFFFFFFFFUL)
-	!= ((uintptr_t)LO_MARKER_A & 0xFFFFFFFFUL))
+    if (((UINT_PTR)i & 0xFFFFFFFFUL)
+	!= ((UINT_PTR)LO_MARKER_A & 0xFFFFFFFFUL))
     {
         ret = -2;               // bad format/args
         fprintf(stderr,
@@ -272,8 +272,8 @@ int lo_message_add_varargs_internal(lo_message msg, const char *types,
         return ret;
     }
     i = va_arg(ap, void *);
-    if (((uintptr_t)i & 0xFFFFFFFFUL)
-	!= ((uintptr_t)LO_MARKER_B & 0xFFFFFFFFUL))
+    if (((UINT_PTR)i & 0xFFFFFFFFUL)
+	!= ((UINT_PTR)LO_MARKER_B & 0xFFFFFFFFUL))
     {
         ret = -2;               // bad format/args
         fprintf(stderr,
