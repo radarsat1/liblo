@@ -181,6 +181,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/liblo.def.in
         ${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def)
+    set_target_properties(${LIBRARY_STATIC} PROPERTIES
+        LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
+    set_target_properties(${LIBRARY_SHARED} PROPERTIES
+        LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
 else()
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
