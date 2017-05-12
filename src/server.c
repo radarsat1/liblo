@@ -2207,21 +2207,33 @@ static int lo_can_coerce(char a, char b)
 // Context for error handler
 void *lo_error_context;
 #ifdef ENABLE_THREADS
-pthread_mutex_t lo_error_context_mutex = PTHREAD_MUTEX_INITIALIZER;
+# ifdef _MSC_VER
+    CRITICAL_SECTION lo_error_context_mutex = {(void*)-1,-1,0,0,0,0};
+# else
+    pthread_mutex_t lo_error_context_mutex = PTHREAD_MUTEX_INITIALIZER;
+# endif
 #endif
 
 void lo_throw(lo_server s, int errnum, const char *message,
               const char *path)
 {
     if (s->err_h) {
-        #ifdef ENABLE_THREADS
+#ifdef ENABLE_THREADS
+# ifdef _MSC_VER
+        EnterCriticalSection (&lo_error_context_mutex);
+# else
         pthread_mutex_lock(&lo_error_context_mutex);
-        #endif
+# endif
+#endif
         lo_error_context = s->error_user_data;
         (*s->err_h) (errnum, message, path);
-        #ifdef ENABLE_THREADS
-        pthread_mutex_unlock(&lo_error_context_mutex);
-        #endif
+#ifdef ENABLE_THREADS
+# ifdef _MSC_VER
+        LeaveCriticalSection (&lo_error_context_mutex);
+# else
+        pthread_mutex_unlock (&lo_error_context_mutex);
+# endif
+#endif
     }
 }
 

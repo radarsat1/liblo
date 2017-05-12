@@ -25,6 +25,7 @@
 #if defined(WIN32) || defined(_MSC_VER)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <process.h>
 #else
 #include <unistd.h>
 #include <netdb.h>
@@ -135,15 +136,27 @@ int lo_server_thread_start(lo_server_thread st)
         st->done = 0;
 
         // Create the server thread
+#ifdef _MSC_VER
+        st->thread = (HANDLE)_beginthreadex (NULL, 0, &thread_func, st, 0, NULL);
+
+        if (st->thread == NULL)
+        {
+            fprintf (stderr,
+                "Failed to create thread: Win _beginthreadex(), %s",
+                strerror (errno));
+            return -1;
+        }
+#else
         result =
             pthread_create(&(st->thread), NULL, (void *(*)(void *)) &thread_func, st);
+
         if (result) {
-            fprintf(stderr,
-                    "Failed to create thread: pthread_create(), %s",
-                    strerror(result));
+            fprintf (stderr,
+                "Failed to create thread: pthread_create(), %s",
+                strerror (result));
             return -result;
         }
-
+#endif
     }
     return 0;
 }
@@ -156,14 +169,28 @@ int lo_server_thread_stop(lo_server_thread st)
         // Signal thread to stop
         st->active = 0;
 
+#ifdef _MSC_VER
+        result = WaitForSingleObject (st->thread, INFINITE);
+        CloseHandle (st->thread);
+        st->thread = NULL;
+        
+        if (result != 0)
+        {
+            fprintf (stderr, "Failed to join thread: waitForSingleObject(), %d",
+                result);
+            return -1;
+        }
+#else
         // pthread_join waits for thread to terminate 
         // and then releases the thread's resources
         result = pthread_join(st->thread, NULL);
+
         if (result) {
             fprintf(stderr, "Failed to stop thread: pthread_join(), %s",
                     strerror(result));
             return -result;
         }
+#endif
     }
 
     return 0;
@@ -197,7 +224,11 @@ static void thread_func(void *data)
         if ( (st->cb_init)(st, st->user_data) )
         {
             st->done = 1;
-            pthread_exit(NULL);
+#ifdef _MSC_VER
+            _endthread ();
+#else
+            pthread_exit (NULL);
+#endif
             return;
         }
     }
@@ -211,7 +242,11 @@ static void thread_func(void *data)
         (st->cb_cleanup)(st, st->user_data);
     }
 
+#ifdef _MSC_VER
+    _endthread ();
+#else
     pthread_exit(NULL);
+#endif
 }
 
 void lo_server_thread_pp(lo_server_thread st)

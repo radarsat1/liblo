@@ -75,17 +75,19 @@ add_executable(${OSCSEND} ${OSCSEND_SOURCES})
 
 if(THREADING)
     set(ENABLE_THREADS 1)
-    check_include_files(pthread.h HAVE_LIBPTHREAD)
+    
+    if(NOT MSVC)
+        check_include_files(pthread.h HAVE_LIBPTHREAD)
+        set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+    endif()
 
     include(FindThreads)
-    set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     find_package(Threads REQUIRED)
 
     target_link_libraries(${LIBRARY_SHARED} Threads::Threads)
 
     set(THREADS_INCLUDE
       "#include \"lo/lo_serverthread.h\"")
-
 else()
     set(THREADS_INCLUDE
       "/* lo/lo_serverthread.h unavailable (THREADING=OFF) */")
@@ -93,7 +95,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(${LIBRARY_SHARED} "user32" "wsock32" "ws2_32" "iphlpapi")
-    if(THREADING)
+    if(THREADING AND NOT MSVC)
         target_link_libraries(${LIBRARY_SHARED} "pthreadVC2")
     endif()
 
