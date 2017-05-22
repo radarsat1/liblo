@@ -33,14 +33,12 @@ typedef __int32 int32_t;
 #endif
 
 #ifndef UINT_PTR
-#ifdef HAVE_UINTPTR_T
-#include <stdint.h>
-#else
-#ifndef uintptr_t
-#define UINT_PTR unsigned long
-#endif
-#endif
-#define UINT_PTR uintptr_t
+  #ifdef HAVE_UINTPTR_T
+    #include <stdint.h>
+    #define UINT_PTR uintptr_t
+  #else
+    #define UINT_PTR unsigned long
+  #endif
 #endif
 
 #ifdef ENABLE_THREADS
