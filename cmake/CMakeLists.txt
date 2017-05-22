@@ -7,9 +7,8 @@ include(TestBigEndian)
 include(GNUInstallDirs)
 
 set(PROJECT liblo)
-project(${PROJECT})
-
 set(PACKAGE_NAME "${PROJECT}")
+project(${PROJECT} LANGUAGES C CXX)
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1.0)
     set_property(TARGET ${LIBRARY} PROPERTY C_STANDARD 11)
@@ -54,12 +53,34 @@ set(OSCSEND_SOURCES ../src/tools/oscsend.c)
 
 check_symbol_exists(poll poll.h HAVE_POLL)
 check_symbol_exists(select sys/select.h HAVE_SELECT)
+if(NOT HAVE_POLL AND NOT HAVE_SELECT)
+  if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(HAVE_SELECT 1)
+    message(STATUS "Windows configuration: Assuming select exists.")
+  else()
+    message(FATAL_ERROR "Neither select nor poll was found.")
+  endif()
+endif()
 check_symbol_exists(getifaddrs sys/types.h ifaddrs.h HAVE_GETIFADDRS)
 check_symbol_exists(inet_pton arpa/inet.h HAVE_INET_PTON)
 
 set(THREADING ON CACHE BOOL "Build with threading support.")
 if(THREADING)
-    set(LIBRARY_SOURCES ${LIBRARY_SOURCES} ../src/server_thread.c)
+  if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(CMAKE_THREAD_PREFER_PTHREAD OFF CACHE BOOL "Prefer pthread to other thread libraries.")
+  else()
+    set(CMAKE_THREAD_PREFER_PTHREAD ON CACHE BOOL "Prefer pthread to other thread libraries.")
+  endif()
+  include(FindThreads)
+  if (NOT Threads_FOUND)
+    message(FATAL_ERROR "No supported thread library found.")
+  endif()
+  if(CMAKE_USE_WIN32_THREADS_INIT AND NOT CMAKE_THREAD_PREFER_PTHREAD)
+    set(HAVE_WIN32_THREADS ON)
+  elseif(CMAKE_USE_PTHREADS_INIT)
+    set(HAVE_LIBPTHREAD ON)
+  endif()
+  set(LIBRARY_SOURCES ${LIBRARY_SOURCES} ../src/server_thread.c)
 endif()
 
 set(BUILD_LANGUAGE C CACHE STRING "Build language (C or CXX)")
@@ -75,14 +96,6 @@ add_executable(${OSCSEND} ${OSCSEND_SOURCES})
 
 if(THREADING)
     set(ENABLE_THREADS 1)
-    
-    if(NOT MSVC)
-        check_include_files(pthread.h HAVE_LIBPTHREAD)
-        set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-    endif()
-
-    include(FindThreads)
-    find_package(Threads REQUIRED)
 
     target_link_libraries(${LIBRARY_SHARED} Threads::Threads)
 
@@ -95,14 +108,14 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(${LIBRARY_SHARED} "user32" "wsock32" "ws2_32" "iphlpapi")
-    if(THREADING AND NOT MSVC)
-        target_link_libraries(${LIBRARY_SHARED} "pthreadVC2")
+    if(THREADING AND Threads_FOUND)
+        target_link_libraries(${LIBRARY_SHARED} ${CMAKE_THREAD_LIBS_INIT})
     endif()
 
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
-        COMPILE_DEFINITIONS "-DLIBLO_DLL")
+        COMPILE_DEFINITIONS "LIBLO_DLL")
     set_target_properties(${LIBRARY_STATIC} PROPERTIES
-        COMPILE_DEFINITIONS "-DLIBLO_LIB")
+        COMPILE_DEFINITIONS "LIBLO_LIB")
 
     set(DLLNAME "")
     if(THREADING)
@@ -175,7 +188,7 @@ if(NOT DEFINED PRINTF_LL)
     endif()
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(MSVC)
     set(VERSION "${CONFIGURE_AC_CURRENT}.${CONFIGURE_AC_REVISION}")
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/config-msvc.h.in

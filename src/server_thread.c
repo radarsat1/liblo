@@ -36,7 +36,11 @@
 #include "lo/lo.h"
 #include "lo/lo_throw.h"
 
-static void thread_func(void *data);
+#ifdef HAVE_WIN32_THREADS
+static unsigned thread_func(void *data);
+#else
+static void* thread_func(void *data);
+#endif
 
 lo_server_thread lo_server_thread_new(const char *port,
                                       lo_err_handler err_h)
@@ -129,25 +133,23 @@ void lo_server_thread_set_callbacks(lo_server_thread st,
 
 int lo_server_thread_start(lo_server_thread st)
 {
-    int result;
-
     if (!st->active) {
         st->active = 1;
         st->done = 0;
 
         // Create the server thread
 #ifdef HAVE_LIBPTHREAD
-        result =
-            pthread_create(&(st->thread), NULL, (void *(*)(void *)) &thread_func, st);
-
-        if (result) {
+        int result;
+        result=pthread_create(&(st->thread), NULL, &thread_func, st);
+        if (result)
+        {
             fprintf (stderr,
                 "Failed to create thread: pthread_create(), %s",
                 strerror (result));
             return -result;
         }
 #else
-#ifdef _MSC_VER
+#ifdef HAVE_WIN32_THREADS
         st->thread = (HANDLE)_beginthreadex (NULL, 0, &thread_func, st, 0, NULL);
 
         if (st->thread == NULL)
@@ -184,7 +186,7 @@ int lo_server_thread_stop(lo_server_thread st)
             return -result;
         }
 #else
-#ifdef _MSC_VER
+#ifdef HAVE_WIN32_THREADS
         result = WaitForSingleObject (st->thread, INFINITE);
         CloseHandle (st->thread);
         st->thread = NULL;
@@ -224,7 +226,11 @@ int lo_server_thread_events_pending(lo_server_thread st)
     return lo_server_events_pending(st->s);
 }
 
-static void thread_func(void *data)
+#ifdef HAVE_WIN32_THREADS
+static unsigned thread_func(void *data)
+#else
+static void* thread_func(void *data)
+#endif
 {
     lo_server_thread st = (lo_server_thread) data;
 
@@ -235,13 +241,13 @@ static void thread_func(void *data)
 #ifdef HAVE_LIBPTHREAD
             pthread_exit (NULL);
 #else
-#ifdef _MSC_VER
+#ifdef HAVE_WIN32_THREADS
             _endthread ();
 #else
 #error "No threading implementation selected."
 #endif
 #endif
-            return;
+            return 0;
         }
     }
 
@@ -257,7 +263,7 @@ static void thread_func(void *data)
 #ifdef HAVE_LIBPTHREAD
     pthread_exit(NULL);
 #else
-#ifdef _MSC_VER
+#ifdef HAVE_WIN32_THREADS
     _endthread ();
 #else
 #error "No threading implementation selected."

@@ -20,7 +20,10 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
-#cmakedefine01 HAVE_LIBPTHREAD
+#cmakedefine HAVE_LIBPTHREAD
+
+/* Define to 1 if you want to use `win32' threads. */
+#cmakedefine HAVE_WIN32_THREADS
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1

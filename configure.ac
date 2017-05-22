@@ -79,7 +79,7 @@ AC_COMPILE_IFELSE(
     [AC_COMPILE_IFELSE(
       [AC_LANG_PROGRAM([#include <stdio.h>],[printf("%I64d", (long long int)0);])],
         [printf_ll=\"I64\"],
-        [AC_MSG_ERROR([printf doesn't support long long int])])])
+        AC_MSG_ERROR([printf doesn't support long long int]))])
 AC_MSG_RESULT([$printf_ll])
 AC_DEFINE_UNQUOTED([PRINTF_LL],[$printf_ll],[printf code for type long long int])
 CFLAGS="$_CFLAGS"
@@ -129,6 +129,18 @@ AC_ARG_ENABLE(threads,
   [want_threads=$enableval],
   [want_threads=yes])
 
+# Check if win32 threads are wanted
+AC_ARG_WITH(win32-threads,
+  [  --with-win32-threads    Use win32 threads], [], [with_win32_threads=yes])
+if test "x$want_threads" = xyes; then
+  AC_CHECK_HEADER([winsock2.h], [HAVE_WINSOCK2_H=yes])
+  if test "x$HAVE_WINSOCK2_H" = xyes; then
+    if test "x$with_win32_threads" = xyes; then
+      have_threads="yes"
+    fi
+  fi
+fi
+
 # Filter out -Werror temporarily, otherwise library checks can fail
 CFLAGS_nowerror="`echo $CFLAGS | sed 's/-Werror\([^=]\|$\)//'`"
 if test "$CFLAGS" = "$CFLAGS_nowerror"; then
@@ -145,22 +157,18 @@ AC_CHECK_FUNCS([getifaddrs])
 
 # Check for whether threads are wanted, and if so, did we find libpthread.
 if test "x$want_threads" = "xyes"; then
+  if test "x$with_win32_threads" = "xyes" && test "x$have_threads" = "xyes"; then
+    AC_DEFINE([HAVE_WIN32_THREADS],[1],[Define to use the win32 library for threading.])
+  else
   AC_SEARCH_LIBS([pthread_create], [c pthread],
     [AS_IF([! test x"$ac_res" = x"-lc" && ! test x"$ac_res" = x"none required"],
            [LIBPTHREAD="$ac_res"])
      have_threads=yes;
-     AC_DEFINE(ENABLE_THREADS, 1, [Define this to enable threads.])],
-    [AC_MSG_ERROR(pthread not found. Try option --disable-threads.)])
-fi
-
-# For now, only implementation of threading is pthread, so indicate
-# its availablility.  Later, possibly HAVE_LIBPTHREAD may be false,
-# while ENABLE_THREADS may be true, and another threading
-# implementation may be used.  (e.g. Windows threads, C11 threads..)
-if test x"$have_threads" == xyes; then
-    HAVE_LIBPTHREAD=1
-    AC_DEFINE([HAVE_LIBPTHREAD],[1],
-      [Define to use the pthread library for threading.])
+     HAVE_LIBPTHREAD=1;
+     AC_DEFINE([HAVE_LIBPTHREAD],[1],[Define to use the pthread library for threading.])],
+     AC_MSG_ERROR([pthread not found. Try option --disable-threads.]))
+  fi
+  AC_DEFINE(ENABLE_THREADS, [1], [Define this to enable threads.])
 fi
 
 # Add back -Werror if it was there before
@@ -275,6 +283,12 @@ test x$enable_tests = xno && echo '== Disabled tests'
 test x$enable_network_tests = xno && echo '== Disabled network-based tests'
 test x$enable_tools = xno && echo '== Disabled tools'
 test x$enable_examples = xno && echo '== Disabled examples'
+test x$have_threads = xyes && echo '== Compile with threading support'
+if test x$have_threads = xyes && test "x$HAVE_LIBPTHREAD" = x1; then
+  echo '== Compile with libpthread'
+else
+  test x$have_threads = xyes && test x$with_win32_threads = xyes && echo '== Compile with Win32 threading'
+fi
 test x$HAVE_LAMBDA = xyes && echo '== Compiling C++ bindings' || echo '== Not compiling C++ bindings'
 test x$DOXYGEN = x && echo '== Disabled documentation (no doxygen found)'
 echo

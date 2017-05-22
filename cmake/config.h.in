@@ -7,7 +7,8 @@
 #cmakedefine HAVE_SELECT
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_INET_PTON
-#cmakedefine01 HAVE_LIBPTHREAD
+#cmakedefine HAVE_LIBPTHREAD
+#cmakedefine HAVE_WIN32_THREADS
 #cmakedefine ENABLE_THREADS
 
 #define PRINTF_LL "@PRINTF_LL@"
