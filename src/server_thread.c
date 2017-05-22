@@ -136,6 +136,17 @@ int lo_server_thread_start(lo_server_thread st)
         st->done = 0;
 
         // Create the server thread
+#ifdef HAVE_LIBPTHREAD
+        result =
+            pthread_create(&(st->thread), NULL, (void *(*)(void *)) &thread_func, st);
+
+        if (result) {
+            fprintf (stderr,
+                "Failed to create thread: pthread_create(), %s",
+                strerror (result));
+            return -result;
+        }
+#else
 #ifdef _MSC_VER
         st->thread = (HANDLE)_beginthreadex (NULL, 0, &thread_func, st, 0, NULL);
 
@@ -147,15 +158,8 @@ int lo_server_thread_start(lo_server_thread st)
             return -1;
         }
 #else
-        result =
-            pthread_create(&(st->thread), NULL, (void *(*)(void *)) &thread_func, st);
-
-        if (result) {
-            fprintf (stderr,
-                "Failed to create thread: pthread_create(), %s",
-                strerror (result));
-            return -result;
-        }
+#error "No threading implementation available."
+#endif
 #endif
     }
     return 0;
@@ -169,19 +173,8 @@ int lo_server_thread_stop(lo_server_thread st)
         // Signal thread to stop
         st->active = 0;
 
-#ifdef _MSC_VER
-        result = WaitForSingleObject (st->thread, INFINITE);
-        CloseHandle (st->thread);
-        st->thread = NULL;
-        
-        if (result != 0)
-        {
-            fprintf (stderr, "Failed to join thread: waitForSingleObject(), %d",
-                result);
-            return -1;
-        }
-#else
-        // pthread_join waits for thread to terminate 
+#ifdef HAVE_LIBPTHREAD
+        // pthread_join waits for thread to terminate
         // and then releases the thread's resources
         result = pthread_join(st->thread, NULL);
 
@@ -190,6 +183,21 @@ int lo_server_thread_stop(lo_server_thread st)
                     strerror(result));
             return -result;
         }
+#else
+#ifdef _MSC_VER
+        result = WaitForSingleObject (st->thread, INFINITE);
+        CloseHandle (st->thread);
+        st->thread = NULL;
+
+        if (result != 0)
+        {
+            fprintf (stderr, "Failed to join thread: waitForSingleObject(), %d",
+                result);
+            return -1;
+        }
+#else
+#error "No threading implementation available."
+#endif
 #endif
     }
 
@@ -224,10 +232,14 @@ static void thread_func(void *data)
         if ( (st->cb_init)(st, st->user_data) )
         {
             st->done = 1;
+#ifdef HAVE_LIBPTHREAD
+            pthread_exit (NULL);
+#else
 #ifdef _MSC_VER
             _endthread ();
 #else
-            pthread_exit (NULL);
+#error "No threading implementation selected."
+#endif
 #endif
             return;
         }
@@ -242,10 +254,14 @@ static void thread_func(void *data)
         (st->cb_cleanup)(st, st->user_data);
     }
 
+#ifdef HAVE_LIBPTHREAD
+    pthread_exit(NULL);
+#else
 #ifdef _MSC_VER
     _endthread ();
 #else
-    pthread_exit(NULL);
+#error "No threading implementation selected."
+#endif
 #endif
 }
 

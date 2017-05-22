@@ -44,10 +44,9 @@ typedef __int32 int32_t;
 #endif
 
 #ifdef ENABLE_THREADS
-// MSVC won't have this
-# ifdef HAVE_PTHREADS_H
-#  include <pthread.h>
-# endif
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
 #endif
 
 #include "lo/lo_osc_types.h"
@@ -193,10 +192,12 @@ typedef void (*lo_server_thread_cleanup_callback)(struct _lo_server_thread *s,
                                                   void *user_data);
 typedef struct _lo_server_thread {
     lo_server s;
+#ifdef HAVE_LIBPTHREAD
+    pthread_t thread;
+#else
 #ifdef _MSC_VER
     HANDLE thread;
-#else 
-    pthread_t thread;
+#endif
 #endif
     volatile int active;
     volatile int done;
