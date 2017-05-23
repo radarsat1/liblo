@@ -2077,6 +2077,40 @@ void lo_server_del_method(lo_server s, const char *path,
     }
 }
 
+int lo_server_del_lo_method(lo_server s, lo_method m)
+{
+    lo_method it, prev, next;
+
+    if (!s->first)
+        return 1;
+
+    it = s->first;
+    prev = it;
+    while (it) {
+        /* incase we free it */
+        next = it->next;
+
+        if (it == m) {
+            /* Take care when removing the head. */
+            if (it == s->first) {
+                s->first = it->next;
+            } else {
+                prev->next = it->next;
+            }
+            next = it->next;
+            free((void *) it->path);
+            free((void *) it->typespec);
+            free(it);
+            it = prev;
+            return 0;
+        }
+        prev = it;
+        if (it)
+            it = next;
+    }
+    return 1;
+}
+
 int lo_server_add_bundle_handlers(lo_server s,
                                   lo_bundle_start_handler sh,
                                   lo_bundle_end_handler eh,

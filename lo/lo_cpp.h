@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <list>
+#include <algorithm>
 #include <unordered_map>
 #include <string>
 #include <sstream>
@@ -38,20 +39,22 @@
 
 #define LO_ADD_METHOD_RT(ht, argtypes, args, rt, r, r1, r2)             \
     template <typename H>                                               \
-    auto add_method(const string_type path, const string_type types, H&& h) \
-    -> rt const                                                         \
+    Method add_method(const string_type path, const string_type types,  \
+                      H&& h, rt* _unused=0)                             \
     {                                                                   \
         std::string key = std::string(path._s?:"") + "," + (types._s?:""); \
         _handlers[key].push_front(                                      \
             std::unique_ptr<handler>(new handler_type<r ht>(h)));       \
-        _add_method(path, types,                                        \
+        lo_method m = _add_method(path, types,                          \
             [](const char *path, const char *types,                     \
                lo_arg **argv, int argc, void *msg,                      \
                void *data)->int                                         \
             {                                                           \
-                r1 (*static_cast<handler_type<r ht>*>(data)) args; \
+                r1 (*static_cast<handler_type<r ht>*>(data)) args;      \
                 r2;                                                     \
             }, _handlers[key].front().get());                           \
+        _handlers[key].front()->method = m;                             \
+        return m;                                                       \
     }
 
 #define RT_INT(argtypes) \
@@ -87,6 +90,17 @@ namespace lo {
     };
 
     class ServerThread;
+
+    /** \brief Class representing an OSC method, proxy for \ref lo_method. */
+    class Method
+    {
+      public:
+        Method(lo_method m) : method(m) {}
+        operator lo_method() const
+            { return method; }
+      protected:
+        lo_method method;
+    };
 
     /** \brief Class representing an OSC destination address, proxy
      * for \ref lo_address. */
@@ -488,9 +502,9 @@ namespace lo {
 
         /** Add a method to handle a given path and type, with a
          * handler and user data pointer. */
-        void add_method(const string_type &path, const string_type &types,
+        Method add_method(const string_type &path, const string_type &types,
                         lo_method_handler h, void *data) const
-            { _add_method(path, types, h, data); }
+            { return _add_method(path, types, h, data); }
 
         // Alternative callback prototypes
 
@@ -520,11 +534,23 @@ namespace lo {
                        (Message(msg)) );
         LO_ADD_METHOD( (), (), () );
 
-        void del_method(const string_type &path, const string_type &typespec)
+        int del_method(const string_type &path, const string_type &typespec)
         {
             _handlers.erase(std::string(path._s?:"") + ","
                             + (typespec._s?:""));
             lo_server_del_method(server, path, typespec);
+            return 0;
+        }
+
+        int del_method(const lo_method& m)
+        {
+          for (auto &i : _handlers) {
+            /* for (auto &j : i.second) { */
+            /*   if (j->method == m) { found=true; i.second.erase(j); break; } } } */
+            std::remove_if(i.second.begin(), i.second.end(),
+                           [&](std::unique_ptr<handler>& h){return h->method == m;});
+          }
+          return lo_server_del_lo_method(server, m);
         }
 
         int dispatch_data(void *data, size_t size)
@@ -602,10 +628,11 @@ namespace lo {
 
         friend class ServerThread;
 
-        class handler {};
+        struct handler { Method method; handler(Method m):method(m){} };
         template <typename T>
         class handler_type : public handler, public std::function<T> {
-          public: template<typename H>handler_type(H&& h) : std::function<T>(h) {}
+          public: template<typename H>handler_type(H&& h, Method m=0)
+            : handler(m), std::function<T>(h) {}
         };
         typedef handler_type<void(int, const char *, const char *)> handler_error;
         typedef handler_type<void(int, const std::string&, const std::string&)> handler_error_s;
@@ -619,10 +646,10 @@ namespace lo {
         std::unique_ptr<std::pair<handler_bundle_start,
                                   handler_bundle_end>> _bundle_handlers;
 
-        virtual void _add_method(const char *path, const char *types,
-                        lo_method_handler h, void *data) const
+        virtual Method _add_method(const char *path, const char *types,
+                                   lo_method_handler h, void *data) const
         {
-            lo_server_add_method(server, path, types, h, data);
+            return lo_server_add_method(server, path, types, h, data);
         }
     };
 
@@ -741,10 +768,10 @@ namespace lo {
         std::unique_ptr<handler_cb_pair> _cb_handlers;
 
         // Regular old liblo method handlers
-        virtual void _add_method(const char *path, const char *types,
-                                 lo_method_handler h, void *data) const
+        virtual Method _add_method(const char *path, const char *types,
+                                   lo_method_handler h, void *data) const
         {
-            lo_server_thread_add_method(server_thread, path, types, h, data);
+            return lo_server_thread_add_method(server_thread, path, types, h, data);
         }
     };
 

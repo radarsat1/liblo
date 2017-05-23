@@ -1300,8 +1300,12 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     lo_server_thread_del_method(st, "/coerce", "dfhiSs");
 
     {
+        lo_method m;
         lo_server s = lo_server_new(NULL, error);
         lo_server_del_method(s, NULL, NULL);
+        TEST (m = lo_server_add_method(s, NULL, NULL, generic_handler, NULL));
+        TEST (lo_server_del_lo_method(s, m) == 0);
+        TEST (lo_server_del_lo_method(s, m) != 0);
         lo_server_free(s);
     }
 

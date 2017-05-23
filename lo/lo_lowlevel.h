@@ -798,13 +798,14 @@ int lo_server_recv(lo_server s);
  * matching message is received
  * \param user_data A value that will be passed to the callback function, h,
  * when its invoked matching from this method.
+ * \return A unique pointer identifying the method.  It should not be freed.
  */
 lo_method lo_server_add_method(lo_server s, const char *path,
                                const char *typespec, lo_method_handler h,
                                const void *user_data);
 
 /**
- * \brief Delete an OSC method from the specifed server.
+ * \brief Delete an OSC method from the specified server.
  *
  * \param s The server the method is to be removed from.
  * \param path The OSC path of the method to delete. If NULL is passed the
@@ -813,6 +814,16 @@ lo_method lo_server_add_method(lo_server s, const char *path,
  */
 void lo_server_del_method(lo_server s, const char *path,
                                const char *typespec);
+
+/**
+ * \brief Delete a specific OSC method from the specified server.
+ *
+ * \param s The server the method is to be removed from.
+ * \param m The lo_method identifier returned from lo_server_add_method for
+ *          the method to delete from the server.
+ * \return Non-zero if it was not found in the list of methods for the server.
+ */
+int lo_server_del_lo_method(lo_server s, lo_method m);
 
 /**
  * \brief Add bundle notification handlers to the specified server.
