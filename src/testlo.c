@@ -1242,6 +1242,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     lo_server_thread_add_method(st, "/bundle", NULL, bundle_handler, NULL);
     lo_server_thread_add_method(st, "/timestamp", NULL,
                                 timestamp_handler, NULL);
+    lo_method jit =
     lo_server_thread_add_method(st, "/jitter", "ti", jitter_handler, NULL);
 
     lo_server_thread_add_method(st, "/pattern/foo", NULL,
@@ -1298,6 +1299,8 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 
     /* Delete methods */
     lo_server_thread_del_method(st, "/coerce", "dfhiSs");
+    TEST (lo_server_thread_del_lo_method(st, jit) == 0);
+    TEST (lo_server_thread_del_lo_method(st, jit) != 0);
 
     {
         lo_method m;

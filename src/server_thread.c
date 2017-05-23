@@ -121,6 +121,11 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
     lo_server_del_method(st->s, path, typespec);
 }
 
+int lo_server_thread_del_lo_method(lo_server_thread st, lo_method m)
+{
+    return lo_server_del_lo_method(st->s, m);
+}
+
 void lo_server_thread_set_callbacks(lo_server_thread st,
                                     lo_server_thread_init_callback init,
                                     lo_server_thread_cleanup_callback cleanup,
