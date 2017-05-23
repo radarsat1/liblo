@@ -746,7 +746,7 @@ int ok_handler(const char *path, const char *types,
 }
 
 #ifdef HAVE_WIN32_THREADS
-unsigned test_tcp_thread(void *context)
+unsigned __stdcall test_tcp_thread(void *context)
 #else
 void *test_tcp_thread(void *context)
 #endif
