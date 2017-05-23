@@ -37,7 +37,7 @@
 #include "lo/lo_throw.h"
 
 #ifdef HAVE_WIN32_THREADS
-static unsigned thread_func(void *data);
+static unsigned __stdcall thread_func(void *data);
 #else
 static void* thread_func(void *data);
 #endif
@@ -227,7 +227,7 @@ int lo_server_thread_events_pending(lo_server_thread st)
 }
 
 #ifdef HAVE_WIN32_THREADS
-static unsigned thread_func(void *data)
+static unsigned __stdcall thread_func(void *data)
 #else
 static void* thread_func(void *data)
 #endif
