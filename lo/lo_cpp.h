@@ -545,8 +545,6 @@ namespace lo {
         int del_method(const lo_method& m)
         {
           for (auto &i : _handlers) {
-            /* for (auto &j : i.second) { */
-            /*   if (j->method == m) { found=true; i.second.erase(j); break; } } } */
             std::remove_if(i.second.begin(), i.second.end(),
                            [&](std::unique_ptr<handler>& h){return h->method == m;});
           }
