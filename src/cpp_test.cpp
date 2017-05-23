@@ -160,10 +160,12 @@ int main()
     lo::Address a("localhost", "9000");
 
     printf("address host %s, port %s\n", a.hostname().c_str(), a.port().c_str());
+#ifdef HAVE_GETIFADDRS
     printf("iface: %s\n", a.iface().c_str());
     a.set_iface(std::string(), std::string("127.0.0.1"));
     a.set_iface(0, "127.0.0.1");
     printf("iface: %s\n", a.iface().c_str());
+#endif
 
     a.send_from(st, "test1", "i", 20);
     a.send("test2", "i", 40);

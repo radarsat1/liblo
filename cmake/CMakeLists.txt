@@ -21,35 +21,55 @@ set(LIBRARY_SHARED lo_shared)
 set(LIBRARY_STATIC lo_static)
 set(OSCDUMP oscdump)
 set(OSCSEND oscsend)
+set(TESTLO testlo)
+set(SUBTEST subtest)
+set(CPPTEST cpp_test)
+set(EXAMPLE_CLIENT example_client)
+set(EXAMPLE_SERVER example_server)
+set(EXAMPLE_TCP_ECHO_SERVER example_tcp_echo_server)
+set(NONBLOCKING_SERVER_EXAMPLE nonblocking_server_example)
+
+set(TOOLS ${OSCDUMP} ${OSCSEND})
+set(TESTS ${TESTLO} ${SUBTEST} ${CPPTEST})
+set(EXAMPLES ${EXAMPLE_CLIENT} ${EXAMPLE_SERVER}
+  ${EXAMPLE_TCP_ECHO_SERVER} ${NONBLOCKING_SERVER_EXAMPLE})
+set(PROGRAMS ${TOOLS} ${TESTS} ${EXAMPLES})
 
 set(LIBRARY_SOURCES
-    ../src/address.c
-    ../src/blob.c
-    ../src/bundle.c
-    ../src/message.c
-    ../src/method.c
-    ../src/pattern_match.c
-    ../src/send.c
-    ../src/server.c
-    ../src/timetag.c
-    ../src/version.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/address.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/blob.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/bundle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/message.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/method.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/pattern_match.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/send.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/server.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/timetag.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/version.c
     )
 
 set(LIBRARY_HEADERS
-    ../lo/lo_cpp.h
-    ../lo/lo_errors.h
-    ../lo/lo_lowlevel.h
-    ../lo/lo_macros.h
-    ../lo/lo_osc_types.h
-    ../lo/lo_serverthread.h
-    ../lo/lo_throw.h
-    ../lo/lo_types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_cpp.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_errors.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_lowlevel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_macros.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_osc_types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_serverthread.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_throw.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_types.h
     ${CMAKE_CURRENT_BINARY_DIR}/lo/lo_endian.h
     ${CMAKE_CURRENT_BINARY_DIR}/lo/lo.h
     )
 
-set(OSCDUMP_SOURCES ../src/tools/oscdump.c)
-set(OSCSEND_SOURCES ../src/tools/oscsend.c)
+set(OSCDUMP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscdump.c)
+set(OSCSEND_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscsend.c)
+set(TESTLO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/testlo.c)
+set(SUBTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/subtest.c)
+set(CPPTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/cpp_test.cpp)
+set(EXAMPLE_CLIENT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/example_client.c)
+set(EXAMPLE_SERVER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/example_server.c)
+set(EXAMPLE_TCP_ECHO_SERVER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/example_tcp_echo_server.c)
+set(NONBLOCKING_SERVER_EXAMPLE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/nonblocking_server_example.c)
 
 check_symbol_exists(poll poll.h HAVE_POLL)
 check_symbol_exists(select sys/select.h HAVE_SELECT)
@@ -61,8 +81,8 @@ if(NOT HAVE_POLL AND NOT HAVE_SELECT)
     message(FATAL_ERROR "Neither select nor poll was found.")
   endif()
 endif()
-check_symbol_exists(getifaddrs sys/types.h ifaddrs.h HAVE_GETIFADDRS)
-check_symbol_exists(inet_pton arpa/inet.h HAVE_INET_PTON)
+check_symbol_exists(getifaddrs "sys/types.h;ifaddrs.h" HAVE_GETIFADDRS)
+check_symbol_exists(inet_pton "arpa/inet.h" HAVE_INET_PTON)
 
 set(THREADING ON CACHE BOOL "Build with threading support.")
 if(THREADING)
@@ -80,19 +100,39 @@ if(THREADING)
   elseif(CMAKE_USE_PTHREADS_INIT)
     set(HAVE_LIBPTHREAD ON)
   endif()
-  set(LIBRARY_SOURCES ${LIBRARY_SOURCES} ../src/server_thread.c)
+  set(LIBRARY_SOURCES ${LIBRARY_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../src/server_thread.c)
 endif()
 
 set(BUILD_LANGUAGE C CACHE STRING "Build language (C or CXX)")
 mark_as_advanced(BUILD_LANGUAGE)
 set_source_files_properties(
     ${LIBRARY_SOURCES} ${OSCDUMP_SOURCES} ${OSCSEND_SOURCES}
+    ${TESTLO_SOURCES} ${EXAMPLE_CLIENT_SOURCES}
+    ${EXAMPLE_SERVER_SOURCES} ${EXAMPLE_TCP_ECHO_SERVER_SOURCES}
+    ${NONBLOCKING_SERVER_EXAMPLE_SOURCES}
     PROPERTIES LANGUAGE ${BUILD_LANGUAGE})
 
+set_source_files_properties(${CPPTEST_SOURCES}
+    PROPERTIES LANGUAGE CXX)
+
+# Library
 add_library(${LIBRARY_STATIC} STATIC ${LIBRARY_SOURCES})
 add_library(${LIBRARY_SHARED} SHARED ${LIBRARY_SOURCES})
+
+# Tools
 add_executable(${OSCDUMP} ${OSCDUMP_SOURCES})
 add_executable(${OSCSEND} ${OSCSEND_SOURCES})
+
+# Tests
+add_executable(${TESTLO} ${TESTLO_SOURCES})
+add_executable(${SUBTEST} ${SUBTEST_SOURCES})
+add_executable(${CPPTEST} ${CPPTEST_SOURCES})
+
+# Examples
+add_executable(${EXAMPLE_CLIENT} ${EXAMPLE_CLIENT_SOURCES})
+add_executable(${EXAMPLE_SERVER} ${EXAMPLE_SERVER_SOURCES})
+add_executable(${EXAMPLE_TCP_ECHO_SERVER} ${EXAMPLE_TCP_ECHO_SERVER_SOURCES})
+add_executable(${NONBLOCKING_SERVER_EXAMPLE} ${NONBLOCKING_SERVER_EXAMPLE_SOURCES})
 
 if(THREADING)
     set(ENABLE_THREADS 1)
@@ -132,11 +172,23 @@ set(LO_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(${LIBRARY_SHARED} PUBLIC ${LO_INCLUDE_DIRS})
 target_include_directories(${LIBRARY_STATIC} PUBLIC ${LO_INCLUDE_DIRS})
-target_include_directories(${OSCDUMP} PUBLIC ${LO_INCLUDE_DIRS})
-target_include_directories(${OSCSEND} PUBLIC ${LO_INCLUDE_DIRS})
 
-target_link_libraries(${OSCDUMP} PUBLIC ${LIBRARY_SHARED})
-target_link_libraries(${OSCSEND} PUBLIC ${LIBRARY_SHARED})
+foreach(PROG ${PROGRAMS})
+  target_include_directories(${PROG} PUBLIC ${LO_INCLUDE_DIRS})
+  target_link_libraries(${PROG} PUBLIC ${LIBRARY_SHARED})
+endforeach(PROG)
+
+foreach(PROG ${TOOLS})
+  set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY "tools")
+endforeach(PROG)
+foreach(PROG ${TESTS})
+  set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY "tests")
+endforeach(PROG)
+foreach(PROG ${EXAMPLES})
+  set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY "examples")
+endforeach(PROG)
+
+set_property(TARGET ${CPPTEST} PROPERTY CXX_STANDARD 11)
 
 # parse version info from configure.ac
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../configure.ac"
