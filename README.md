@@ -35,7 +35,10 @@ so that the liblo library can be located by your application.
 To build with MS Visual Studio on Windows, first download and run the
 `premake4.exe` application in the build directory with an argument
 describing which IDE you are using.  This will generate project and
-solution files.  See `build/README.md` for more details.
+solution files.  See `build/README.md` for more details. For the time
+being, you will also need a [Win32 pthreads
+implementation](http://sourceware.org/pthreads-win32/) in order to
+build liblo.
 
 Examples
 --------
