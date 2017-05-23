@@ -23,9 +23,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
+#include <sys/time.h>
+#endif
 #include <signal.h>
-
 #include "lo/lo.h"
 
 int done = 0;

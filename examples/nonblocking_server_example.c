@@ -21,10 +21,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <sys/types.h>
-#include <strings.h>
+#ifndef WIN32
+#include <sys/time.h>
 #include <unistd.h>
+#endif
 
 #include "lo/lo.h"
 
@@ -187,6 +188,9 @@ int quit_handler(const char *path, const char *types, lo_arg ** argv,
 
 void read_stdin(void)
 {
+#ifdef WIN32
+  return;
+#else
     char buf[256];
     int len = read(0, buf, 256);
     if (len > 0) {
@@ -195,6 +199,7 @@ void read_stdin(void)
         printf("\n");
         fflush(stdout);
     }
+#endif
 }
 
 /* vi:set ts=8 sts=4 sw=4: */

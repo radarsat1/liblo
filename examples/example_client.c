@@ -16,8 +16,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
-
+#endif
 #include "lo/lo.h"
 
 const char testdata[6] = "ABCDE";
