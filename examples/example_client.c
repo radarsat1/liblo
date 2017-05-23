@@ -16,8 +16,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#ifndef WIN32
+#include <unistd.h>
 #endif
 #include "lo/lo.h"
 

@@ -23,8 +23,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#ifndef WIN32
+#include <unistd.h>
+#include <sys/time.h>
 #endif
 #include <signal.h>
 #include "lo/lo.h"
