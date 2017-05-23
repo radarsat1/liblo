@@ -42,7 +42,7 @@
     Method add_method(const string_type path, const string_type types,  \
                       H&& h, rt* _unused=0)                             \
     {                                                                   \
-        std::string key = std::string(path._s?:"") + "," + (types._s?:""); \
+        std::string key(path.s() + "," + types.s());                    \
         _handlers[key].push_front(                                      \
             std::unique_ptr<handler>(new handler_type<r ht>(h)));       \
         lo_method m = _add_method(path, types,                          \
@@ -77,6 +77,7 @@ namespace lo {
         string_type(const char *s=0) { _s = s; }
         string_type(const std::string &s) { _s = s.c_str(); }
         operator const char*() const { return _s; }
+        std::string s() const { return _s?_s:""; }
         const char *_s;
     };
 
@@ -140,7 +141,7 @@ namespace lo {
             va_list q;
             va_start(q, type);
             lo_message m = lo_message_new();
-            std::string t = std::string(type) + "$$";
+            std::string t = type.s() + "$$";
             lo_message_add_varargs(m, t.c_str(), q);
             int r = lo_send_message(address, path, m);
             lo_message_free(m);
@@ -212,25 +213,25 @@ namespace lo {
           { return lo_address_errno(address); }
 
         std::string errstr() const
-          { return std::string(lo_address_errstr(address)?:""); }
+          { auto s(lo_address_errstr(address)); return std::string(s?s:""); }
 
         std::string hostname() const
-          { return std::string(lo_address_get_hostname(address)?:""); }
+          { auto s(lo_address_get_hostname(address)); return std::string(s?s:""); }
 
         std::string port() const
-          { return std::string(lo_address_get_port(address)?:""); }
+          { auto s(lo_address_get_port(address)); return std::string(s?s:""); }
 
         int protocol() const
           { return lo_address_get_protocol(address); }
 
         std::string url() const
-          { return std::string(lo_address_get_url(address)?:""); }
+          { auto s(lo_address_get_url(address)); return std::string(s?s:""); }
 
         std::string iface() const
-          { return std::string(lo_address_get_iface(address)?:""); }
+          { auto s(lo_address_get_iface(address)); return std::string(s?s:""); }
 
         void set_iface(const string_type &iface, const string_type &ip)
-          { lo_address_set_iface(address, iface._s?:0, ip._s?:0); }
+          { lo_address_set_iface(address, iface, ip); }
 
         int set_tcp_nodelay(int enable)
           { return lo_address_set_tcp_nodelay(address, enable); }
@@ -376,7 +377,7 @@ namespace lo {
             { return lo_message_get_timestamp(message); }
 
         std::string types() const
-            { return std::string(lo_message_get_types(message)?:""); }
+            { auto s(lo_message_get_types(message)); return std::string(s?s:""); }
 
         int argc() const
             { return lo_message_get_argc(message); }
@@ -488,8 +489,7 @@ namespace lo {
                const string_type &iface="", const string_type &ip="", lo_err_handler err_h=0)
             : Server((iface._s || ip._s)
                      ? lo_server_new_multicast_iface(group, port,
-                                                     iface._s?:0,
-                                                     ip._s?:0, err_h)
+                                                     iface, ip, err_h)
                      : lo_server_new_multicast(group, port, err_h)) {}
 
         /** Destructor */
@@ -536,8 +536,7 @@ namespace lo {
 
         int del_method(const string_type &path, const string_type &typespec)
         {
-            _handlers.erase(std::string(path._s?:"") + ","
-                            + (typespec._s?:""));
+            _handlers.erase(path.s() + "," + typespec.s());
             lo_server_del_method(server, path, typespec);
             return 0;
         }
@@ -604,7 +603,7 @@ namespace lo {
             { return lo_server_get_protocol(server); }
 
         std::string url() const
-            { return std::string(lo_server_get_url(server)?:""); }
+            { auto s(lo_server_get_url(server)); return std::string(s?s:""); }
 
         int enable_queue(int queue_enabled,
                          int dispatch_remaining=1)
@@ -920,13 +919,13 @@ namespace lo {
         Message get_message(int index, std::string &path) const
             { const char *p;
               lo_message m=lo_bundle_get_message(bundle, index, &p);
-              path = p?:0;
+              path = p?p:0;
               return Message(m); }
 
         PathMsg get_message(int index) const
             { const char *p;
               lo_message m = lo_bundle_get_message(bundle, index, &p);
-              return PathMsg(p?:0, m); }
+              return PathMsg(p?p:0, m); }
 
         Bundle get_bundle(int index) const
             { return lo_bundle_get_bundle(bundle, index); }
