@@ -23,9 +23,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <signal.h>
-
 #include "lo/lo.h"
 
 int done = 0;

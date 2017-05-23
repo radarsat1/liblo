@@ -21,11 +21,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <sys/types.h>
-#include <strings.h>
-#include <unistd.h>
-
+#ifndef _MSC_VER
+# include <sys/time.h>
+# include <strings.h>
+#endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include "lo/lo.h"
 
 int done = 0;
