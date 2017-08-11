@@ -2,7 +2,7 @@ SUBDIRS = src
 if COMPILE_EXAMPLES
 SUBDIRS += examples
 endif
-SUBDIRS += lo build @DOXYGEN@
+SUBDIRS += lo build cmake @DOXYGEN@
 
 EXTRA_DIST = libtool ltmain.sh autogen.sh
 

@@ -37,6 +37,17 @@ To build with MS Visual Studio on Windows, first download and run the
 describing which IDE you are using.  This will generate project and
 solution files.  See `build/README.md` for more details.
 
+Building with CMake
+-------------------
+
+If you prefer the CMake build system, support has been added.  Instead
+of the `configure` step listed in the previous section, create a build
+directory and initialize CMake:
+
+    mkdir ~/build/liblo
+    cmake ~/source/liblo/cmake <more options..>
+    make
+
 Examples
 --------
 

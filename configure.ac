@@ -306,6 +306,7 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	doc/reference.doxygen
 	build/Makefile
+	cmake/Makefile
 ])
 AC_OUTPUT
 
