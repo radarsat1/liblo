@@ -1,3 +1,29 @@
+2017-08-11 Stephen Sinclair <radarsat1@gmail.com>
+	* Compatibility fixes (Windows, FreeBSD)
+	* Configure options to modularize the build
+	* Detect SO_REUSEPORT support at runtime
+	* Fix C++ null pointer checks in error conditions
+	* Add C++ send_from support
+	* Delay server hostname resolution
+	* Fix bug in slip_decode
+	* Fix LO_MARKER-related bugs
+	* Run-time specification of maximum message size
+	* Support larger outgoing TCP messages
+	* Fix C++ header for use with multiple compilation units
+	* Add blob example
+	* Add secondary build system based on CMake
+	* Fix erroneous use of C++ assignment in initializer list
+	* Fix printf sequences for long long
+	* Add init/cleanup callbacks for server threads
+	* Use uintptr_t for casting pointers
+	* Fix false-positive check for inet_pton
+	* Change oscdump output buffering behaviour
+	* Add timetags to oscdump output
+	* Add oscsendfile for playing back oscdump output
+	* Use Win32 threads insteads pthreads on Windows
+	* Add function lo_server_del_lo_method
+	* Fix bad use of the ternary operator in C++ header
+	* Cache path strings when building bundles
 
 2014-01-27 Stephen Sinclair <radarsat1@gmail.com>
 	* Fix build for Windows (MingW, MSVC) and Android platforms

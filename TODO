@@ -10,5 +10,3 @@
 * Rendevous/OpenWhatever (eg. howl) service discovery [low priority]
 
 * Think about a JACK transport layer [maybe^W probably not, low priority]
-
-* Use Windows threading API on Windows
