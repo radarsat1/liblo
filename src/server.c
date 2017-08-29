@@ -55,6 +55,10 @@
 #endif
 #include <sys/un.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#ifdef HAVE_GETIFADDRS
+#include <ifaddrs.h>
+#endif
 #endif
 
 #if defined(WIN32) || defined(_MSC_VER)
@@ -298,20 +302,72 @@ void lo_server_resolve_hostname(lo_server s)
     /* Set hostname to empty string */
     hostname[0] = '\0';
 
-#ifdef ENABLE_IPV6
+#if defined(ENABLE_IPV6) && defined(HAVE_GETIFADDRS)
     /* Try it the IPV6 friendly way first */
-    for (it = ai; it; it = it->ai_next) {
-        if (getnameinfo(it->ai_addr, it->ai_addrlen, hostname,
-                        sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0) {
+    do {
+        struct ifaddrs *ifa, *ifa_list;
+        if (getifaddrs(&ifa_list))
             break;
-        }
-    }
+        ifa = ifa_list;
 
-    /* check to make sure getnameinfo() didn't just set the hostname to "::".
-       Needed on Darwin. */
-    if (hostname[0] == ':') {
-        hostname[0] = '\0';
+        while (ifa) {
+            if (!ifa->ifa_addr) {
+                ifa = ifa->ifa_next;
+                continue;
+            }
+
+            if (s->addr_if.iface) {
+                if (s->addr_if.size == sizeof(struct in_addr)
+                    && (ifa->ifa_addr->sa_family == AF_INET))
+                {
+                    struct sockaddr_in *sin = (struct sockaddr_in*)ifa->ifa_addr;
+                    if (memcmp(&sin->sin_addr, &s->addr_if.a.addr, sizeof(struct in_addr))!=0
+                        || (s->addr_if.iface && ifa->ifa_name
+                            && strcmp(s->addr_if.iface, ifa->ifa_name)!=0))
+                    {
+                        ifa = ifa->ifa_next;
+                        continue;
+                    }
+                }
+                else if (s->addr_if.size == sizeof(struct in6_addr)
+                         && (ifa->ifa_addr->sa_family == AF_INET6))
+                {
+                    struct sockaddr_in6 *sin = (struct sockaddr_in6*)ifa->ifa_addr;
+                    if (memcmp(&sin->sin6_addr, &s->addr_if.a.addr6,
+                               sizeof(struct in6_addr))!=0
+                        || (s->addr_if.iface && ifa->ifa_name
+                            && strcmp(s->addr_if.iface, ifa->ifa_name)!=0))
+                    {
+                        ifa = ifa->ifa_next;
+                        continue;
+                    }
+                }
+            }
+
+            if ((ifa->ifa_addr->sa_family == AF_INET
+                 && (!s->addr_if.iface || s->addr_if.size == sizeof(struct in_addr))
+                 && (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), hostname,
+                                 sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0))
+                || (ifa->ifa_addr->sa_family == AF_INET6
+                    && (!s->addr_if.iface || s->addr_if.size == sizeof(struct in6_addr))
+                    && (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in6), hostname,
+                                    sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0)))
+            {
+                /* check to make sure getnameinfo() didn't just set the hostname to "::".
+                   Needed on Darwin. */
+                if (hostname[0] == ':')
+                    hostname[0] = '\0';
+                else if (strcmp(hostname, "localhost")==0)
+                    hostname[0] = '\0';
+                else
+                    break;
+            }
+            ifa = ifa->ifa_next;
+        }
+
+        freeifaddrs(ifa_list);
     }
+    while (0);
 #endif
 
     /* Fallback to the oldschool (i.e. more reliable) way */

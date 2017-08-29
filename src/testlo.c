@@ -704,6 +704,13 @@ void test_multicast(lo_server_thread st)
 
     DOING("test_multicast");
 
+#ifdef ENABLE_IPV6
+    // Print a warning but we let it fail, prefer to actually fix IPv6
+    // support rather than just skip the test!
+    printf("WARNING: Compiled with --enable-ipv6, multicast not supported;"
+           "failure expected.\n");
+#endif
+
     /* test multicast server and sender */
     /* message is sent from st otherwise reply doesn't work */
     ms = lo_server_new_multicast("224.0.1.1", "15432", error);
