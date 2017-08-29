@@ -143,3 +143,4 @@ EXPORTS
 @DEFTHREADS@    lo_server_thread_set_callbacks         @140
     lo_server_del_lo_method                @141
 @DEFTHREADS@    lo_server_thread_del_lo_method         @142
+@DEFTHREADS@    lo_server_thread_new_multicast_iface   @143

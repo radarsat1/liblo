@@ -64,6 +64,28 @@ lo_server_thread lo_server_thread_new_multicast(const char *group, const char *p
                                                 lo_err_handler err_h);
 
 /**
+ * \brief Create a new server thread instance, and join a UDP
+ * multicast group, optionally specifying which network interface to
+ * use.  Note that usually only one of iface or ip are specified.
+ * 
+ * \param group The multicast group to join.  See documentation on IP
+ * multicast for the acceptable address range; e.g., http://tldp.org/HOWTO/Multicast-HOWTO-2.html
+ * \param port If using UDP then NULL may be passed to find an unused port.
+ * Otherwise a decimal port number or service name or may be passed.
+ * If using UNIX domain sockets then a socket path should be passed here.
+ * \param iface A string specifying the name of a network interface to
+ * use, or zero if not specified.
+ * \param ip A string specifying the IP address of a network interface
+ * to use, or zero if not specified.
+ * \param err_h An error callback function that will be called if there is an
+ * error in messge reception or server creation. Pass NULL if you do not want
+ * error handling.
+ */
+lo_server_thread lo_server_thread_new_multicast_iface(const char *group, const char *port,
+						      const char *iface, const char *ip,
+						      lo_err_handler err_h);
+
+/**
  * \brief Create a new server thread to handle incoming OSC
  * messages, specifying protocol.
  *

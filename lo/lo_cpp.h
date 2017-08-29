@@ -708,6 +708,17 @@ namespace lo {
                 }
             }
 
+        ServerThread(const string_type &group, const num_string_type &port,
+		     const string_type &iface, const string_type &ip,
+		     lo_err_handler err_h=0) : Server(0)
+        { if (iface._s || ip._s)
+            server_thread = lo_server_thread_new_multicast_iface(group, port,
+                                                                 iface, ip, err_h);
+          else
+            server_thread = lo_server_thread_new_multicast(group, port, err_h);
+          if (server_thread)
+            server = lo_server_thread_get_server(server_thread); }
+
         virtual ~ServerThread()
             { server = 0;
               if (server_thread) lo_server_thread_free(server_thread); }

@@ -72,6 +72,15 @@ lo_server_thread lo_server_thread_new_multicast(const char *group,
     return st;
 }
 
+lo_server_thread lo_server_thread_new_multicast_iface(const char *group, const char *port,
+						      const char *iface, const char *ip,
+						      lo_err_handler err_h)
+{
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_multicast_iface(group, port, iface, ip, err_h));
+    return st;
+}
+
 lo_server_thread lo_server_thread_new_with_proto(const char *port,
                                                  int proto,
                                                  lo_err_handler err_h)
