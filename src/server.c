@@ -1347,77 +1347,107 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 
 int lo_server_wait(lo_server s, int timeout)
 {
-    int sched_timeout = lo_server_next_event_delay(s) * 1000;
-    int i;
-    struct sockaddr_storage addr;
-    socklen_t addr_len = sizeof(addr);
+    return lo_servers_wait(&s, 0, 1, timeout);
+}
+
+int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
+{
+    int i, j, k, sched_timeout;
+
+    if (!status)
+        status = alloca(sizeof(int) * num_servers);
+    for (i = 0; i < num_servers; i++)
+        status[i] = 0;
+
     lo_timetag now, then;
 #ifdef HAVE_SELECT
 #ifndef HAVE_POLL
     fd_set ps;
     struct timeval stimeout;
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
 #endif
 #endif
 
 #ifdef HAVE_POLL
-  again:
-    for (i = 0; i < s->sockets_len; i++) {
-        s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-        s->sockets[i].revents = 0;
+    socklen_t addr_len = sizeof(struct sockaddr_storage);
+    struct sockaddr_storage *addr = alloca (addr_len * num_servers);
+    int num_sockets;
 
-        if (lo_server_buffer_contains_msg(s, i))
-            return 1;
+  again:
+    num_sockets = 0;
+    for (j = 0; j < num_servers; j++) {
+        for (i = 0; i < s[j]->sockets_len; i++) {
+            if (lo_server_buffer_contains_msg(s[j], i)) {
+                status[j] = 1;
+            }
+            ++num_sockets;
+        }
+    }
+
+    struct pollfd *sockets = alloca(sizeof(struct pollfd) * num_sockets);
+
+    sched_timeout = timeout;
+    for (j = 0, k = 0; j < num_servers; j++) {
+        for (i = 0; i < s[j]->sockets_len; i++) {
+            sockets[k].fd = s[j]->sockets[i].fd;
+            sockets[k].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+            sockets[k].revents = 0;
+            ++k;
+        }
+        int server_timeout = lo_server_next_event_delay(s[j]) * 1000;
+        if (server_timeout < sched_timeout)
+            sched_timeout = server_timeout;
     }
 
     lo_timetag_now(&then);
 
-    poll(s->sockets, s->sockets_len,
-         timeout > sched_timeout ? sched_timeout : timeout);
+    poll(sockets, num_sockets, timeout > sched_timeout ? sched_timeout : timeout);
 
-    if (s->sockets[0].revents == POLLERR
-        || s->sockets[0].revents == POLLHUP)
-        return 0;
-
-    // If select() was reporting a new connection on the listening
+    // If poll() was reporting a new connection on the listening
     // socket rather than a ready message, accept it and check again.
-    if (s->sockets[0].revents)
-    {
-        if (s->protocol == LO_TCP)
-        {
-            int sock = accept(s->sockets[0].fd,
-                              (struct sockaddr *) &addr, &addr_len);
+    for (j = 0, k = 0; j < num_servers; j++) {
+        if (sockets[k].revents && sockets[k].revents != POLLERR
+            && sockets[k].revents != POLLHUP) {
+            if (s[j]->protocol == LO_TCP) {
+                int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
+                                  &addr_len);
 
-            i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
-            if (i < 0)
-                closesocket(sock);
+                i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
+                if (i < 0)
+                    closesocket(sock);
 
-            init_context(&s->contexts[i]);
+                init_context(&s[j]->contexts[i]);
 
-            lo_timetag_now(&now);
+                lo_timetag_now(&now);
 
-            double diff = lo_timetag_diff(now, then);
+                double diff = lo_timetag_diff(now, then);
 
-            sched_timeout = lo_server_next_event_delay(s) * 1000;
-            timeout -= (int)(diff*1000);
-            if (timeout < 0) timeout = 0;
+                timeout -= (int)(diff*1000);
+                if (timeout < 0)
+                    timeout = 0;
 
-            goto again;
+                goto again;
+            }
+            else {
+                status[j] = 1;
+            }
         }
-        else {
-            return 1;
+        k += s[j]->sockets_len;
+    }
+
+    for (j = 0, k = 1; j < num_servers; j++, k++) {
+        for (i = 1; i < s[j]->sockets_len; i++, k++) {
+            if (sockets[k].revents && sockets[k].revents != POLLERR
+                && sockets[k].revents != POLLHUP)
+                status[j] = 1;
         }
     }
 
-    for (i = 1; i < s->sockets_len; i++) {
-        if (s->sockets[i].revents == POLLERR
-            || s->sockets[i].revents == POLLHUP)
-            return 0;
-        if (s->sockets[i].revents)
-            return 1;
+    for (j = 0; j < num_servers; j++) {
+        if (lo_server_next_event_delay(s[j]) < 0.01)
+            status[j] = 1;
     }
-
-    if (lo_server_next_event_delay(s) < 0.01)
-        return 1;
 #else
 #ifdef HAVE_SELECT
     int res, to, nfds = 0;
@@ -1427,19 +1457,30 @@ int lo_server_wait(lo_server s, int timeout)
         return 0;
 #endif
 
+  again:
+
+    sched_timeout = timeout;
+    for (j = 0, k = 0; j < num_servers; j++) {
+        int server_timeout = lo_server_next_event_delay(s[j]) * 1000;
+        if (server_timeout < sched_timeout)
+            sched_timeout = server_timeout;
+    }
+
     to = timeout > sched_timeout ? sched_timeout : timeout;
     stimeout.tv_sec = to / 1000;
     stimeout.tv_usec = (to % 1000) * 1000;
 
-  again:
     FD_ZERO(&ps);
-    for (i = 0; i < s->sockets_len; i++) {
-        FD_SET(s->sockets[i].fd, &ps);
-        if (s->sockets[i].fd > nfds)
-            nfds = s->sockets[i].fd;
+    for (j = 0; j < num_servers; j++) {
+        for (i = 0; i < s[j]->sockets_len; i++) {
+            FD_SET(s[j]->sockets[i].fd, &ps);
+            if (s[j]->sockets[i].fd > nfds)
+                nfds = s[j]->sockets[i].fd;
 
-        if (lo_server_buffer_contains_msg(s, i))
-            return 1;
+            if (lo_server_buffer_contains_msg(s[j], i)) {
+                status[j] = 1;
+            }
+        }
     }
 
     lo_timetag_now(&then);
@@ -1447,62 +1488,94 @@ int lo_server_wait(lo_server s, int timeout)
 
     if (res == SOCKET_ERROR)
         return 0;
+    else if (res) {
+        for (j = 0; j < num_servers; j++) {
+            if (FD_ISSET(s[j]->sockets[0].fd, &ps)) {
+                // If select() was reporting a new connection on the listening
+                // socket rather than a ready message, accept it and check again.
+                if (s[j]->protocol == LO_TCP) {
+                    int sock = accept(s[j]->sockets[0].fd,
+                                      (struct sockaddr *) &addr, &addr_len);
+                    double diff;
+                    struct timeval tvdiff;
 
-    if (s->protocol == LO_TCP) {
-        // If select() was reporting a new connection on the listening
-        // socket rather than a ready message, accept it and check again.
-        if (FD_ISSET(s->sockets[0].fd, &ps)) {
-            int sock = accept(s->sockets[0].fd,
-                              (struct sockaddr *) &addr, &addr_len);
-            double diff;
-            struct timeval tvdiff;
+                    i = lo_server_add_socket(s[j], sock, 0, &addr, addr_len);
+                    if (i < 0)
+                        closesocket(sock);
 
-            i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
-            if (i < 0)
-                closesocket(sock);
+                    init_context(&s[j]->contexts[i]);
 
-            init_context(&s->contexts[i]);
+                    lo_timetag_now(&now);
 
-            lo_timetag_now(&now);
+                    // Subtract time waited from total timeout
+                    diff = lo_timetag_diff(now, then);
+                    tvdiff.tv_sec = stimeout.tv_sec - (int)diff;
+                    tvdiff.tv_usec = stimeout.tv_usec - (diff * 1000000
+                                                         - (int)diff * 1000000);
 
-            // Subtract time waited from total timeout
-            diff = lo_timetag_diff(now, then);
-            tvdiff.tv_sec = stimeout.tv_sec - (int)diff;
-            tvdiff.tv_usec = stimeout.tv_usec - (diff*1000000
-                                                 -(int)diff*1000000);
+                    // Handle underflow
+                    if (tvdiff.tv_usec < 0) {
+                        tvdiff.tv_sec -= 1;
+                        tvdiff.tv_usec = 1000000 + tvdiff.tv_usec;
+                    }
+                    if (tvdiff.tv_sec < 0) {
+                        stimeout.tv_sec = 0;
+                        stimeout.tv_usec = 0;
+                    }
+                    else
+                        stimeout = tvdiff;
 
-            // Handle underflow
-            if (tvdiff.tv_usec < 0) {
-                tvdiff.tv_sec -= 1;
-                tvdiff.tv_usec = 1000000 + tvdiff.tv_usec;
+                    timeout -= (int)(diff*1000);
+                    if (timeout < 0)
+                        timeout = 0;
+
+                    goto again;
+                }
+                else {
+                    status[j] = 1;
+                }
             }
-            if (tvdiff.tv_sec < 0) {
-                stimeout.tv_sec = 0;
-                stimeout.tv_usec = 0;
+            for (i = 1; i < s[j]->sockets_len; i++) {
+                if (FD_ISSET(s[j]->sockets[i].fd, &ps))
+                    status[j] = 1;
             }
-            else
-                stimeout = tvdiff;
-
-            goto again;
         }
     }
 
-    if (res || lo_server_next_event_delay(s) < 0.01)
-        return 1;
+    for (j = 0; j < num_servers; j++) {
+        if (lo_server_next_event_delay(s[j]) < 0.01) {
+            status[j] = 1;
+        }
+    }
 #endif
 #endif
 
-    return 0;
+    for (i = 0, j = 0; i < num_servers; i++)
+        j += status[i];
+
+    return j;
+}
+
+int lo_servers_recv_noblock(lo_server *s, int *recvd, int num_servers,
+                            int timeout)
+{
+    int i, total_bytes = 0;
+    if (!lo_servers_wait(s, recvd, num_servers, timeout)) {
+        return 0;
+    }
+    for (i = 0; i < num_servers; i++) {
+        if (recvd[i]) {
+            recvd[i] = lo_server_recv(s[i]);
+            total_bytes += recvd[i];
+        }
+    }
+    return total_bytes;
 }
 
 int lo_server_recv_noblock(lo_server s, int timeout)
 {
-    int result = lo_server_wait(s, timeout);
-    if (result > 0) {
-        return lo_server_recv(s);
-    } else {
-        return 0;
-    }
+    int status;
+    return lo_servers_recv_noblock(&s, &status, 1, timeout);
 }
 
 int lo_server_recv(lo_server s)
