@@ -144,3 +144,5 @@ EXPORTS
     lo_server_del_lo_method                @141
 @DEFTHREADS@    lo_server_thread_del_lo_method         @142
 @DEFTHREADS@    lo_server_thread_new_multicast_iface   @143
+    lo_servers_wait                        @144
+    lo_servers_recv_noblock                @145
