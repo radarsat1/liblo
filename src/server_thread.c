@@ -50,10 +50,13 @@ lo_server_thread lo_server_thread_new(const char *port,
 
 static lo_server_thread alloc_server_thread(lo_server s)
 {
+    lo_server_thread st;
+
     if (!s)
         return NULL;
-    lo_server_thread st = (lo_server_thread)
-        malloc(sizeof(struct _lo_server_thread));
+
+    st = (lo_server_thread) malloc(sizeof(struct _lo_server_thread));
+
     st->s = s;
     st->active = 0;
     st->done = 0;
