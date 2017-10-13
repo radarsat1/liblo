@@ -54,7 +54,7 @@ static lo_server_thread alloc_server_thread(lo_server s)
 
     if (!s)
         return NULL;
-
+    
     st = (lo_server_thread) malloc(sizeof(struct _lo_server_thread));
 
     st->s = s;
