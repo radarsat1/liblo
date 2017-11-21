@@ -881,7 +881,7 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
         buffer = (char*) malloc(s->max_msg_size);
         heap_buffer = 1;
     }
-    else if (buffer > 0) {
+    else {
         buffer = (char*) alloca(s->max_msg_size);
     }
 

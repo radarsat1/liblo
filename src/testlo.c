@@ -1591,6 +1591,8 @@ void test_nonblock()
     lo_server s;
     char *server_url;
     lo_address a;
+    int testSizes[2] = { -1, 2048 };
+    int i;
 
     DOING("test_nonblock");
 
@@ -1599,18 +1601,23 @@ void test_nonblock()
 
     lo_server_add_method(s, NULL, NULL, generic_handler, NULL);
     a = lo_address_new_from_url(server_url);
-    TEST(lo_server_recv_noblock(s, 0) == 0);
-    printf("Testing noblock API on %s\n", server_url);
-    lo_send(a, "/non-block-test", "f", 23.0);
 
-    int tries = 1000;
-    while (!lo_server_recv_noblock(s, 10) && --tries > 0)
-    {
-    }
+    for (i = 0; i < sizeof(testSizes) / sizeof(testSizes[0]); i++) {
+        lo_server_max_msg_size(s, testSizes[i]);
 
-    if (tries == 0) {
-        printf("lo_server_recv_noblock() test failed\n");
-        exit(1);
+        TEST(lo_server_recv_noblock(s, 0) == 0);
+        printf("Testing noblock API on %s\n", server_url);
+        lo_send(a, "/non-block-test", "f", 23.0);
+
+        int tries = 1000;
+        while (!lo_server_recv_noblock(s, 10) && --tries > 0)
+        {
+        }
+
+        if (tries == 0) {
+            printf("lo_server_recv_noblock() test failed\n");
+            exit(1);
+        }
     }
 
     free(server_url);
