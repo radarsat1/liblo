@@ -106,7 +106,7 @@ int lo_send_bundle_from(lo_address targ, lo_server serv, lo_bundle b);
 /**
  * \brief Create a new lo_message object
  */
-lo_message lo_message_new();
+lo_message lo_message_new(void);
 
 /**
  * \brief  Add one to a message's reference count.

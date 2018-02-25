@@ -27,7 +27,7 @@ void lo_throw(lo_server s, int errnum, const char *message, const char *path);
  *  it can be provided by associating it with a particular server
  *  through this thread-safe API. */
 
-void *lo_error_get_context();
+void *lo_error_get_context(void);
 
 void lo_server_set_error_context(lo_server s, void *user_data);
 
