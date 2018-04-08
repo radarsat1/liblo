@@ -51,7 +51,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #ifdef HAVE_POLL
-#include <sys/poll.h>
+#include <poll.h>
 #endif
 #include <sys/un.h>
 #include <arpa/inet.h>
