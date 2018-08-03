@@ -207,6 +207,9 @@ if(THREADING)
     set(ENABLE_THREADS 1)
 
     target_link_libraries(${LIBRARY_SHARED} Threads::Threads)
+    if (WITH_STATIC)
+      target_link_libraries(${LIBRARY_STATIC} Threads::Threads)
+    endif()
 
     set(THREADS_INCLUDE
       "#include \"lo/lo_serverthread.h\"")
@@ -218,7 +221,10 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(${LIBRARY_SHARED} "user32" "wsock32" "ws2_32" "iphlpapi")
     if(THREADING AND Threads_FOUND)
-        target_link_libraries(${LIBRARY_SHARED} ${CMAKE_THREAD_LIBS_INIT})
+      target_link_libraries(${LIBRARY_SHARED} ${CMAKE_THREAD_LIBS_INIT})
+      if (WITH_STATIC)
+        target_link_libraries(${LIBRARY_STATIC} ${CMAKE_THREAD_LIBS_INIT})
+      endif()
     endif()
 
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
@@ -235,7 +241,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(DEFTHREADS ";;")
     endif()
 else()
-    target_link_libraries(${LIBRARY_SHARED} "m")
+  target_link_libraries(${LIBRARY_SHARED} "m")
+  if (WITH_STATIC)
+    target_link_libraries(${LIBRARY_STATIC} "m")
+  endif()
 endif()
 
 set(LO_INCLUDE_DIRS
