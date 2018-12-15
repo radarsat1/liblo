@@ -377,7 +377,7 @@ void lo_server_resolve_hostname(lo_server s)
         gethostname(hostname, sizeof(hostname));
         he = gethostbyname(hostname);
         if (he) {
-            strncpy(hostname, he->h_name, sizeof(hostname));
+            strncpy(hostname, he->h_name, sizeof(hostname) - 1);
         }
     }
 
