@@ -225,7 +225,12 @@ namespace lo {
           { return lo_address_get_protocol(address); }
 
         std::string url() const
-          { auto s(lo_address_get_url(address)); return std::string(s?s:""); }
+        {
+            char* s(lo_address_get_url(address));
+            std::string result(s?s:"");
+            free(s);
+            return result;
+        }
 
         std::string iface() const
           { auto s(lo_address_get_iface(address)); return std::string(s?s:""); }
@@ -603,7 +608,12 @@ namespace lo {
             { return lo_server_get_protocol(server); }
 
         std::string url() const
-            { auto s(lo_server_get_url(server)); return std::string(s?s:""); }
+        {
+            char* s(lo_server_get_url(server));
+            std::string result(s?s:"");
+            free(s);
+            return result;
+        }
 
         int enable_queue(int queue_enabled,
                          int dispatch_remaining=1)
