@@ -1265,7 +1265,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 
     poll(s->sockets, s->sockets_len, -1);
 
-    for (i = data ? 0 : (s->sockets_len - 1); i >= 0; --i) {
+    for (i = s->sockets_len - 1; i >= 0 && !data; --i) {
         if (s->sockets[i].revents == POLLERR
             || s->sockets[i].revents == POLLHUP) {
             if (i > 0) {
