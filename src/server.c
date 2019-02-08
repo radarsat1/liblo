@@ -639,6 +639,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 #if defined(WIN32) || defined(_MSC_VER)
         if (wins2003_or_later)
 #endif
+	{
         /* Join multicast group if specified. */
         if (group != NULL) {
             if (lo_server_join_multicast_group(s, group, used->ai_family,
@@ -653,7 +654,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                  continue;
              }
 #endif
-        }
+        }}
 
         if ((used != NULL) &&
             (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
