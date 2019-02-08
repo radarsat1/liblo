@@ -1353,7 +1353,7 @@ int lo_server_wait(lo_server s, int timeout)
 
 int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 {
-    int i, j, k, sched_timeout;
+    int i, j, sched_timeout;
 
     if (!status)
         status = alloca(sizeof(int) * num_servers);
@@ -1389,6 +1389,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
     struct pollfd *sockets = alloca(sizeof(struct pollfd) * num_sockets);
 
     sched_timeout = timeout;
+    int k;
     for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             sockets[k].fd = s[j]->sockets[i].fd;
@@ -1461,7 +1462,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
   again:
 
     sched_timeout = timeout;
-    for (j = 0, k = 0; j < num_servers; j++) {
+    for (j = 0; j < num_servers; j++) {
         int server_timeout = lo_server_next_event_delay(s[j]) * 1000;
         if (server_timeout < sched_timeout)
             sched_timeout = server_timeout;
