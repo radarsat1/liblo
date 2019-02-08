@@ -118,6 +118,12 @@ int main(int argc, char **argv)
     char *port=0, *group=0;
     int i=1;
 
+#ifdef WIN32
+#ifdef HAVE_SETVBUF
+    setvbuf(stdout, 0, _IONBF, BUFSIZ);
+#endif
+#endif
+
     if (argc > i && argv[i][0]=='-') {
 #ifdef HAVE_SETVBUF
         if (argv[i][1]=='L') { // line buffering
