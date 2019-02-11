@@ -4,7 +4,12 @@ option(WITH_TOOLS "Enable building tools." ON)
 option(WITH_TESTS "Enable building tests." ON)
 option(WITH_EXAMPLES "Enable building examples." ON)
 option(WITH_CPP_TESTS "Enable building C++ wrapper tests." ON)
+option(WITH_STATIC "Enable building static library." OFF)
 option(THREADING "Build with threading support." ON)
+
+if (WITH_STATIC)
+  message(STATUS "If you are using the static library build, please keep in mind (and inform yourself of the implications) that liblo is licensed with LGPL v2.1+.")
+endif()
 
 include(CheckIncludeFiles)
 include(CheckSymbolExists)
@@ -29,8 +34,36 @@ endif()
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
+if (MSVC)
+  add_definitions(
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_SECURE_NO_DEPRECATE
+    /D_CRT_NONSTDC_NO_DEPRECATE
+    /D_WINSOCK_DEPRECATED_NO_WARNINGS)
+
+  # On Windows we do not wish the default behaviour of removing "lib"
+  # from "liblo.dll".
+  if ("${CMAKE_SHARED_LIBRARY_PREFIX}" STREQUAL "")
+    set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
+  endif()
+  if ("${CMAKE_STATIC_LIBRARY_PREFIX}" STREQUAL "")
+    set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+  endif()
+
+  # For Visual Studio, ensure import lib can be distinguished from
+  # static lib
+  if ("${CMAKE_IMPORT_LIBRARY_PREFIX}" STREQUAL "")
+    set(CMAKE_IMPORT_LIBRARY_PREFIX "lib")
+  endif()
+  if ("${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL ".lib")
+    set(CMAKE_STATIC_LIBRARY_SUFFIX "_static.lib")
+  endif()
+endif()
+
 set(LIBRARY_SHARED lo_shared)
-set(LIBRARY_STATIC lo_static)
+if (WITH_STATIC)
+  set(LIBRARY_STATIC lo_static)
+endif()
 if (WITH_TOOLS)
   set(OSCDUMP oscdump)
   set(OSCSEND oscsend)
@@ -142,8 +175,10 @@ if (WITH_CPP_TESTS)
 endif()
 
 # Library
-add_library(${LIBRARY_STATIC} STATIC ${LIBRARY_SOURCES})
 add_library(${LIBRARY_SHARED} SHARED ${LIBRARY_SOURCES})
+if (WITH_STATIC)
+  add_library(${LIBRARY_STATIC} STATIC ${LIBRARY_SOURCES})
+endif()
 
 # Tools
 if (WITH_TOOLS)
@@ -188,8 +223,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
         COMPILE_DEFINITIONS "LIBLO_DLL")
-    set_target_properties(${LIBRARY_STATIC} PROPERTIES
-        COMPILE_DEFINITIONS "LIBLO_LIB")
+    if (WITH_STATIC)
+      set_target_properties(${LIBRARY_STATIC} PROPERTIES
+          COMPILE_DEFINITIONS "LIBLO_LIB")
+    endif()
 
     set(DLLNAME "")
     if(THREADING)
@@ -205,7 +242,9 @@ set(LO_INCLUDE_DIRS
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(${LIBRARY_SHARED} PUBLIC ${LO_INCLUDE_DIRS})
-target_include_directories(${LIBRARY_STATIC} PUBLIC ${LO_INCLUDE_DIRS})
+if (WITH_STATIC)
+  target_include_directories(${LIBRARY_STATIC} PUBLIC ${LO_INCLUDE_DIRS})
+endif()
 
 foreach(PROG ${PROGRAMS})
   target_include_directories(${PROG} PUBLIC ${LO_INCLUDE_DIRS})
@@ -257,9 +296,11 @@ set_target_properties(${LIBRARY_SHARED} PROPERTIES
     SOVERSION "${CURRENT_MINUS_AGE}"
     OUTPUT_NAME "lo"
     )
-set_target_properties(${LIBRARY_STATIC} PROPERTIES
-    OUTPUT_NAME "lo"
-    )
+if (WITH_STATIC)
+  set_target_properties(${LIBRARY_STATIC} PROPERTIES
+      OUTPUT_NAME "lo"
+      )
+endif()
 
 if(NOT DEFINED PRINTF_LL)
     message(STATUS "Check how to print long long int")
@@ -286,8 +327,10 @@ if(MSVC)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/liblo.def.in
         ${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def)
-    set_target_properties(${LIBRARY_STATIC} PROPERTIES
-        LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
+    if (WITH_STATIC)
+      set_target_properties(${LIBRARY_STATIC} PROPERTIES
+          LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
+    endif()
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
         LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_BINARY_DIR}/src/liblo.def\"")
 else()
