@@ -1,10 +1,15 @@
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
 
 #include <stdio.h>
-#include <lo/lo.h>
-#include <pthread.h>
 #include <stdlib.h>
+#include <lo/lo.h>
 
 int generic_handler(const char *path, const char *types, lo_arg ** argv,
                     int argc, lo_message data, void *user_data)
