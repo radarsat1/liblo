@@ -10,40 +10,32 @@ Building liblo for Microsoft Visual Studio
 ------------------------------------------
 
 Some Windows users prefer to use Microsoft Visual Studio to the
-well-supported MSYS/MingW or Cygwin environments.
+well-supported MSYS2 environment.
 
 For them, an alternative configuration system is supported by liblo
-using the excellent `premake4` utility.
-The `build` folder contains a file called `premake4.lua`.
-It must be accompanied by `premake4.exe`, which can be downloaded
-from:
+using the excellent `CMake` utility.
+The `cmake` folder contains a file called `CMakeLists.txt`.
+To use it, you must first install CMake either through your favorite
+package manager (such as MSYS2's pacman, or Chocolatey, NuGet, etc),
+or by going to,
 
-    http://industriousone.com/premake/download
+    http://cmake.org
 
-Once `premake4.exe` is copied to the `build` directory, open a
-`cmd.exe` prompt and `cd` to the `build` directory.
-Then, run `premake4` with arguments specifying the version of
-Microsoft Visual Studio you wish to use.
-For example, for MSVS 2010:
+Once CMake has been installed, you can run it as a GUI program, or run
+it from the command-line specifying the "generator" as your version of
+Visual Studio, and adding `Win64` if you want a 64-bit build.  Note
+that you must run it from the `cmake` folder, NOT the project's main
+directory:
 
-    > premake4 vs2010
+    > cd liblo\cmake
+    > C:\<path to>\cmake.exe -G "Visual Studio 15 2017 Win64"
 
-You may provide the `--without-threads` option if you wish to exclude
-support for liblo's `lo_server_thread` API, which can be helpful if you
-have not downloaded the Win32 port of `pthread`.
-This can be found at,
-
-    http://sourceware.org/pthreads-win32/
-
-You should specify the location of this library using the `--pthreads`
-option to premake4, e.g.:
-
-    > premake4 --pthreads=C:/Libraries/pthreads-w32-2-9-1-release vs2010
-
-Unfortunately liblo does not yet support the Win32 thread API, so
-pthreads-w32 is required for lo_server_thread functionality. Note that
-test programs (`subtest.exe`, `testlo.exe`) will not be built without
-threading enabled.
+You can specify some options such as enable/disalbing the C++ tests,
+examples, tests, static library build, and command-line tools.  You
+can also choose to enable or disable the `lo_server_thread` interface
+via the `THREADING` option.  On Windows, the Win32 threading API is
+used, therefore there is no longer a need to install the `pthreads`
+library on Windows.
 
 Building liblo for Android
 --------------------------
