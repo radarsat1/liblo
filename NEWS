@@ -1,5 +1,27 @@
 
 --------------------------------------------
+2019-03-03: Release 0.30
+--------------------------------------------
+
+We are pleased to present stable release 0.30 of LibLo, the
+lightweight, easy to use implementation of the Open Sound Control
+protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+Changes of note since the 0.29 release include:
+
+- Functions to wait and receive on multiple servers (lo_servers_wait
+  and lo_servers_recv_noblock)
+- Improvements to the CMake build system.
+- Remove premake4 files and rely on CMake for building on Windows.
+- Fix memory leak in lo_server_recv_raw_stream.
+- C++ wrapper: Fix memory leak on string allocation.
+- oscdump: Disable line buffering in Windows to support MSYS2 output.
+
+--------------------------------------------
 2017-08-11: Release 0.29
 --------------------------------------------
 
