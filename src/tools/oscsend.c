@@ -46,7 +46,10 @@ void usage(void)
            "url     : specifies the destination parameters using a liblo URL.\n"
            "          e.g. UDP        \"osc.udp://localhost:9000\"\n"
            "               Multicast  \"osc.udp://224.0.1.9:9000\"\n"
-           "               TCP        \"osc.tcp://localhost:9000\"\n\n"
+           "               TCP        \"osc.tcp://localhost:9000\"\n"
+           "               File       \"file:///tmp/dump.osc\"\n"
+           "               stdout     -\n\n"
+
            "address : the OSC address where the message to be sent.\n"
            "types   : specifies the types of the following values.\n",
            VERSION);
@@ -254,7 +257,8 @@ int main(int argc, char **argv)
 {
     lo_address target;
     lo_message message;
-    int ret, i=1;
+    int ret, i=1, dump_to_file=0, dump_to_stdout=0;
+    char file_uri[256];
 
     if (argc < 3) {
         usage();
@@ -267,11 +271,22 @@ int main(int argc, char **argv)
     }
 
     if (strstr(argv[i], "://")!=0) {
-        target = lo_address_new_from_url(argv[i]);
-        if (target == NULL) {
-            fprintf(stderr, "Failed to open %s\n", argv[i]);
-            exit(1);
+        if(strncmp(argv[i], "file://", 7)==0 && strlen(argv[i])>7) {
+            dump_to_file=1;
+            memset(file_uri, 0, sizeof(file_uri));
+            strncpy(file_uri, argv[i]+7, sizeof(file_uri)-1);
         }
+        else {
+            target = lo_address_new_from_url(argv[i]);
+            if (target == NULL) {
+                fprintf(stderr, "Failed to open %s\n", argv[i]);
+                exit(1);
+            }
+        }
+        i++;
+    }
+    else if(strncmp(argv[i], "-", 1)==0 && strlen(argv[i])==1) {
+        dump_to_stdout=1;
         i++;
     }
     else if (argv[i+1] == NULL) {
@@ -292,20 +307,49 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    lo_address_set_ttl(target, 1);
-
     message = create_message(&argv[i+1]);
     if (message == NULL) {
         fprintf(stderr, "Failed to create OSC message.\n");
         exit(1);
     }
 
-    ret = lo_send_message(target, argv[i], message);
-    if (ret == -1) {
-        fprintf(stderr, "An error occured: %s\n",
-                lo_address_errstr(target));
-        exit(1);
+    if(!dump_to_file && !dump_to_stdout) {
+        lo_address_set_ttl(target, 1);
+
+        ret = lo_send_message(target, argv[i], message);
+        if (ret == -1) {
+            fprintf(stderr, "An error occured: %s\n",
+                    lo_address_errstr(target));
+            lo_message_free(message);
+            exit(1);
+        }
     }
+    else {
+	FILE *fout = NULL;
+
+        if(dump_to_file) {
+            FILE *f=fopen(file_uri, "w+");
+            if(f == NULL) {
+                fprintf(stderr, "An error occured: Could not open file for writing OSC message: '%s'\n",
+                    file_uri);
+                lo_message_free(message);
+                exit(1);
+            }
+            fout=f;
+        }
+        else if(dump_to_stdout) {
+            fout=stdout;
+        }
+
+        size_t size;
+        void *msg_ptr=lo_message_serialise(message, argv[i], NULL, &size);
+        fwrite(msg_ptr, 1, size, fout);
+        fflush(fout);
+        fclose(fout);
+        free(msg_ptr);
+    }
+
+    lo_message_free(message);
 
     return 0;
 }
