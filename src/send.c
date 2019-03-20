@@ -576,6 +576,28 @@ int lo_send_message_from(lo_address a, lo_server from, const char *path,
     return ret;
 }
 
+int lo_send_serialized_message(lo_address a, char *serialized_data, size_t length)
+{
+    return lo_send_serialized_message_from(a, NULL, serialized_data, length);
+}
+
+int lo_send_serialized_message_from(lo_address a, lo_server from, char *serialized_data, size_t length)
+{
+
+    // Send the message
+	const size_t data_len = length;
+    int ret = send_data(a, from, serialized_data, data_len);
+
+    // For TCP, retry once if it failed.  The first try will return
+    // error if the connection was closed, so the second try will
+    // attempt to re-open the connection.
+    if (ret == -1 && a->protocol == LO_TCP)
+        ret = send_data(a, from, serialized_data, data_len);
+
+    // it's up to the caller to free serialized message
+ 
+    return ret;
+}
 
 int lo_send_bundle(lo_address a, lo_bundle b)
 {
