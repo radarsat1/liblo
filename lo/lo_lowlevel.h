@@ -82,6 +82,30 @@ int lo_send_message(lo_address targ, const char *path, lo_message msg);
 int lo_send_message_from(lo_address targ, lo_server serv, 
      const char *path, lo_message msg);
 
+
+/**
+ * \brief Send a serialized lo_message object to target targ
+ *
+ * This is slightly more efficient than lo_send() if you want to send a lot of
+ * similar messages. The messages are constructed with the lo_message_new() and
+ * \ref lo_message_add_int32 "lo_message_add*()" functions.
+ */
+int lo_send_serialized_message(lo_address targ, char *serialized_message, size_t length);
+
+/**
+ * \brief Send a serialized lo_message object to target targ from address of serv
+ *
+ * it's up to the caller to free serialized message.
+ *
+ * \param targ The address to send the message to
+ * \param serv The server socket to send the message from
+ *              (can be NULL to use new socket)
+ * \param serialized_message The serialized message
+ * \param length  length of the serialized message
+ */
+int lo_send__serialized_message_from(lo_address targ, lo_server serv, 
+     char *serialized_message, size_t length);
+
 /**
  * \brief Send a lo_bundle object to address targ
  *
