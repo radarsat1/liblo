@@ -103,7 +103,7 @@ int lo_send_serialized_message(lo_address targ, char *serialized_message, size_t
  * \param serialized_message The serialized message
  * \param length  length of the serialized message
  */
-int lo_send__serialized_message_from(lo_address targ, lo_server serv, 
+int lo_send_serialized_message_from(lo_address targ, lo_server serv, 
      char *serialized_message, size_t length);
 
 /**
