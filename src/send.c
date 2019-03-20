@@ -576,17 +576,16 @@ int lo_send_message_from(lo_address a, lo_server from, const char *path,
     return ret;
 }
 
-int lo_send_serialized_message(lo_address a, char *serialized_data, size_t length)
+int lo_send_serialized_message(lo_address a, char *serialized_data, const size_t length)
 {
     return lo_send_serialized_message_from(a, NULL, serialized_data, length);
 }
 
-int lo_send_serialized_message_from(lo_address a, lo_server from, char *serialized_data, size_t length)
+int lo_send_serialized_message_from(lo_address a, lo_server from, char *serialized_data, const size_t serialized_data_length)
 {
 
     // Send the message
-	const size_t data_len = length;
-    int ret = send_data(a, from, serialized_data, data_len);
+    int ret = send_data(a, from, serialized_data, serialized_data_length);
 
     // For TCP, retry once if it failed.  The first try will return
     // error if the connection was closed, so the second try will
