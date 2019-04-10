@@ -141,6 +141,7 @@ int quit_handler(const char *path, const char *types, lo_arg ** argv,
 
 int test_varargs(lo_address a, const char *path, const char *types, ...);
 int test_version();
+void test_patterns();
 void test_types();
 void test_url();
 void test_address();
@@ -166,6 +167,7 @@ int main()
     atexit(exitcheck);
 
     test_version();
+    test_patterns();
     test_deserialise();
     test_types();
     test_url();
@@ -472,6 +474,54 @@ void replace_char(char *str, size_t size, const char find,
         }
         ++p;
     }
+}
+
+void test_patterns()
+{
+    DOING("test_patterns");
+
+    // Test {} pattern
+    TEST(lo_pattern_match("/x1y", "/x{1,10,11}y"));
+    TEST(lo_pattern_match("/x10y", "/x{1,10,11}y"));
+    TEST(lo_pattern_match("/x11y", "/x{1,10,11}y"));
+    TEST(!lo_pattern_match("/x2y", "/x{1,10,11}y"));
+    TEST(!lo_pattern_match("/x12y", "/x{1,10,11}y"));
+    TEST(!lo_pattern_match("/x12y", "/x{11}y"));
+    TEST(lo_pattern_match("/x12y", "/x{12}y"));
+
+    // Test [] pattern
+    TEST(lo_pattern_match("/x1y", "/x[321]y"));
+    TEST(!lo_pattern_match("/x4y", "/x[321]y"));
+    TEST(lo_pattern_match("/x2y", "/x[1-3]y"));
+    TEST(lo_pattern_match("/x3y", "/x[3-2]y"));
+    TEST(lo_pattern_match("/xzy", "/x[3-2z]y"));
+    TEST(lo_pattern_match("/x1y", "/x[!a-z]y"));
+    TEST(!lo_pattern_match("/x1y", "/x[a-z]y"));
+    TEST(lo_pattern_match("/xby", "/x[a-z]y"));
+    // spec 1.0: "A - at the end of the string has no special meaning"
+    TEST(lo_pattern_match("/x-y", "/x[23-]y"));
+    // spec 1.0: "An ! anywhere besides the first character after the
+    // open bracket has no special meaning"
+    TEST(lo_pattern_match("/x!y", "/x[a-z!]y"));
+
+    // Test * pattern
+    TEST(lo_pattern_match("/x123y", "/x*y"));
+    TEST(!lo_pattern_match("/x123y", "/x*z"));
+
+    // Test ? pattern
+    TEST(lo_pattern_match("/x1y", "/x?y"));
+    TEST(lo_pattern_match("/x?y", "/x?y"));
+
+    // Test ?, *, and [] with multiple /
+    TEST(lo_pattern_match("/xy/z", "/*/?"));
+    TEST(!lo_pattern_match("/xy/z", "/?/*"));
+    TEST(lo_pattern_match("/w/xy/z", "/[xyzw]/*/?"));
+
+    // Test '//' from spec 1.1
+    TEST(lo_pattern_match("/z", "//z"));
+    TEST(lo_pattern_match("/xy/z", "//z"));
+    TEST(lo_pattern_match("/xy/z/w/u", "///w/u"));
+    TEST(!lo_pattern_match("/xy/z/w/u", "///z/w"));
 }
 
 void test_deserialise()
