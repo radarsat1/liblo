@@ -163,7 +163,8 @@ int lo_pattern_match(const char *str, const char *p)
                             (*str > c && *str < *p))
                             match = true;
                     } else {    /* c-] */
-                        if (*str >= c)
+                        // spec 1.0: "no special meaning" so it should match '-'
+                        if (*str == '-')
                             match = true;
                         break;
                     }
@@ -214,9 +215,6 @@ int lo_pattern_match(const char *str, const char *p)
                             // backtrack on test string
                             str = place;
                             // continue testing,
-                            // skip comma
-                            if (!*p++)  // oops
-                                return false;
                         }
                     } else if (c == '}') {
                         // continue normal pattern matching
