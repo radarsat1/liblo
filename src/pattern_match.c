@@ -248,6 +248,22 @@ int lo_pattern_match(const char *str, const char *p)
                c = *p++;
              */
 
+        case '/':
+            if (*p == '/') {
+                // spec 1.1 '//' xpath-insired pattern, find first
+                // matching subpath
+                while (*p && *str) {
+                    if (lo_pattern_match(str, p))
+                        return true;
+                    else {
+                        while (*++str && *str != '/')
+                            ;
+                        if (!*str)
+                            return false;
+                    }
+                }
+            }
+
         default:
             if (c != *str)
                 return false;
