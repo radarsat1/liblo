@@ -774,6 +774,7 @@ namespace lo {
 
         void start() { lo_server_thread_start(server_thread); }
         void stop() { lo_server_thread_stop(server_thread); }
+        int get_port() { return lo_server_thread_get_port(server_thread); }
 
         operator lo_server_thread() const
             { return server_thread; }
