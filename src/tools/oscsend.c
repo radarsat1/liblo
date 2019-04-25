@@ -318,7 +318,7 @@ int main(int argc, char **argv)
 
         ret = lo_send_message(target, argv[i], message);
         if (ret == -1) {
-            fprintf(stderr, "An error occured: %s\n",
+            fprintf(stderr, "An error occurred: %s\n",
                     lo_address_errstr(target));
             lo_message_free(message);
             exit(1);
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
         if(dump_to_file) {
             FILE *f=fopen(file_uri, "w+");
             if(f == NULL) {
-                fprintf(stderr, "An error occured: Could not open file for writing OSC message: '%s'\n",
+                fprintf(stderr, "An error occurred: Could not open file for writing OSC message: '%s'\n",
                     file_uri);
                 lo_message_free(message);
                 exit(1);

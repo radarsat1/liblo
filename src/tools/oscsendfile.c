@@ -441,7 +441,7 @@ int main(int argc, char **argv)
     ret = send_file(target, speed);
 
     if (ret == -1) {
-        fprintf(stderr, "An error occured: %s\n",
+        fprintf(stderr, "An error occurred: %s\n",
                 lo_address_errstr(target));
         exit(1);
     }
