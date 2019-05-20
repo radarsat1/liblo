@@ -519,21 +519,11 @@ static int send_data(lo_address a, lo_server from, char *data,
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
         } else {
-            struct addrinfo* ai = a->ai;
-
             size_t len = data_len;
             if (a->flags & LO_SLIP)
                 data = (char*)slip_encode((unsigned char*)data, &len);
 
-            do {
-                ret = send(sock, data, len, MSG_NOSIGNAL);
-                if (a->protocol == LO_TCP)
-                    ai = ai->ai_next;
-                else
-                    ai = 0;
-            } while (ret == -1 && ai != NULL);
-            if (ret == -1 && ai != NULL && a->ai!=ai)
-                a->ai = ai;
+            ret = send(sock, data, len, MSG_NOSIGNAL);
 
             if (a->flags & LO_SLIP)
                 free(data);
