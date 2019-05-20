@@ -314,8 +314,9 @@ static int is_broadcast(struct addrinfo *ai) {
 
 static int create_socket(lo_address a)
 {
-    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
-
+    switch(a->protocol) {
+    case LO_UDP:
+    case LO_TCP:
         a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
         if (a->socket == -1) {
             a->errnum = geterror();
@@ -340,9 +341,9 @@ static int create_socket(lo_address a)
             setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
                 (const char*)&opt, sizeof(int));
         }
-    }
+        break;
 #if !defined(WIN32) && !defined(_MSC_VER)
-    else if (a->protocol == LO_UNIX) {
+    case LO_UNIX: {
         struct sockaddr_un sa;
 
         a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
@@ -363,8 +364,9 @@ static int create_socket(lo_address a)
             return -1;
         }
     }
+        break;
 #endif
-    else {
+    default:
         /* unknown protocol */
         return -2;
     }
