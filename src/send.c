@@ -304,6 +304,14 @@ static char *format_to_types(const char *format)
 
 #endif
 
+static int is_broadcast(struct addrinfo *ai) {
+    struct sockaddr_in *si = (struct sockaddr_in *) ai->ai_addr;
+    unsigned char *ip = (unsigned char *) &(si->sin_addr);
+    if(AF_INET == ai->ai_family)
+        return(ip[0] == 255 && ip[1] == 255 && ip[2] == 255 && ip[3] == 255);
+    return 0;
+}
+
 static int create_socket(lo_address a)
 {
     if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
@@ -325,22 +333,13 @@ static int create_socket(lo_address a)
                 return -1;
             }
         }
-        // if UDP and destination address is broadcast allow broadcast on the
-        // socket
-        else if (a->protocol == LO_UDP && a->ai->ai_family == AF_INET) {
-            // If UDP, and destination address is broadcast,
-            // then allow broadcast on the socket.
-            struct sockaddr_in *si = (struct sockaddr_in *) a->ai->ai_addr;
-            unsigned char *ip = (unsigned char *) &(si->sin_addr);
-
-            if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255
-                && ip[3] == 255) {
-                int opt = 1;
-                setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
-						   (const char*)&opt, sizeof(int));
-            }
+        // if UDP and destination address is broadcast,
+        // then allow broadcast on the socket
+        else if (a->protocol == LO_UDP && is_broadcast(a->ai)) {
+            int opt = 1;
+            setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
+                (const char*)&opt, sizeof(int));
         }
-
     }
 #if !defined(WIN32) && !defined(_MSC_VER)
     else if (a->protocol == LO_UNIX) {
