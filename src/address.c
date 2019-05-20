@@ -411,22 +411,22 @@ char *lo_url_get_port(const char *url)
 {
     char *port = (char*) malloc(strlen(url));
 
-    if (sscanf(url, "osc://%*[^:]:%[0-9]", port)) {
+    if (sscanf(url, "osc://%*[^:]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc.%*[^:]://%*[^:]:%[0-9]", port)) {
+    if (sscanf(url, "osc.%*[^:]://%*[^:]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc://[%*[^]]]:%[0-9]", port)) {
+    if (sscanf(url, "osc://[%*[^]]]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc.%*[^:]://[%*[^]]]:%[0-9]", port)) {
+    if (sscanf(url, "osc.%*[^:]://[%*[^]]]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc://:%[0-9]", port)) {
+    if (sscanf(url, "osc://:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc.%*[^:]://:%[0-9]", port)) {
+    if (sscanf(url, "osc.%*[^:]://:%[0-9]", port) > 0) {
         return port;
     }
 
