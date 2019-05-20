@@ -330,22 +330,26 @@ static int create_socket(lo_address a)
                 (const char*)&opt, sizeof(int));
         }
         break;
-    case LO_TCP:
-        a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
-        if (a->socket == -1) {
-            a->errnum = geterror();
-            a->errstr = NULL;
-            return -1;
+    case LO_TCP: {
+        struct addrinfo *ai = a->ai;
+        int sfd = -1;
+        for(ai=a->ai; ai != NULL; ai = ai->ai_next) {
+            sfd = socket(ai->ai_family, ai->ai_socktype, 0);
+            if (-1 == sfd)
+                continue;
+            if(-1 != connect(sfd, ai->ai_addr, ai->ai_addrlen))
+                break;
+            closesocket(sfd);
         }
-
-        // Only call connect() for TCP sockets - we use sendto() for UDP
-        if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-            a->errnum = geterror();
-            a->errstr = NULL;
-            closesocket(a->socket);
+        if(NULL == ai) {
+            /* all addresses failed */
             a->socket = -1;
+            a->errnum = geterror();
+            a->errstr = NULL;
             return -1;
         }
+        a->socket = sfd;
+    }
         break;
 #if !defined(WIN32) && !defined(_MSC_VER)
     case LO_UNIX: {
