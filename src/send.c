@@ -316,6 +316,20 @@ static int create_socket(lo_address a)
 {
     switch(a->protocol) {
     case LO_UDP:
+        a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
+        if (a->socket == -1) {
+            a->errnum = geterror();
+            a->errstr = NULL;
+            return -1;
+        }
+        // if UDP and destination address is broadcast,
+        // then allow broadcast on the socket
+        if (is_broadcast(a->ai)) {
+            int opt = 1;
+            setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
+                (const char*)&opt, sizeof(int));
+        }
+        break;
     case LO_TCP:
         a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
         if (a->socket == -1) {
@@ -324,22 +338,13 @@ static int create_socket(lo_address a)
             return -1;
         }
 
-        if (a->protocol == LO_TCP) {
-            // Only call connect() for TCP sockets - we use sendto() for UDP
-            if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-                a->errnum = geterror();
-                a->errstr = NULL;
-                closesocket(a->socket);
-                a->socket = -1;
-                return -1;
-            }
-        }
-        // if UDP and destination address is broadcast,
-        // then allow broadcast on the socket
-        else if (a->protocol == LO_UDP && is_broadcast(a->ai)) {
-            int opt = 1;
-            setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
-                (const char*)&opt, sizeof(int));
+        // Only call connect() for TCP sockets - we use sendto() for UDP
+        if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
+            a->errnum = geterror();
+            a->errstr = NULL;
+            closesocket(a->socket);
+            a->socket = -1;
+            return -1;
         }
         break;
 #if !defined(WIN32) && !defined(_MSC_VER)
