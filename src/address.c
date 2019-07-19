@@ -566,7 +566,7 @@ int lo_address_resolve(lo_address a)
     int ret;
 
     if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
-        struct addrinfo *ai;
+        struct addrinfo *ai=NULL;
         struct addrinfo hints;
         const char* host = lo_address_get_hostname(a);
 #ifdef ENABLE_IPV6
