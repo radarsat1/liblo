@@ -1180,14 +1180,18 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
             msg_len = sc->buffer_read_offset - sc->buffer_msg_offset - sizeof(uint32_t);
 
-            // Store message length header
-            *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = htonl(msg_len);
+            // Skip empty messages, for instance for when sender is double-ENDing SLIP
+            if (msg_len)
+            {
+                // Store message length header
+                *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = htonl(msg_len);
 
-            // Advance to next message and zero the message length header
-            sc->buffer_msg_offset += msg_len + sizeof(uint32_t);
-            sc->buffer_read_offset += sizeof(uint32_t);
-            buffer_after += sizeof(uint32_t);
-            *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = 0;
+                // Advance to next message and zero the message length header
+                sc->buffer_msg_offset += msg_len + sizeof(uint32_t);
+                sc->buffer_read_offset += sizeof(uint32_t);
+                buffer_after += sizeof(uint32_t);
+                *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = 0;
+            }
 
             // Update how much memory still needs decoding.
             bytes_recv -= bytes_read;
