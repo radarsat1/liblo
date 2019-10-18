@@ -174,7 +174,7 @@ static void lo_address_resolve_source(lo_address a)
             case EAI_NONAME:
                 lo_throw(s, err, "Cannot resolve", a->source_path);
                 break;
-#if !defined(WIN32) && !defined(_MSC_VER)
+#if !defined(WIN32) && !defined(_MSC_VER) && !defined(ESP_PLATFORM)
             case EAI_SYSTEM:
                 lo_throw(s, err, strerror(err), a->source_path);
                 break;
