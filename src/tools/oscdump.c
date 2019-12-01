@@ -115,7 +115,6 @@ int rawMessageHandler(const char *path, const char *types, lo_arg ** argv,
 {
    size_t size;
    void *msg_ptr;
-   int ret;
 
    if(!fout){return 1;}
 
