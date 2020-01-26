@@ -31,6 +31,10 @@ matrix:
     osx_image: xcode10
     env: HOST="" MATRIX_EVAL="brew install autoconf-archive"
     compiler: clang
+  - os: osx
+    osx_image: xcode11.3
+    env: HOST="" MATRIX_EVAL="brew install autoconf-archive"
+    compiler: clang
 before_install:
   - eval "${MATRIX_EVAL}"
 script:  pwd && echo MINGW_ON_LINUX=$MINGW_ON_LINUX && mkdir $PWD/inst && (./autogen.sh --host=$HOST --disable-debug --prefix=$PWD/inst || (cat config.log; false)) && make && ([ x = x$MINGW_ON_LINUX ] && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) || true) && make install && find inst
