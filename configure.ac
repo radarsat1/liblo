@@ -67,6 +67,21 @@ AC_COMPILE_IFELSE(
   [AC_MSG_RESULT([no])
    CFLAGS="$_CFLAGS"])
 
+# If we can add -Wunused-lambda-capture.
+# This is needed for cpp_test.cpp to compile with clang >= 11
+AC_MSG_CHECKING([whether can add -Wunused-lambda-capture (C++)])
+_CFLAGS="$CFLAGS"
+CFLAGS="$_CFLAGS -Qunused-arguments"
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([],[])],
+  [AC_MSG_RESULT([yes])
+   CFLAGS="$_CFLAGS"
+   have_unused_lambda_capture=yes],
+  [AC_MSG_RESULT([no])
+   CFLAGS="$_CFLAGS"
+   have_unused_lambda_capture=no])
+AM_CONDITIONAL([HAVE_UNUSED_LAMBDA_CAPTURE],[test x$have_unused_lambda_capture = xyes])
+
 # Since we don't require C99, format code for long long int can vary
 # in some compilers.  (In particular, MingW seems to require "I64"
 # instead of "ll")
