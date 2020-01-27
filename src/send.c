@@ -333,8 +333,8 @@ static int create_socket(lo_address a)
             struct sockaddr_in *si = (struct sockaddr_in *) a->ai->ai_addr;
             unsigned char *ip = (unsigned char *) &(si->sin_addr);
 
-            if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255
-                && ip[3] == 255) {
+            if (/*ip[0] == 255 && ip[1] == 255 && ip[2] == 255
+                &&*/ ip[3] == 255) {
                 int opt = 1;
                 setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
 						   (const char*)&opt, sizeof(int));
