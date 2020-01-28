@@ -122,14 +122,9 @@ void init(lo::Server &s)
     s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
                  {printf("test11.2: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
 
-#ifdef HAVE_UNUSED_LAMBDA_CAPTURE
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-lambda-capture."
     j*=2;
     s.add_method("test12", "i", [j](const lo::Message m)
-                 {printf("test12 source: %s\n", m.source().url().c_str());});
-#pragma clang diagnostic pop
-#endif
+                 {printf("test12: %d, source: %s\n", j, m.source().url().c_str());});
 
     s.add_method(0, 0, [](const char *path, lo_message m){printf("generic: %s ", path); lo_message_pp(m);});
 
