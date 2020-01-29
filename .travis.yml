@@ -28,7 +28,7 @@ matrix:
       - MINGW_ON_LINUX="1"
       - MATRIX_EVAL="unset CC && unset CXX"
   - os: osx
-    osx_image: xcode10
+    osx_image: xcode11.3
     env: HOST="" MATRIX_EVAL="brew install autoconf-archive"
     compiler: clang
 before_install:
