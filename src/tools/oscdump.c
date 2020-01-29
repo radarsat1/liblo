@@ -33,16 +33,19 @@ int done = 0;
 int bundled = 0;
 lo_timetag tt_now;
 lo_timetag tt_bundle;
+FILE *fout = NULL;
+int dump_raw = 0;
 
 void usage(void)
 {
     printf("oscdump version %s\n"
            "Copyright (C) 2008 Kentaro Fukuchi\n\n"
-           "Usage: oscdump [-L] <port>\n"
-           "or     oscdump [-L] <url>\n"
+           "Usage: oscdump [-L] [-r] <port>\n"
+           "or     oscdump [-L] [-r] <url>\n"
            "Receive OpenSound Control messages and dump to standard output.\n\n"
            "Description\n"
            "-L      : specifies line buffering even if stdout is a pipe or file\n"
+           "-r      : specifies to dump raw message data to stdout (binary)\n"
            "port    : specifies the listening port number.\n"
            "url     : specifies the server parameters using a liblo URL.\n"
            "          e.g. UDP        \"osc.udp://:9000\"\n"
@@ -75,7 +78,7 @@ int bundleEndHandler(void *user_data)
 
 void errorHandler(int num, const char *msg, const char *where)
 {
-    printf("liblo server error %d in path %s: %s\n", num, where, msg);
+    fprintf(stderr, "liblo server error %d in path %s: %s\n", num, where, msg);
 }
 
 int messageHandler(const char *path, const char *types, lo_arg ** argv,
@@ -107,6 +110,24 @@ int messageHandler(const char *path, const char *types, lo_arg ** argv,
     return 0;
 }
 
+int rawMessageHandler(const char *path, const char *types, lo_arg ** argv,
+                   int argc, lo_message msg, void *user_data)
+{
+   size_t size;
+   void *msg_ptr;
+
+   if(!fout){return 1;}
+
+   msg_ptr=lo_message_serialise(msg, path, NULL, &size);
+   if(!msg_ptr){return 1;}
+
+   fwrite(msg_ptr, 1, size, fout);
+   fflush(fout);
+   free(msg_ptr);
+
+   return 0;
+}
+
 void ctrlc(int sig)
 {
     done = 1;
@@ -136,8 +157,12 @@ int main(int argc, char **argv)
             usage();
             exit(0);
         }
+        else if (argv[i][1]=='r') {
+            dump_raw = 1;
+            i++;
+        }
         else {
-            printf("Unknown option `%s'\n", argv[i]);
+            fprintf(stderr, "Unknown option `%s'\n", argv[i]);
             exit(1);
         }
     }
@@ -171,7 +196,15 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    lo_server_add_method(server, NULL, NULL, messageHandler, NULL);
+    if(!dump_raw)
+    {
+        lo_server_add_method(server, NULL, NULL, messageHandler, NULL);
+    }
+    else
+    {
+        fout = stdout;
+        lo_server_add_method(server, NULL, NULL, rawMessageHandler, NULL);
+    }
     lo_server_add_bundle_handlers(server, bundleStartHandler, bundleEndHandler,
                                   NULL);
 
