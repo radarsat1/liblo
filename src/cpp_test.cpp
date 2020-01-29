@@ -124,7 +124,7 @@ void init(lo::Server &s)
 
     j*=2;
     s.add_method("test12", "i", [j](const lo::Message m)
-                 {printf("test12 source: %s\n", m.source().url().c_str());});
+                 {printf("test12 (j=%d) source: %s\n", j, m.source().url().c_str());});
 
     s.add_method(0, 0, [](const char *path, lo_message m){printf("generic: %s ", path); lo_message_pp(m);});
 
