@@ -145,6 +145,7 @@ namespace lo {
             lo_message_add_varargs(m, t.c_str(), q);
             int r = lo_send_message(address, path, m);
             lo_message_free(m);
+            va_end(q);
             return r;
         }
 
@@ -160,6 +161,7 @@ namespace lo {
             lo_bundle_add_message(b, path, m);
             int r = lo_send_bundle(address, b);
             lo_bundle_free_messages(b);
+            va_end(q);
             return r;
         }
 
@@ -182,6 +184,7 @@ namespace lo {
             lo_message_add_varargs(m, t.c_str(), q);
             int r = lo_send_message_from(address, from, path, m);
             lo_message_free(m);
+            va_end(q);
             return r;
         }
 
@@ -198,6 +201,7 @@ namespace lo {
             lo_bundle_add_message(b, path, m);
             int r = lo_send_bundle_from(address, from, b);
             lo_bundle_free_messages(b);
+            va_end(q);
             return r;
         }
 
@@ -274,6 +278,7 @@ namespace lo {
             va_start(q, types);
             std::string t(std::string(types)+"$$");
             add_varargs(t.c_str(), q);
+            va_end(q);
         }
 
         ~Message()
@@ -287,7 +292,9 @@ namespace lo {
             va_list q;
             va_start(q, types);
             std::string t(std::string(types)+"$$");
-            return add_varargs(t.c_str(), q);
+            int ret = add_varargs(t.c_str(), q);
+            va_end(q);
+            return ret;
         }
 
         int add_varargs(const string_type &types, va_list ap)
@@ -808,6 +815,7 @@ namespace lo {
 		lo_server s = static_cast<lo::Server&>(from);
 		int r = lo_send_message_from(address, s, path, m);
 		lo_message_free(m);
+		va_end(q);
 		return r;
 	}
 
