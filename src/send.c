@@ -103,7 +103,9 @@ int lo_send(lo_address t, const char *path, const char *types, ...)
     int line = 0;
     va_list ap;
     va_start(ap, types);
-    return lo_send_varargs_internal(t, file, line, path, types, ap);
+    int ret = lo_send_varargs_internal(t, file, line, path, types, ap);
+    va_end(ap);
+    return ret;
 }
 #endif
 
@@ -115,7 +117,9 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 {
     va_list ap;
     va_start(ap, types);
-    return lo_send_varargs_internal(t, file, line, path, types, ap);
+    int ret = lo_send_varargs_internal(t, file, line, path, types, ap);
+    va_end(ap);
+    return ret;
 }
 
 static
@@ -153,8 +157,10 @@ int lo_send_timestamped(lo_address t, lo_timetag ts,
     int line = 0;
     va_list ap;
     va_start(ap, types);
-    return lo_send_timestamped_varargs_internal(t, file, line, ts, path,
-                                                types, ap);
+    int ret = lo_send_timestamped_varargs_internal(t, file, line, ts, path,
+                                                   types, ap);
+    va_end(ap);
+    return ret;
 }
 #endif
 
@@ -166,8 +172,10 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
 {
     va_list ap;
     va_start(ap, types);
-    return lo_send_timestamped_varargs_internal(t, file, line, ts, path,
-                                                types, ap);
+    int ret = lo_send_timestamped_varargs_internal(t, file, line, ts, path,
+                                                   types, ap);
+    va_end(ap);
+    return ret;
 }
 
 static
@@ -214,8 +222,10 @@ int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
     int line = 0;
     va_list ap;
     va_start(ap, types);
-    return lo_send_from_varargs_internal(to, from, file, line, ts,
-                                         path, types, ap);
+    int ret = lo_send_from_varargs_internal(to, from, file, line, ts,
+                                            path, types, ap);
+    va_end(ap);
+    return ret;
 }
 #endif
 
@@ -228,8 +238,10 @@ int lo_send_from_internal(lo_address to, lo_server from, const char *file,
 {
     va_list ap;
     va_start(ap, types);
-    return lo_send_from_varargs_internal(to, from, file, line, ts,
-                                         path, types, ap);
+    int ret = lo_send_from_varargs_internal(to, from, file, line, ts,
+                                            path, types, ap);
+    va_end(ap);
+    return ret;
 }
 
 #if 0

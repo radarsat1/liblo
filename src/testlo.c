@@ -461,6 +461,7 @@ int test_varargs(lo_address a, const char *path, const char *types, ...)
     else
         printf("lo_message_add_varargs returned %d\n", error);
     lo_message_free(m);
+    va_end(ap);
     return error < 0;
 }
 
