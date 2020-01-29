@@ -1205,6 +1205,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
             {
                 sc->buffer_size *= 2;
                 sc->buffer = (char*)  realloc(sc->buffer, sc->buffer_size);
+                buffer_after = sc->buffer + sc->buffer_read_offset;
             }
         }
 
