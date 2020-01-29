@@ -304,46 +304,55 @@ static char *format_to_types(const char *format)
 
 #endif
 
+static int is_broadcast(struct addrinfo *ai) {
+    struct sockaddr_in *si = (struct sockaddr_in *) ai->ai_addr;
+    unsigned char *ip = (unsigned char *) &(si->sin_addr);
+    if(AF_INET == ai->ai_family)
+        return(ip[0] == 255 && ip[1] == 255 && ip[2] == 255 && ip[3] == 255);
+    return 0;
+}
+
 static int create_socket(lo_address a)
 {
-    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
-
+    switch(a->protocol) {
+    case LO_UDP:
         a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
         if (a->socket == -1) {
             a->errnum = geterror();
             a->errstr = NULL;
             return -1;
         }
-
-        if (a->protocol == LO_TCP) {
-            // Only call connect() for TCP sockets - we use sendto() for UDP
-            if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-                a->errnum = geterror();
-                a->errstr = NULL;
-                closesocket(a->socket);
-                a->socket = -1;
-                return -1;
-            }
+        // if UDP and destination address is broadcast,
+        // then allow broadcast on the socket
+        if (is_broadcast(a->ai)) {
+            int opt = 1;
+            setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
+                (const char*)&opt, sizeof(int));
         }
-        // if UDP and destination address is broadcast allow broadcast on the
-        // socket
-        else if (a->protocol == LO_UDP && a->ai->ai_family == AF_INET) {
-            // If UDP, and destination address is broadcast,
-            // then allow broadcast on the socket.
-            struct sockaddr_in *si = (struct sockaddr_in *) a->ai->ai_addr;
-            unsigned char *ip = (unsigned char *) &(si->sin_addr);
-
-            if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255
-                && ip[3] == 255) {
-                int opt = 1;
-                setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
-						   (const char*)&opt, sizeof(int));
-            }
+        break;
+    case LO_TCP: {
+        struct addrinfo *ai = a->ai;
+        int sfd = -1;
+        for(ai=a->ai; ai != NULL; ai = ai->ai_next) {
+            sfd = socket(ai->ai_family, ai->ai_socktype, 0);
+            if (-1 == sfd)
+                continue;
+            if(-1 != connect(sfd, ai->ai_addr, ai->ai_addrlen))
+                break;
+            closesocket(sfd);
         }
-
+        if(NULL == ai) {
+            /* all addresses failed */
+            a->socket = -1;
+            a->errnum = geterror();
+            a->errstr = NULL;
+            return -1;
+        }
+        a->socket = sfd;
     }
+        break;
 #if !defined(WIN32) && !defined(_MSC_VER)
-    else if (a->protocol == LO_UNIX) {
+    case LO_UNIX: {
         struct sockaddr_un sa;
 
         a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
@@ -364,8 +373,9 @@ static int create_socket(lo_address a)
             return -1;
         }
     }
+        break;
 #endif
-    else {
+    default:
         /* unknown protocol */
         return -2;
     }
@@ -509,21 +519,11 @@ static int send_data(lo_address a, lo_server from, char *data,
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
         } else {
-            struct addrinfo* ai = a->ai;
-
             size_t len = data_len;
             if (a->flags & LO_SLIP)
                 data = (char*)slip_encode((unsigned char*)data, &len);
 
-            do {
-                ret = send(sock, data, len, MSG_NOSIGNAL);
-                if (a->protocol == LO_TCP)
-                    ai = ai->ai_next;
-                else
-                    ai = 0;
-            } while (ret == -1 && ai != NULL);
-            if (ret == -1 && ai != NULL && a->ai!=ai)
-                a->ai = ai;
+            ret = send(sock, data, len, MSG_NOSIGNAL);
 
             if (a->flags & LO_SLIP)
                 free(data);
