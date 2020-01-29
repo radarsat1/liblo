@@ -934,7 +934,8 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
 
     // args
     msg->data = malloc(remain);
-    if (NULL == msg->data) {
+    // ESP32 returns NULL for malloc(0)
+    if (NULL == msg->data && remain > 0) {
         res = LO_EALLOC;
         goto fail;
     }

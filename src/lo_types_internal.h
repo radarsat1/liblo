@@ -18,7 +18,9 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
+#ifndef ESP_PLATFORM
 #define closesocket close
+#endif
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

@@ -594,6 +594,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                 int opt = 1;
                 setsockopt(s->sockets[0].fd, SOL_SOCKET, SO_BROADCAST,
 						   (char*)&opt, sizeof(int));
+                setsockopt(s->sockets[0].fd, IPPROTO_IP, IP_MULTICAST_LOOP,
+                           (char*)&opt, sizeof(int));
             }
         }
         if (s->sockets[0].fd == -1) {
