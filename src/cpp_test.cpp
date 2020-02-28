@@ -11,6 +11,7 @@
 #endif
 
 #include <lo/lo.h>
+#define LO_USE_EXCEPTIONS
 #include <lo/lo_cpp.h>
 
 int test1(const char *path, const char *types,
@@ -228,6 +229,26 @@ int main()
 
     // Memory for lo_message is copied
     lo::Message m4 = m2.second.clone();
+
+    // Test exceptions
+    {
+#ifdef LO_USE_EXCEPTIONS
+        try {
+#endif
+            lo::ServerThread st2(9000);
+            if (st2.is_valid()) {
+                printf("st2 unexpectedly valid on port 9000.\n");
+                return 1;
+            }
+#ifdef LO_USE_EXCEPTIONS
+        } catch(lo::Invalid e) {
+            printf("Invalid! (unexpected)\n");
+            return 1;
+        } catch(lo::Error e) {
+            printf("Expected error opening st2 on port 9000.\n");
+        }
+#endif
+    }
 
 #ifdef WIN32
     Sleep(1000);
