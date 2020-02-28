@@ -1,5 +1,31 @@
 
 --------------------------------------------
+2019-02-28: Release 0.31
+--------------------------------------------
+
+We are pleased to present stable release 0.31 of LibLo, the
+lightweight, easy to use implementation of the Open Sound Control
+protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+Changes of note since the 0.30 release include:
+
+- oscsend can write to files and stdout.
+- oscdump can write raw output.
+- Fixed parsing bug with } and [a-] patterns.
+- Support for // mattern matching operator.
+- Support for double-ENDed SLIP packets.
+- Assertions in C++ header and optional use of exceptions.
+- Fixed improper use of va_end.
+- Fix a clang compilation error.
+- Compatibility with ESP32 embedded platform.
+
+No API changes were made since the last release.
+
+--------------------------------------------
 2019-03-03: Release 0.30
 --------------------------------------------
 
