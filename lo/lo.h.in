@@ -51,9 +51,13 @@ extern "C" {
  * The lo_address object may be used as the target of OSC messages.
  *
  * Note: if you wish to receive replies from the target of this
- * address, you must first create a lo_server_thread or lo_server
- * object which will receive the replies. The last lo_server(_thread)
- * object craeted will be the receiver.
+ * address, you must either supply a lo_server by using lo_send_from()
+ * or lo_send_message_from() to send your message, otherwise the last
+ * lo_server or lo_server_thread that was created will be used as the
+ * reply socket.  The remote receiver may get the reply address by
+ * calling lo_message_get_source() in the message handler.  See
+ * example_tcp_echo_server.c for an example of how to establish
+ * bidirectional communication.
  */
 lo_address lo_address_new(const char *host, const char *port);
 
