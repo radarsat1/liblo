@@ -2011,13 +2011,11 @@ static void dispatch_method(lo_server s, const char *path,
                     char *tmp;
                     char *sec;
 
+                    int tmplen = strlen(it->path + len) + 1;
                     tmp = (char*) malloc(strlen(it->path + len) + 1);
-                    strcpy(tmp, it->path + len);
-#if defined(WIN32) || defined(_MSC_VER)
+                    strncpy(tmp, it->path + len, tmplen);
+                    tmp[tmplen-1]=0;
                     sec = strchr(tmp, '/');
-#else
-                    sec = index(tmp, '/');
-#endif
                     if (sec)
                         *sec = '\0';
                     slend = sl;
