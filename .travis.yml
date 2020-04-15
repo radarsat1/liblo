@@ -27,6 +27,15 @@ matrix:
       - HOST="x86_64-w64-mingw32"
       - MINGW_ON_LINUX="1"
       - MATRIX_EVAL="unset CC && unset CXX"
+  - os: linux
+    dist: xenial
+    addons:
+      apt:
+        packages:
+          - autoconf-archive
+    env:
+      - ANDROID_NDK=
+    script: build/android_build.sh
   - os: osx
     osx_image: xcode11.3
     env: HOST="" MATRIX_EVAL="brew install autoconf-archive"
