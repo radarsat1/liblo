@@ -13,6 +13,9 @@
 #include <string>
 #include <sstream>
 #include <initializer_list>
+#ifndef LO_USE_EXCEPTIONS
+#include <cassert>
+#endif
 
 /**
  * \file lo_cpp.h The liblo C++ wrapper
@@ -125,7 +128,6 @@ namespace lo {
 #define LO_CHECK_BEFORE if (!is_valid()) throw Invalid();
 #define LO_CHECK_AFTER if (!is_valid()) throw Error();
 #else
-#include <cassert>
 #define LO_CHECK_BEFORE assert(is_valid());
 #define LO_CHECK_AFTER
 #endif
