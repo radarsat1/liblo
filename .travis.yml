@@ -10,9 +10,9 @@ matrix:
         sources:
           - ubuntu-toolchain-r-test
         packages:
-          - g++-8
+          - g++-9
           - autoconf-archive
-    env: HOST="" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+    env: HOST="" MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
     compiler: gcc
   - os: linux
     dist: xenial
