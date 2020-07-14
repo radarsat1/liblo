@@ -11,7 +11,6 @@
 #endif
 
 #include <lo/lo.h>
-#define LO_USE_EXCEPTIONS
 #include <lo/lo_cpp.h>
 
 int test1(const char *path, const char *types,
@@ -233,6 +232,7 @@ int main()
     // Test exceptions
     {
 #ifdef LO_USE_EXCEPTIONS
+        printf("Testing exceptions.\n");
         try {
 #endif
             lo::ServerThread st2(9000);
@@ -240,6 +240,8 @@ int main()
                 printf("st2 unexpectedly valid on port 9000.\n");
                 return 1;
             }
+            printf("Exception not thrown when expected!\n");
+            return 1;
 #ifdef LO_USE_EXCEPTIONS
         } catch(lo::Invalid e) {
             printf("Invalid! (unexpected)\n");

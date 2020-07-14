@@ -745,7 +745,8 @@ namespace lo {
           : Server(0)
         { server_thread = lo_server_thread_new(port, err_h);
           if (server_thread)
-            server = lo_server_thread_get_server(server_thread); }
+            server = lo_server_thread_get_server(server_thread);
+          LO_CHECK_AFTER; }
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
