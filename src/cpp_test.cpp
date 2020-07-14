@@ -240,9 +240,9 @@ int main()
                 printf("st2 unexpectedly valid on port 9000.\n");
                 return 1;
             }
+#ifdef LO_USE_EXCEPTIONS
             printf("Exception not thrown when expected!\n");
             return 1;
-#ifdef LO_USE_EXCEPTIONS
         } catch(lo::Invalid e) {
             printf("Invalid! (unexpected)\n");
             return 1;
