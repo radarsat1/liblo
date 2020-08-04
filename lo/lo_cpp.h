@@ -50,7 +50,7 @@
             std::unique_ptr<handler>(new handler_type<r ht>(h)));       \
         lo_method m = _add_method(path, types,                          \
             [](const char *path, const char *types,                     \
-               lo_arg **argv, int argc, void *msg,                      \
+               lo_arg **argv, int argc, lo_message msg,                 \
                void *data)->int                                         \
             {                                                           \
                 r1 (*static_cast<handler_type<r ht>*>(data)) args;      \

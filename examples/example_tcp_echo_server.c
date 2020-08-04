@@ -36,10 +36,10 @@ int count = 0;
 void error(int num, const char *m, const char *path);
 
 int echo_handler(const char *path, const char *types, lo_arg ** argv,
-                    int argc, void *data, void *user_data);
+                    int argc, lo_message data, void *user_data);
 
 int quit_handler(const char *path, const char *types, lo_arg ** argv,
-                 int argc, void *data, void *user_data);
+                 int argc, lo_message data, void *user_data);
 
 void ctrlc(int sig)
 {
@@ -114,7 +114,7 @@ void error(int num, const char *msg, const char *path)
 /* catch any incoming messages, display them, and send them
  * back. */
 int echo_handler(const char *path, const char *types, lo_arg ** argv,
-                    int argc, void *data, void *user_data)
+                    int argc, lo_message data, void *user_data)
 {
     int i;
     lo_message m = (lo_message)data;
@@ -159,7 +159,7 @@ int echo_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 int quit_handler(const char *path, const char *types, lo_arg ** argv,
-                 int argc, void *data, void *user_data)
+                 int argc, lo_message data, void *user_data)
 {
     done = 1;
     printf("quitting\n\n");

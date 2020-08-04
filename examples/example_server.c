@@ -26,16 +26,16 @@ int done = 0;
 void error(int num, const char *m, const char *path);
 
 int generic_handler(const char *path, const char *types, lo_arg ** argv,
-                    int argc, void *data, void *user_data);
+                    int argc, lo_message data, void *user_data);
 
 int foo_handler(const char *path, const char *types, lo_arg ** argv,
-                int argc, void *data, void *user_data);
+                int argc, lo_message data, void *user_data);
 
 int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
-                     int argc, void *data, void *user_data);
+                     int argc, lo_message data, void *user_data);
 
 int quit_handler(const char *path, const char *types, lo_arg ** argv,
-                 int argc, void *data, void *user_data);
+                 int argc, lo_message data, void *user_data);
 
 int main()
 {
@@ -79,7 +79,7 @@ void error(int num, const char *msg, const char *path)
 /* catch any incoming messages and display them. returning 1 means that the
  * message has not been fully handled and the server should try other methods */
 int generic_handler(const char *path, const char *types, lo_arg ** argv,
-                    int argc, void *data, void *user_data)
+                    int argc, lo_message data, void *user_data)
 {
     int i;
 
@@ -96,7 +96,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 int foo_handler(const char *path, const char *types, lo_arg ** argv,
-                int argc, void *data, void *user_data)
+                int argc, lo_message data, void *user_data)
 {
     /* example showing pulling the argument values out of the argv array */
     printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
@@ -106,7 +106,7 @@ int foo_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
-                     int argc, void *data, void *user_data)
+                     int argc, lo_message data, void *user_data)
 {
     /* example showing how to get data for a blob */
     int i, size = argv[0]->blob.size;
@@ -136,7 +136,7 @@ int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 int quit_handler(const char *path, const char *types, lo_arg ** argv,
-                 int argc, void *data, void *user_data)
+                 int argc, lo_message data, void *user_data)
 {
     done = 1;
     printf("quiting\n\n");
