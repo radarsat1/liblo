@@ -1063,15 +1063,16 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     char *stack_buffer = 0, *read_into;
     uint32_t msg_len;
 	int buffer_bytes_left, bytes_recv;
-	ssize_t bytes_wrote, size;
+	ssize_t bytes_written, size;
     *pdata = 0;
 
   again:
 
     // Check if there is already a message waiting in the buffer.
-    if ((*pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize)))
+    if ((*pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize))) {
         // There could be more data, so return true.
         return 1;
+    }
 
     buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
 
@@ -1100,9 +1101,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     {
         sc->buffer_size = size;
         sc->buffer = (char*) realloc(sc->buffer, sc->buffer_size);
-        if (!sc->buffer)
+        if (!sc->buffer) {
             // Out of memory
             return 0;
+        }
     }
 
     // Read as much as we can into the remaining buffer memory.
@@ -1176,9 +1178,9 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
                            &sc->slip_state, &bytes_read) == 0)
         {
             // We have a whole message in the buffer.
-            size_t bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
+            size_t bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
 
-            sc->buffer_read_offset += bytes_wrote;
+            sc->buffer_read_offset += bytes_written;
 
             msg_len = sc->buffer_read_offset - sc->buffer_msg_offset - sizeof(uint32_t);
 
@@ -1211,8 +1213,8 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // Any data left over is left in the buffer, so update the
         // read offset to indicate the end of it.
-        bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
-        sc->buffer_read_offset += bytes_wrote;
+        bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
+        sc->buffer_read_offset += bytes_written;
     }
     else
     {
