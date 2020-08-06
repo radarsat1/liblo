@@ -904,6 +904,11 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
         res = LO_EINVALIDPATH;  // invalid path string
         goto fail;
     }
+    char *path = (char*)data;
+    if (path[0] != '/' && path[0] != '#') {
+        res = LO_EINVALIDPATH;  // invalid path string
+        goto fail;
+    }
     remain -= len;
 
     // types
