@@ -1030,25 +1030,37 @@ uint32_t lo_server_buffer_contains_msg(lo_server s, int isock)
 static
 void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
 {
-	void *data;
+    void *data = 0;
     struct socket_context *sc = &s->contexts[isock];
-    uint32_t msg_len = lo_server_buffer_contains_msg(s, isock);
+    uint32_t msg_len;
+again:
+    msg_len = lo_server_buffer_contains_msg(s, isock);
     if (msg_len == 0)
         return NULL;
-
-    data = malloc(msg_len);
-    memcpy(data, sc->buffer + sizeof(uint32_t), msg_len);
-    *psize = msg_len;
+    char *str = (char*)(sc->buffer + sizeof(uint32_t));
+    if (0 < lo_validate_string(str, msg_len) && (str[0] == '/' || str[0] == '#')) {
+        data = malloc(msg_len);
+        memcpy(data, sc->buffer + sizeof(uint32_t), msg_len);
+        *psize = msg_len;
+    }
+    else {
+        // corrupted message in buffer: do not copy
+    }
 
     sc->buffer_read_offset -= msg_len + sizeof(uint32_t);
     sc->buffer_msg_offset -= msg_len + sizeof(uint32_t);
 
     // Move any left-over data to the beginning of the buffer to
     // make room for the next read.
-    if (sc->buffer_read_offset > 0)
+    if (sc->buffer_read_offset <= 0)
+        sc->buffer_read_offset = 0;
+    else {
         memmove(sc->buffer,
                 sc->buffer + msg_len + sizeof(uint32_t),
                 sc->buffer_read_offset);
+        if (!data)
+            goto again;
+    }
 
     return data;
 }
