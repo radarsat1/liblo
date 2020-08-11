@@ -1018,19 +1018,34 @@ static
 uint32_t lo_server_buffer_contains_msg(lo_server s, int isock)
 {
     struct socket_context *sc = &s->contexts[isock];
-    if (sc->buffer_read_offset > sizeof(uint32_t))
+    if (sc->buffer_read_offset <= sizeof(uint32_t))
+        return 0;
+
+    uint32_t msg_len = ntohl(*(uint32_t*)sc->buffer);
+    char *str = (char*)(sc->buffer + sizeof(uint32_t));
+    if (str[0] != '/' && str[0] != '#')
     {
-        uint32_t msg_len = ntohl(*(uint32_t*)sc->buffer);
-        return (msg_len + sizeof(uint32_t) <= sc->buffer_read_offset)
-            ? msg_len : 0;
+        // invalid message
+        goto clear_buffer;
     }
+    if (msg_len + sizeof(uint32_t) > sc->buffer_read_offset)
+    {
+        // still waiting for the rest of message
+        return 0;
+    }
+    if (msg_len && lo_validate_string(str, msg_len) < 0)
+        goto clear_buffer;
+    return msg_len;
+
+clear_buffer:
+    sc->buffer_read_offset = sc->buffer_msg_offset = 0;
     return 0;
 }
 
 static
 void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
 {
-	void *data;
+    void *data;
     struct socket_context *sc = &s->contexts[isock];
     uint32_t msg_len = lo_server_buffer_contains_msg(s, isock);
     if (msg_len == 0)
