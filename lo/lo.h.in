@@ -133,6 +133,13 @@ int lo_send(lo_address targ, const char *path, const char *type, ...);
  * \brief Send a OSC formatted message to the address specified, 
  * from the same socket as the specified server.
  *
+ * If a liblo server is receiving this message, it can reply by
+ * getting the server's address by calling lo_message_get_source() in
+ * the message handler, passing the \ref lo_message provided as an
+ * argument to the \ref lo_method_handler.  By this mechanism
+ * bidirectional communication can be established by setting up a \ref
+ * lo_server or \ref lo_server_thread on both sides.
+ *
  * \param targ The target OSC address
  * \param from The server to send message from   (can be NULL to use new socket)
  * \param ts   The OSC timetag timestamp at which the message will be processed 
@@ -149,6 +156,9 @@ int lo_send(lo_address targ, const char *path, const char *type, ...);
  * lo_server_add_method(serv, "/reply", "ss", reply_handler, NULL);
  * lo_send_from(t, serv, LO_TT_IMMEDIATE, "/foo/bar", "ff", 0.1f, 23.0f);
  * \endcode
+ *
+ * See \ref example_tcp_echo_server.c for an example of how to use
+ * lo_message_get_source() as described.
  *
  * \return on success, the number of bytes sent, or -1 on failure.
  */

@@ -289,9 +289,12 @@ int lo_message_add_nil(lo_message m);
 int lo_message_add_infinitum(lo_message m);
 
 /**
- * \brief  Returns the source (lo_address) of an incoming message.
+ * \brief  Returns the source (\ref lo_address) of an incoming message.
  *
- * Returns NULL if the message is outgoing. Do not free the returned address.
+ * Returns NULL if the message is outgoing. Do not free the returned
+ * address. This is usually called on the \ref lo_message passed to
+ * \ref lo_method_handler, to set up bidirectional communication.  See
+ * \ref example_tcp_echo_server.c for an example of this.
  */
 lo_address lo_message_get_source(lo_message m);
 
