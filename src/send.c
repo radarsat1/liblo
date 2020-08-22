@@ -323,7 +323,6 @@ static char *format_to_types(const char *format)
 #if !defined(WIN32)
 static int is_local_broadcast(struct addrinfo *ai){ 
     struct ifaddrs *ifap, *ifa;
-    struct sockaddr_in *sa;
     uint32_t destination_addr = ((struct sockaddr_in *) ai->ai_addr)->sin_addr.s_addr;
     int result;
 
