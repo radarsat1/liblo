@@ -1018,19 +1018,34 @@ static
 uint32_t lo_server_buffer_contains_msg(lo_server s, int isock)
 {
     struct socket_context *sc = &s->contexts[isock];
-    if (sc->buffer_read_offset > sizeof(uint32_t))
+    if (sc->buffer_read_offset <= sizeof(uint32_t))
+        return 0;
+
+    uint32_t msg_len = ntohl(*(uint32_t*)sc->buffer);
+    char *str = (char*)(sc->buffer + sizeof(uint32_t));
+    if (str[0] != '/' && str[0] != '#')
     {
-        uint32_t msg_len = ntohl(*(uint32_t*)sc->buffer);
-        return (msg_len + sizeof(uint32_t) <= sc->buffer_read_offset)
-            ? msg_len : 0;
+        // invalid message
+        goto clear_buffer;
     }
+    if (msg_len + sizeof(uint32_t) > sc->buffer_read_offset)
+    {
+        // still waiting for the rest of message
+        return 0;
+    }
+    if (msg_len && lo_validate_string(str, msg_len) < 0)
+        goto clear_buffer;
+    return msg_len;
+
+clear_buffer:
+    sc->buffer_read_offset = sc->buffer_msg_offset = 0;
     return 0;
 }
 
 static
 void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
 {
-	void *data;
+    void *data;
     struct socket_context *sc = &s->contexts[isock];
     uint32_t msg_len = lo_server_buffer_contains_msg(s, isock);
     if (msg_len == 0)
@@ -1063,15 +1078,16 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     char *stack_buffer = 0, *read_into;
     uint32_t msg_len;
 	int buffer_bytes_left, bytes_recv;
-	ssize_t bytes_wrote, size;
+	ssize_t bytes_written, size;
     *pdata = 0;
 
   again:
 
     // Check if there is already a message waiting in the buffer.
-    if ((*pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize)))
+    if ((*pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize))) {
         // There could be more data, so return true.
         return 1;
+    }
 
     buffer_bytes_left = sc->buffer_size - sc->buffer_read_offset;
 
@@ -1100,9 +1116,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     {
         sc->buffer_size = size;
         sc->buffer = (char*) realloc(sc->buffer, sc->buffer_size);
-        if (!sc->buffer)
+        if (!sc->buffer) {
             // Out of memory
             return 0;
+        }
     }
 
     // Read as much as we can into the remaining buffer memory.
@@ -1176,9 +1193,9 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
                            &sc->slip_state, &bytes_read) == 0)
         {
             // We have a whole message in the buffer.
-            size_t bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
+            size_t bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
 
-            sc->buffer_read_offset += bytes_wrote;
+            sc->buffer_read_offset += bytes_written;
 
             msg_len = sc->buffer_read_offset - sc->buffer_msg_offset - sizeof(uint32_t);
 
@@ -1211,8 +1228,8 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // Any data left over is left in the buffer, so update the
         // read offset to indicate the end of it.
-        bytes_wrote = buffer_after - sc->buffer - sc->buffer_read_offset;
-        sc->buffer_read_offset += bytes_wrote;
+        bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
+        sc->buffer_read_offset += bytes_written;
     }
     else
     {

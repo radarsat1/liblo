@@ -156,7 +156,7 @@ void lo_server_thread_del_method(lo_server_thread st, const char *path,
 /**
  * \brief Delete an OSC method from the specified server thread.
  *
- * \param s The server thread the method is to be removed from.
+ * \param st The server thread the method is to be removed from.
  * \param m The lo_method identifier returned from lo_server_add_method for
  *          the method to delete from the server.
  * \return Non-zero if it was not found in the list of methods for the server.
