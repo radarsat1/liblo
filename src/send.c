@@ -25,6 +25,10 @@
 #include <errno.h>
 #include <sys/types.h>
 
+#if !defined(WIN32)
+#include <ifaddrs.h> // ifaddr, see is_local_broadcast method
+#endif
+
 #if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
 #include <winsock2.h>
@@ -316,11 +320,56 @@ static char *format_to_types(const char *format)
 
 #endif
 
+#if !defined(WIN32)
+static int is_local_broadcast(struct addrinfo *ai){ 
+    struct ifaddrs *ifap, *ifa;
+    uint32_t destination_addr = ((struct sockaddr_in *) ai->ai_addr)->sin_addr.s_addr;
+    int result;
+
+    getifaddrs(&ifap);
+
+    result = 0;
+
+    // loop over all network interfaces
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr->sa_family==AF_INET) {
+            // get this machine's address for the current interface (ie. 192.168.1.6)
+            uint32_t cur_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
+            // get the subnet mask for the current interface (ie. 255.255.0.0)
+            uint32_t cur_subn = ((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr.s_addr;
+
+            // check if the subnet part (ie. 192.168._._) of the given address matches
+            if ((cur_subn & cur_addr) == (cur_subn & destination_addr)) {
+                // check if the non-subnet (ie. _._.1.6) part of the destination address
+                // indicates that it is a broadcast address (all ones)
+                if ((cur_subn | destination_addr) == 0xFFFFFFFF) {
+                    result = 1;
+                }
+
+                break;
+            }
+        }
+    }
+
+    freeifaddrs(ifap);
+    return result;
+}
+#endif
+
 static int is_broadcast(struct addrinfo *ai) {
     struct sockaddr_in *si = (struct sockaddr_in *) ai->ai_addr;
     unsigned char *ip = (unsigned char *) &(si->sin_addr);
-    if(AF_INET == ai->ai_family)
-        return(ip[0] == 255 && ip[1] == 255 && ip[2] == 255 && ip[3] == 255);
+    if(AF_INET == ai->ai_family) {
+        // is it the "global" broadcast address?
+        if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255 && ip[3] == 255)
+            return 1;
+
+        #if !defined(WIN32)
+            // check if the address is the "local" broadcast
+            // addres of any of the active network interfaces
+            return is_local_broadcast(ai);
+        #endif
+    }
     return 0;
 }
 
