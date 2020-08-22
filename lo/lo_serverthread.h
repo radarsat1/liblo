@@ -117,6 +117,15 @@ lo_server_thread lo_server_thread_new_with_proto(const char *port, int proto,
 lo_server_thread lo_server_thread_new_from_url(const char *url,
                                                lo_err_handler err_h);
 
+
+/**
+ * \brief Create a new server thread, using a configuration struct.
+ *
+ * \param config A pre-initialized config struct.  A pointer to it will not be kept.
+ * \return A new lo_server_thread instance.
+ */
+lo_server_thread lo_server_thread_new_from_config(lo_server_config *config);
+
 /**
  * \brief Free memory taken by a server thread
  *

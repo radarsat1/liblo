@@ -107,6 +107,13 @@ lo_server_thread lo_server_thread_new_from_url(const char *url,
     return st;
 }
 
+lo_server_thread lo_server_thread_new_from_config(lo_server_config *config)
+{
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_from_config(config));
+    return st;
+}
+
 void lo_server_thread_set_error_context(lo_server_thread st,
                                         void *user_data)
 {

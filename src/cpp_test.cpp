@@ -140,6 +140,7 @@ int main()
     lo::ServerThread st(9000,
                         [=](int num, const char *msg, const char *where)
                         {printf("error handler: %d\n", context);});
+    context=888;
     if (!st.is_valid()) {
         printf("Nope.\n");
         return 1;

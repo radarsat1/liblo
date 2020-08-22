@@ -55,6 +55,26 @@ typedef SSIZE_T ssize_t;
 typedef long double lo_hires;
 
 
+/**
+ * \brief A configuration struct for initializing \ref lo_server using lo_server_new_from_config().
+ *
+ * User code is responsible for allocating and deallocating memory
+ * pointed to by this struct, including strings for group, port,
+ * iface, ip, etc.  The struct and relevant fields will be copied by
+ * liblo when necessary, therefore it can be deallocated after use.
+ * The size field should be set to sizeof(lo_server_config).  Fields
+ * set to 0 shall be ignored.
+ */
+typedef struct {
+    size_t size;
+    const char *group;
+    const char *port;
+    const char *iface;
+    const char *ip;
+    int proto;
+    lo_err_handler err_handler;
+    void *err_handler_context;
+} lo_server_config;
 
 
 /**
@@ -739,6 +759,14 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
  */
 lo_server lo_server_new_from_url(const char *url,
                                  lo_err_handler err_h);
+
+/**
+ * \brief Create a new server instance, using a configuration struct.
+ *
+ * \param config A pre-initialized config struct.  A pointer to it will not be kept.
+ * \return A new lo_server instance.
+ */
+lo_server lo_server_new_from_config(lo_server_config *config);
 
 /**
  * \brief Enables or disables type coercion during message dispatch.

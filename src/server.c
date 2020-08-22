@@ -74,6 +74,7 @@
 #include "lo_types_internal.h"
 #include "lo_internal.h"
 #include "lo/lo.h"
+#include "lo/lo_lowlevel.h"
 #include "lo/lo_throw.h"
 
 typedef struct {
@@ -101,7 +102,8 @@ static lo_server lo_server_new_with_proto_internal(const char *group,
                                                    const char *iface,
                                                    const char *ip,
                                                    int proto,
-                                                   lo_err_handler err_h);
+                                                   lo_err_handler err_h,
+                                                   void *err_h_context);
 static int lo_server_join_multicast_group(lo_server s, const char *group,
                                           int family,
                                           const char *iface, const char *ip);
@@ -233,7 +235,7 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h)
 lo_server lo_server_new_multicast(const char *group, const char *port,
                                   lo_err_handler err_h)
 {
-    return lo_server_new_with_proto_internal(group, port, 0, 0, LO_UDP, err_h);
+    return lo_server_new_with_proto_internal(group, port, 0, 0, LO_UDP, err_h, 0);
 }
 
 #if defined(WIN32) || defined(_MSC_VER) || defined(HAVE_GETIFADDRS)
@@ -241,14 +243,14 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
                                         const char *iface, const char *ip,
                                         lo_err_handler err_h)
 {
-    return lo_server_new_with_proto_internal(group, port, iface, ip, LO_UDP, err_h);
+    return lo_server_new_with_proto_internal(group, port, iface, ip, LO_UDP, err_h, 0);
 }
 #endif
 
 lo_server lo_server_new_with_proto(const char *port, int proto,
                                    lo_err_handler err_h)
 {
-    return lo_server_new_with_proto_internal(NULL, port, 0, 0, proto, err_h);
+    return lo_server_new_with_proto_internal(NULL, port, 0, 0, proto, err_h, 0);
 }
 
 lo_server lo_server_new_from_url(const char *url,
@@ -267,7 +269,7 @@ lo_server lo_server_new_from_url(const char *url,
         group = lo_url_get_hostname(url);
         port = lo_url_get_port(url);
         s = lo_server_new_with_proto_internal(group, port, 0, 0,
-                                              protocol, err_h);
+                                              protocol, err_h, 0);
         if (group)
             free(group);
         if (port)
@@ -276,7 +278,7 @@ lo_server lo_server_new_from_url(const char *url,
     } else if (protocol == LO_UNIX) {
         port = lo_url_get_path(url);
         s = lo_server_new_with_proto_internal(0, port, 0, 0,
-                                              LO_UNIX, err_h);
+                                              LO_UNIX, err_h, 0);
         if (port)
             free(port);
 #endif
@@ -292,6 +294,20 @@ lo_server lo_server_new_from_url(const char *url,
     }
 
     return s;
+}
+
+lo_server lo_server_new_from_config(lo_server_config *config)
+{
+    if (config->size < sizeof(lo_server_config))
+        return NULL;
+
+    return lo_server_new_with_proto_internal(config->group,
+                                             config->port,
+                                             config->iface,
+                                             config->ip,
+                                             config->proto,
+                                             config->err_handler,
+                                             config->err_handler_context);
 }
 
 static
@@ -426,7 +442,8 @@ lo_server lo_server_new_with_proto_internal(const char *group,
                                             const char *iface,
                                             const char *ip,
                                             int proto,
-                                            lo_err_handler err_h)
+                                            lo_err_handler err_h,
+                                            void *err_h_context)
 {
     lo_server s;
     struct addrinfo *ai = NULL, *it, *used;
@@ -462,6 +479,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         return 0;
 
     s->err_h = err_h;
+    s->error_user_data = err_h_context;
     s->first = NULL;
     s->ai = NULL;
     s->hostname = NULL;

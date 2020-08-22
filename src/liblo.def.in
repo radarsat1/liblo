@@ -146,3 +146,5 @@ EXPORTS
 @DEFTHREADS@    lo_server_thread_new_multicast_iface   @143
     lo_servers_wait                        @144
     lo_servers_recv_noblock                @145
+    lo_server_new_from_config              @146
+@DEFTHREADS@    lo_server_thread_new_from_config       @147
