@@ -257,6 +257,6 @@ int main()
 #else
     sleep(1);
 #endif
-    printf("%s: %d\n", a.errstr().c_str(), a.get_errno());
+    printf("%s (errno=%d)\n", a.errstr().c_str(), a.get_errno());
     return a.get_errno();
 }
