@@ -255,7 +255,7 @@ lo_message create_message(char **argv)
 
 int main(int argc, char **argv)
 {
-    lo_address target;
+    lo_address target = NULL;
     lo_message message;
     int ret, i=1, dump_to_file=0, dump_to_stdout=0;
     char file_uri[256];
