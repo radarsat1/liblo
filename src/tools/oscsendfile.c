@@ -277,7 +277,7 @@ int send_file(lo_address target, double speed) {
     const char *delim = " \r\n";
     char *args[64];
     char str[1024], *p, *s, *path;
-    lo_timetag tt_start = {0, 0}, tt_start_file, tt_now;
+    lo_timetag tt_start = {0, 0}, tt_start_file = {0, 0}, tt_now;
     lo_timetag tt1 = {0, 0}, tt2 = {0, 0}, *tt_last = &tt1, *tt_this = &tt2;
     int tt_init = 0, ret;
     lo_message m;
