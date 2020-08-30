@@ -129,6 +129,7 @@ typedef int (*lo_bundle_end_handler) (void *user_data);
 typedef struct _lo_method {
     const char *path;
     const char *typespec;
+    int has_pattern;
     lo_method_handler handler;
     char *user_data;
     struct _lo_method *next;

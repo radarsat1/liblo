@@ -1058,8 +1058,17 @@ uint32_t lo_blobsize(lo_blob b);
  *
  * \param str The string to test
  * \param p   The pattern to test against
+ * \return 1 if true, 0 otherwise.
  */
 int lo_pattern_match(const char *str, const char *p);
+
+/**
+ * \brief Test if a string contains any OSC pattern characters
+ *
+ * \param str The string to test
+ * \return 1 if true, 0 otherwise.
+ */
+int lo_string_contains_pattern(const char *str);
 
 /** \internal \brief the real send function (don't call directly) */
 int lo_send_internal(lo_address t, const char *file, const int line,

@@ -89,7 +89,7 @@
  * Initial revision
  */
 
-#include "lo/lo.h"
+#include <string.h>
 
 #ifndef NEGATE
 #define NEGATE  '!'
@@ -274,4 +274,10 @@ int lo_pattern_match(const char *str, const char *p)
     }
 
     return !*str;
+}
+
+int lo_string_contains_pattern(const char *str)
+{
+    if (!str) return 0;
+    return strpbrk(str, " #*,?[]{}") != NULL;
 }

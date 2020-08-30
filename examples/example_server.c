@@ -34,6 +34,9 @@ int foo_handler(const char *path, const char *types, lo_arg ** argv,
 int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
                      int argc, lo_message data, void *user_data);
 
+int pattern_handler(const char *path, const char *types, lo_arg ** argv,
+                    int argc, lo_message data, void *user_data);
+
 int quit_handler(const char *path, const char *types, lo_arg ** argv,
                  int argc, lo_message data, void *user_data);
 
@@ -51,6 +54,13 @@ int main()
 
     /* add method that will match the path /blobtest with one blob arg */
     lo_server_thread_add_method(st, "/blobtest", "b", blobtest_handler, NULL);
+
+    /* catch any message starting with /g using a pattern method */
+    lo_server_thread_add_method(st, "/p*", "", pattern_handler, NULL);
+
+    /* also catch "/q*", but glob_handle returns 1, so quit_handler
+     * gets called after */
+    lo_server_thread_add_method(st, "/q*", "", pattern_handler, NULL);
 
     /* add method that will match the path /quit with no args */
     lo_server_thread_add_method(st, "/quit", "", quit_handler, NULL);
@@ -83,7 +93,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 {
     int i;
 
-    printf("path: <%s>\n", path);
+    printf("generic handler; path: <%s>\n", path);
     for (i = 0; i < argc; i++) {
         printf("arg %d '%c' ", i, types[i]);
         lo_arg_pp((lo_type)types[i], argv[i]);
@@ -99,7 +109,7 @@ int foo_handler(const char *path, const char *types, lo_arg ** argv,
                 int argc, lo_message data, void *user_data)
 {
     /* example showing pulling the argument values out of the argv array */
-    printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
+    printf("foo: %s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);
     fflush(stdout);
 
     return 0;
@@ -133,6 +143,17 @@ int blobtest_handler(const char *path, const char *types, lo_arg ** argv,
     fflush(stdout);
 
     return 0;
+}
+
+int pattern_handler(const char *path, const char *types, lo_arg ** argv,
+                    int argc, lo_message data, void *user_data)
+{
+    printf("pattern handler matched: %s\n\n", path);
+    fflush(stdout);
+
+    // Let the dispatcher continue by returning non-zero, so
+    // quit_handler can also catch the message
+    return 1;
 }
 
 int quit_handler(const char *path, const char *types, lo_arg ** argv,

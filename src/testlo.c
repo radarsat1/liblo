@@ -1309,6 +1309,8 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
                                 pattern_handler, "bar");
     lo_server_thread_add_method(st, "/pattern/baz", NULL,
                                 pattern_handler, "baz");
+    lo_server_thread_add_method(st, "/pattern*test", NULL,
+                                pattern_handler, "glob");
 
     lo_server_thread_add_method(st, "/subtest", "i", subtest_handler, st);
 
@@ -1351,6 +1353,9 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     lo_send(a, "/coerce", "ffffss", 0.1f, 0.2f, 123.0, 124.0, "aaa",
             "bbb");
     lo_send(a, "/coerce", "ddddSS", 0.1, 0.2, 123.0, 124.0, "aaa", "bbb");
+    lo_send(a, "/patternXYZtest", "");
+    lo_send(a, "/pattern123test", "");
+    lo_send(a, "/patterntest", "");
     lo_send(a, "/a/b/c/d", "sfsff", "one", 0.12345678f, "three",
             -0.00000023001f, 1.0);
     lo_send(a, "/a/b/c/d", "b", btest);
@@ -1490,7 +1495,7 @@ void test_subtest(lo_server_thread st)
     }
 
     TEST(reply_count == 3);
-    TEST(pattern_count == 5);
+    TEST(pattern_count == 8);
     TEST(subtest_count == 2);
     TEST(subtest_reply_count == 22);
     printf("\n");

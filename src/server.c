@@ -1935,7 +1935,7 @@ static void dispatch_method(lo_server s, const char *path,
     int argc = strlen(types);
     lo_method it;
     int ret = 1;
-    int pattern = strpbrk(path, " #*,?[]{}") != NULL;
+    int pattern = lo_string_contains_pattern(path);
     lo_address src = 0;
     const char *pptr;
 
@@ -1965,7 +1965,8 @@ static void dispatch_method(lo_server s, const char *path,
     for (it = s->first; it; it = it->next) {
         /* If paths match or handler is wildcard */
         if (!it->path || !strcmp(path, it->path) ||
-            (pattern && lo_pattern_match(it->path, path))) {
+            (pattern && lo_pattern_match(it->path, path)) ||
+            (it->has_pattern && lo_pattern_match(path, it->path))) {
             /* If types match or handler is wildcard */
             if (!it->typespec || !strcmp(types, it->typespec)) {
                 /* Send wildcard path to generic handler, expanded path
@@ -2177,12 +2178,7 @@ lo_method lo_server_add_method(lo_server s, const char *path,
     lo_method m = (lo_method) calloc(1, sizeof(struct _lo_method));
     lo_method it;
 
-    if (path && strpbrk(path, " #*,?[]{}")) {
-        if (m) {
-            free(m);
-        }
-        return NULL;
-    }
+    m->has_pattern = lo_string_contains_pattern(path);
 
     if (path) {
         m->path = strdup(path);
@@ -2221,7 +2217,7 @@ void lo_server_del_method(lo_server s, const char *path,
     if (!s->first)
         return;
     if (path)
-        pattern = strpbrk(path, " #*,?[]{}") != NULL;
+        pattern = lo_string_contains_pattern(path);
 
     it = s->first;
     prev = it;
