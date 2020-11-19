@@ -86,11 +86,11 @@ namespace lo {
 
     class num_string_type : public string_type {
       public:
-      num_string_type(const char *s) : string_type(s) {}
-      num_string_type(const std::string &s) : string_type(s) {}
-        num_string_type(int n) { std::ostringstream ss; ss << n;
-            _p.reset(new std::string(ss.str())); _s = _p->c_str(); }
-        std::unique_ptr<std::string> _p;
+        num_string_type(const char *s) : string_type(s) {}
+        num_string_type(const std::string &s) : string_type(s) {}
+        num_string_type(int n)
+          {_p.reset(new std::string(std::to_string(n))); _s = _p->c_str(); }
+      std::unique_ptr<std::string> _p;
     };
 
 /*
