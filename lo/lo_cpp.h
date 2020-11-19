@@ -11,7 +11,9 @@
 #include <algorithm>
 #include <unordered_map>
 #include <string>
-#include <sstream>
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 #include <initializer_list>
 #ifndef LO_USE_EXCEPTIONS
 #include <cassert>
@@ -77,20 +79,30 @@ namespace lo {
     // "std::string", and "int".
     class string_type {
       public:
+        string_type(const string_type& s) { _s = s._s; }
         string_type(const char *s=0) { _s = s; }
         string_type(const std::string &s) { _s = s.c_str(); }
+#if __cplusplus >= 201703L
+        string_type(const std::string_view& s) {
+            if (s[s.length()]==0) _s = s.data();
+            else { _p.reset(new std::string(s)); _s = _p->c_str(); }
+        }
+#endif
         operator const char*() const { return _s; }
         std::string s() const { return _s?_s:""; }
         const char *_s;
+        std::unique_ptr<std::string> _p;
     };
 
     class num_string_type : public string_type {
       public:
         num_string_type(const char *s) : string_type(s) {}
         num_string_type(const std::string &s) : string_type(s) {}
+#if __cplusplus >= 201703L
+        num_string_type(const std::string_view& s) : string_type(s) {}
+#endif
         num_string_type(int n)
           {_p.reset(new std::string(std::to_string(n))); _s = _p->c_str(); }
-      std::unique_ptr<std::string> _p;
     };
 
 /*
