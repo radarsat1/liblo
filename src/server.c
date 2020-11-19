@@ -1973,7 +1973,7 @@ static void dispatch_method(lo_server s, const char *path,
                    to others.
                  */
                 pptr = path;
-                if (it->path)
+                if (it->path && !it->has_pattern)
                     pptr = it->path;
                 ret = it->handler(pptr, types, msg->argv, argc, msg,
                                   it->user_data);
