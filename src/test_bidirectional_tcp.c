@@ -1,3 +1,6 @@
+#ifdef WIN32
+#include <process.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,7 +37,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 #ifdef HAVE_WIN32_THREADS
-unsigned sendthread(void *arg)
+unsigned __attribute__((stdcall)) sendthread(void *arg)
 #else
 void *sendthread(void *arg)
 #endif
