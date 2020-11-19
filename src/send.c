@@ -332,7 +332,7 @@ static int is_local_broadcast(struct addrinfo *ai){
 
     // loop over all network interfaces
     for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr->sa_family==AF_INET) {
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family==AF_INET) {
             // get this machine's address for the current interface (ie. 192.168.1.6)
             uint32_t cur_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
             // get the subnet mask for the current interface (ie. 255.255.0.0)
