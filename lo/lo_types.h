@@ -42,14 +42,14 @@ extern "C" {
  *
  * Created by calls to lo_address_new() or lo_address_new_from_url().
  */
-typedef struct lo_address_ {} *lo_address;
+typedef struct lo_address_  *lo_address;
 
 /**
  * \brief A object to store an opaque binary data object.
  *
  * Can be passed over OSC using the 'b' type. Created by calls to lo_blob_new().
  */
-typedef struct lo_blob_ {} *lo_blob;
+typedef struct lo_blob_ *lo_blob;
 
 /**
  * \brief A low-level object used to represent messages passed over OSC.
@@ -57,7 +57,7 @@ typedef struct lo_blob_ {} *lo_blob;
  * Created by calls to lo_message_new(), arguments can be added with calls to
  * lo_message_add_*().
  */
-typedef struct lo_message_ {} *lo_message;
+typedef struct lo_message_ *lo_message;
 
 /**
  * \brief A low-level object used to represent bundles of messages passed over
@@ -66,7 +66,7 @@ typedef struct lo_message_ {} *lo_message;
  * Created by calls to lo_bundle_new(), messages can be added with calls to
  * lo_bundle_add_message().
  */
-typedef struct lo_bundle_ {} *lo_bundle;
+typedef struct lo_bundle_ *lo_bundle;
 
 /**
  * \brief An object representing an method on a server.
@@ -74,7 +74,7 @@ typedef struct lo_bundle_ {} *lo_bundle;
  * Returned by calls to lo_server_thread_add_method() and
  * lo_server_add_method().
  */
-typedef struct lo_method_ {} *lo_method;
+typedef struct lo_method_ *lo_method;
 
 /**
  * \brief An object representing an instance of an OSC server.
@@ -82,14 +82,14 @@ typedef struct lo_method_ {} *lo_method;
  * Created by calls to lo_server_new(). If you wish to have the server
  * operate in a background thread, use lo_server_thread instead.
  */
-typedef struct lo_server_ {} *lo_server;
+typedef struct lo_server_ *lo_server;
 
 /**
  * \brief An object representing a thread containing an OSC server.
  *
  * Created by calls to lo_server_thread_new().
  */
-typedef struct lo_server_thread_ {} *lo_server_thread;
+typedef struct lo_server_thread_ *lo_server_thread;
 
 /**
  * \brief A callback function to receive notification of an error in a server or
