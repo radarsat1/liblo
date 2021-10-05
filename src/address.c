@@ -494,6 +494,15 @@ int lo_address_set_stream_slip(lo_address t, int enable)
     return r;
 }
 
+int lo_address_set_stream_slip_double_end(lo_address t, int enable)
+{
+    int r = (t->flags & LO_SLIP_DBL_END) != 0;
+    lo_address_set_flags(t, enable
+                         ? t->flags | LO_SLIP_DBL_END
+                         : t->flags & ~LO_SLIP_DBL_END);
+    return r;
+}
+
 static
 void lo_address_set_flags(lo_address t, int flags)
 {

@@ -310,6 +310,9 @@ namespace lo {
         int set_stream_slip(int enable)
           { LO_CHECK_BEFORE; return lo_address_set_stream_slip(address, enable); }
 
+        int set_stream_slip_double_end(int enable)
+          { LO_CHECK_BEFORE; return lo_address_set_stream_slip_double_end(address, enable); }
+
         operator lo_address() const
             { return address; }
 

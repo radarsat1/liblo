@@ -503,6 +503,15 @@ int lo_address_set_tcp_nodelay(lo_address t, int enable);
 int lo_address_set_stream_slip(lo_address t, int enable);
 
 /**
+ * \brief Set outgoing stream connections using SLIP to be
+ *        double ENDed. (No effect if SLIP isn't enabled.)
+ * \param t The address to set this flag for.
+ * \param enable Non-zero to set the flag, zero to unset it.
+ * \return the previous value of this flag.
+ */
+int lo_address_set_stream_slip_double_end(lo_address t, int enable);
+
+/**
  * \brief  Create a new bundle object.
  *
  * OSC Bundles encapsulate one or more OSC messages and may include a timestamp
