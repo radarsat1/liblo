@@ -52,8 +52,9 @@ typedef SSIZE_T ssize_t;
 /** \brief Bitflags for optional protocol features, set by
  *         lo_address_set_flags(). */
 typedef enum {
-    LO_SLIP=0x01,     /*!< SLIP decoding */
-    LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
+    LO_SLIP=0x01,         /*!< SLIP decoding */
+    LO_NODELAY=0x02,      /*!< Set the TCP_NODELAY socket option. */
+    LO_SLIP_DBL_END=0x04, /*!< Set SLIP encoding to double-END. */
 } lo_proto_flags;
 
 /** \brief Bitflags for optional server features. */

@@ -470,10 +470,13 @@ static int create_socket(lo_address a)
 #define SLIP_ESC_ESC    0335    /* ESC ESC_ESC means ESC data byte */
 
 static unsigned char *slip_encode(const unsigned char *data,
-                                  size_t *data_len)
+                                  size_t *data_len,
+                                  int double_end_slip_enabled)
 {
     size_t i, j = 0, len=*data_len;
     unsigned char *slipdata = (unsigned char *) malloc(len*2);
+    if (double_end_slip_enabled)
+        slipdata[j++] = SLIP_END;
     for (i=0; i<len; i++) {
         switch (data[i])
         {
@@ -582,7 +585,7 @@ static int send_data(lo_address a, lo_server from, char *data,
         } else {
             size_t len = data_len;
             if (a->flags & LO_SLIP)
-                data = (char*)slip_encode((unsigned char*)data, &len);
+                data = (char*)slip_encode((unsigned char*)data, &len, a->flags & LO_SLIP_DBL_END);
 
             ret = send(sock, data, len, MSG_NOSIGNAL);
 
