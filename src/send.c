@@ -585,7 +585,8 @@ static int send_data(lo_address a, lo_server from, char *data,
         } else {
             size_t len = data_len;
             if (a->flags & LO_SLIP)
-                data = (char*)slip_encode((unsigned char*)data, &len, a->flags & LO_SLIP_DBL_END);
+                data = (char*)slip_encode((unsigned char*)data, &len,
+                                          a->flags & LO_SLIP_DBL_END);
 
             ret = send(sock, data, len, MSG_NOSIGNAL);
 

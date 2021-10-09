@@ -485,19 +485,17 @@ int lo_address_set_tcp_nodelay(lo_address t, int enable)
     return r;
 }
 
-int lo_address_set_stream_slip(lo_address t, int enable)
+int lo_address_set_stream_slip(lo_address t, lo_slip_encoding encoding)
 {
-    int r = (t->flags & LO_SLIP) != 0;
-    lo_address_set_flags(t, enable
+    int r = t->flags & LO_SLIP_DBL_END
+        ? LO_SLIP_DOUBLE
+        : t->flags & LO_SLIP
+            ? LO_SLIP_SINGLE
+            : LO_SLIP_NONE;
+    lo_address_set_flags(t, encoding > 0
                          ? t->flags | LO_SLIP
                          : t->flags & ~LO_SLIP);
-    return r;
-}
-
-int lo_address_set_stream_slip_double_end(lo_address t, int enable)
-{
-    int r = (t->flags & LO_SLIP_DBL_END) != 0;
-    lo_address_set_flags(t, enable
+    lo_address_set_flags(t, encoding > 1
                          ? t->flags | LO_SLIP_DBL_END
                          : t->flags & ~LO_SLIP_DBL_END);
     return r;
