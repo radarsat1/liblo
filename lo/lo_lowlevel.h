@@ -77,6 +77,16 @@ typedef struct {
     void *err_handler_context;
 } lo_server_config;
 
+/**
+ * \brief Used with \ref lo_address_set_stream_slip() to specify whether sent
+ *        messages should be encoded with SLIP, and whether the encoding should
+ *        be single- or double-ENDed.
+ */
+typedef enum {
+	LO_SLIP_NONE   = 0,
+	LO_SLIP_SINGLE = 1,
+	LO_SLIP_DOUBLE = 2
+} lo_slip_encoding;
 
 /**
  * \brief Send a lo_message object to target targ
@@ -497,19 +507,10 @@ int lo_address_set_tcp_nodelay(lo_address t, int enable);
  * \brief Set outgoing stream connections (e.g., TCP) to be
  *        transmitted using the SLIP packetizing protocol.
  * \param t The address to set this flag for.
- * \param enable Non-zero to set the flag, zero to unset it.
+ * \param encoding Specify single- or double-ENDed SLIP, or disable SLIP.
  * \return the previous value of this flag.
  */
-int lo_address_set_stream_slip(lo_address t, int enable);
-
-/**
- * \brief Set outgoing stream connections using SLIP to be
- *        double ENDed. (No effect if SLIP isn't enabled.)
- * \param t The address to set this flag for.
- * \param enable Non-zero to set the flag, zero to unset it.
- * \return the previous value of this flag.
- */
-int lo_address_set_stream_slip_double_end(lo_address t, int enable);
+int lo_address_set_stream_slip(lo_address t, lo_slip_encoding encoding);
 
 /**
  * \brief  Create a new bundle object.

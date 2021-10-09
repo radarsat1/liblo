@@ -307,11 +307,8 @@ namespace lo {
         int set_tcp_nodelay(int enable)
           { LO_CHECK_BEFORE; return lo_address_set_tcp_nodelay(address, enable); }
 
-        int set_stream_slip(int enable)
-          { LO_CHECK_BEFORE; return lo_address_set_stream_slip(address, enable); }
-
-        int set_stream_slip_double_end(int enable)
-          { LO_CHECK_BEFORE; return lo_address_set_stream_slip_double_end(address, enable); }
+        int set_stream_slip(lo_slip_encoding encoding)
+          { LO_CHECK_BEFORE; return lo_address_set_stream_slip(address, encoding); }
 
         operator lo_address() const
             { return address; }
