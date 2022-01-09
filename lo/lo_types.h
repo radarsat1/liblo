@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-#if defined(WIN32) || defined(_MSC_VER)
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
