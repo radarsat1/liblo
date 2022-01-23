@@ -64,7 +64,7 @@ lo_message create_message(char **argv)
     int i, argi;
     lo_message message;
     const char *types;
-    char *arg;
+    char *arg = NULL;
     int values;
 
     message = lo_message_new();
