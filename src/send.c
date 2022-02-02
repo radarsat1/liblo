@@ -582,7 +582,16 @@ static int send_data(lo_address a, lo_server from, char *data,
             } while (ret == -1 && ai != NULL);
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
+        } else if (a->protocol == LO_UNIX && from->protocol == LO_UNIX) {
+            struct sockaddr_un saddr;
+            size_t len = data_len;
+
+            saddr.sun_family = AF_UNIX;
+            strncpy(saddr.sun_path, a->port, sizeof(saddr.sun_path) - 1);
+
+            ret = sendto(from->sockets[0].fd, data, len, MSG_NOSIGNAL, (struct sockaddr*)&saddr, sizeof(struct sockaddr_un));
         } else {
+
             size_t len = data_len;
             if (a->flags & LO_SLIP)
                 data = (char*)slip_encode((unsigned char*)data, &len,

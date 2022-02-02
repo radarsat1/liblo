@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #ifdef HAVE_GETIFADDRS
@@ -189,6 +190,10 @@ static void lo_address_resolve_source(lo_address a)
 
         a->host = strdup(hostname);
         a->port = strdup(portname);
+    } else if (a->protocol== LO_UNIX) {
+        struct sockaddr_un * addr = (struct sockaddr_un *) &s->addr;
+        a->host = strdup("");
+        a->port = strdup(addr->sun_path);
     } else {
         a->host = strdup("");
         a->port = strdup("");
