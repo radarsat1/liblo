@@ -582,7 +582,7 @@ static int send_data(lo_address a, lo_server from, char *data,
             } while (ret == -1 && ai != NULL);
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
-        } else if (a->protocol == LO_UNIX && from->protocol == LO_UNIX) {
+        } else if (a->protocol == LO_UNIX && from && from->protocol == LO_UNIX) {
             struct sockaddr_un saddr;
             size_t len = data_len;
 
