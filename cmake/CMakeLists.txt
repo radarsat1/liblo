@@ -60,7 +60,7 @@ if (MSVC)
   endif()
 endif()
 
-set(LIBRARY_SHARED lo_shared)
+set(LIBRARY_SHARED lo)
 if (WITH_STATIC)
   set(LIBRARY_STATIC lo_static)
 endif()
@@ -247,25 +247,32 @@ else()
   endif()
 endif()
 
-set(LO_INCLUDE_DIRS
+set(LO_BUILD_INCLUDE_DIRS
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..)
-target_include_directories(${LIBRARY_SHARED} PUBLIC ${LO_INCLUDE_DIRS})
+target_include_directories(${LIBRARY_SHARED} PUBLIC
+    "$<BUILD_INTERFACE:${LO_BUILD_INCLUDE_DIRS}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 if (WITH_STATIC)
-  target_include_directories(${LIBRARY_STATIC} PUBLIC ${LO_INCLUDE_DIRS})
+    target_include_directories(${LIBRARY_STATIC} PUBLIC
+        "$<BUILD_INTERFACE:${LO_BUILD_INCLUDE_DIRS}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 endif()
 
 foreach(PROG ${PROGRAMS})
-  target_include_directories(${PROG} PUBLIC ${LO_INCLUDE_DIRS})
+    target_include_directories(${PROG} PUBLIC
+        "$<BUILD_INTERFACE:${LO_BUILD_INCLUDE_DIRS}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
   target_link_libraries(${PROG} PUBLIC ${LIBRARY_SHARED})
 endforeach(PROG)
 
 foreach(PROG ${TOOLS})
-  set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY "tools")
+    set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY
+        "tools")
 endforeach(PROG)
 
 foreach(PROG ${TESTS})
-  set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY "tests")
+    set_property(TARGET ${PROG} PROPERTY RUNTIME_OUTPUT_DIRECTORY "tests")
 endforeach(PROG)
 
 foreach(PROG ${EXAMPLES})
@@ -355,9 +362,21 @@ test_big_endian(LO_BIGENDIAN)
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_endian.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/lo/lo_endian.h)
-configure_file(
-    ${PROJECT}Config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}Config.cmake)
+
+install(
+    TARGETS ${LIBRARY_STATIC} ${LIBRARY_SHARED} ${OSCDUMP} ${OSCSEND}
+    EXPORT ${PROJECT}Targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(
+    FILES ${LIBRARY_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lo)
+install(EXPORT ${PROJECT}Targets
+    FILE ${PROJECT}Targets.cmake
+    NAMESPACE lo
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
@@ -369,18 +388,6 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}.pc
     @ONLY)
 add_definitions(-DHAVE_CONFIG_H)
-
-install(
-    TARGETS ${LIBRARY_STATIC} ${LIBRARY_SHARED} ${OSCDUMP} ${OSCSEND}
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin)
-install(
-    FILES ${LIBRARY_HEADERS}
-    DESTINATION include/lo)
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}Config.cmake
-    DESTINATION lib/cmake/${PROJECT})
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}.pc
     DESTINATION lib/pkgconfig)
