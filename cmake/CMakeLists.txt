@@ -25,11 +25,13 @@ else()
   project(${PROJECT} LANGUAGES C)
 endif()
 
+
 include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(TestBigEndian)
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1.0)
     set_property(TARGET ${LIBRARY} PROPERTY C_STANDARD 11)
@@ -66,9 +68,9 @@ if (MSVC)
   endif()
 endif()
 
-set(LIBRARY_SHARED lo)
+set(LIBRARY_SHARED liblo)
 if (WITH_STATIC)
-  set(LIBRARY_STATIC lo_static)
+  set(LIBRARY_STATIC liblo_static)
 endif()
 if (WITH_TOOLS)
   set(OSCDUMP oscdump)
@@ -154,7 +156,7 @@ if(THREADING)
   else()
     option(CMAKE_THREAD_PREFER_PTHREAD "Prefer pthread to other thread libraries." ON)
   endif()
-  include(FindThreads)
+  find_package(Threads)
   if (NOT Threads_FOUND)
     message(FATAL_ERROR "No supported thread library found.")
   endif()
@@ -196,6 +198,7 @@ endif()
 if (WITH_TESTS)
   add_executable(${TESTLO} ${TESTLO_SOURCES})
   add_executable(${SUBTEST} ${SUBTEST_SOURCES})
+  target_link_libraries(${TESTLO} PRIVATE Threads::Threads)
 endif()
 if (WITH_CPP_TESTS)
   add_executable(${CPPTEST} ${CPPTEST_SOURCES})
@@ -212,9 +215,9 @@ endif()
 if(THREADING)
     set(ENABLE_THREADS 1)
 
-    target_link_libraries(${LIBRARY_SHARED} Threads::Threads)
+    target_link_libraries(${LIBRARY_SHARED} PRIVATE Threads::Threads)
     if (WITH_STATIC)
-      target_link_libraries(${LIBRARY_STATIC} Threads::Threads)
+      target_link_libraries(${LIBRARY_STATIC} PRIVATE Threads::Threads)
     endif()
 
     set(THREADS_INCLUDE
@@ -247,9 +250,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(DEFTHREADS ";;")
     endif()
 else()
-  target_link_libraries(${LIBRARY_SHARED} "m")
+  target_link_libraries(${LIBRARY_SHARED} PRIVATE "m")
   if (WITH_STATIC)
-    target_link_libraries(${LIBRARY_STATIC} "m")
+    target_link_libraries(${LIBRARY_STATIC} PRIVATE "m")
   endif()
 endif()
 
@@ -309,12 +312,14 @@ file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../configure.ac"
     CONFIGURE_AC_LINE REGEX "m4_define\\(\\[lt_age\\], [0-9]+\\)")
 string(REGEX MATCHALL "[0-9]+" CONFIGURE_AC_LIST ${CONFIGURE_AC_LINE})
 list(GET CONFIGURE_AC_LIST 1 CONFIGURE_AC_AGE)
+
 set(LO_SO_VERSION
     "{${CONFIGURE_AC_CURRENT}, ${CONFIGURE_AC_REVISION}, ${CONFIGURE_AC_AGE}}")
-
 math(EXPR CURRENT_MINUS_AGE "${CONFIGURE_AC_CURRENT} - ${CONFIGURE_AC_AGE}")
+set(LO_VERSION "${CURRENT_MINUS_AGE}.${CONFIGURE_AC_AGE}.${CONFIGURE_AC_REVISION}")
+
 set_target_properties(${LIBRARY_SHARED} PROPERTIES
-    VERSION   "${CURRENT_MINUS_AGE}.${CONFIGURE_AC_AGE}.${CONFIGURE_AC_REVISION}"
+    VERSION "${LO_VERSION}"
     SOVERSION "${CURRENT_MINUS_AGE}"
     OUTPUT_NAME "lo"
     )
@@ -369,6 +374,12 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../lo/lo_endian.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/lo/lo_endian.h)
 
+# install header files
+install(
+    FILES ${LIBRARY_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lo)
+
+# install exported targets
 install(
     TARGETS ${LIBRARY_STATIC} ${LIBRARY_SHARED} ${OSCDUMP} ${OSCSEND}
     EXPORT ${PROJECT}Targets
@@ -376,14 +387,32 @@ install(
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(
-    FILES ${LIBRARY_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lo)
 install(EXPORT ${PROJECT}Targets
     FILE ${PROJECT}Targets.cmake
-    NAMESPACE lo
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
+    NAMESPACE ${PROJECT}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT})
 
+# install package config and version file
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}Config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT}
+    )
+set_property(TARGET ${LIBRARY_SHARED} PROPERTY
+    INTERFACE_${LIBRARY_SHARED}_MAJOR_VERSION ${CURRENT_MINUS_AGE})
+set_property(TARGET ${LIBRARY_SHARED} APPEND PROPERTY
+    COMPATIBLE_INTERFACE_STRING ${LIBRARY_SHARED}_MAJOR_VERSION)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}ConfigVersion.cmake"
+    VERSION "${LO_VERSION}"
+    COMPATIBILITY SameMajorVersion
+    )
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}Config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}ConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT}
+    )
+
+# install pkgconfig file
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
 set(libdir "\${exec_prefix}/lib")

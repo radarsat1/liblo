@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/libloTargets.cmake")
+
+if(@THREADING@)
+    find_package(Threads)
+    if (NOT Threads_FOUND)
+        message(FATAL_ERROR "No supported thread library found.")
+    endif()
+endif()
+
+check_required_components(liblo)
