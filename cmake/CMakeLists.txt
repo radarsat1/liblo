@@ -11,6 +11,12 @@ if (WITH_STATIC)
   message(STATUS "If you are using the static library build, please keep in mind (and inform yourself of the implications) that liblo is licensed with LGPL v2.1+.")
 endif()
 
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+        "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel")
+endif()
+
 set(PROJECT liblo)
 set(PACKAGE_NAME "${PROJECT}")
 if (WITH_CPP_TESTS)
