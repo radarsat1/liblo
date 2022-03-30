@@ -228,13 +228,10 @@ else()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    target_link_libraries(${LIBRARY_SHARED} "user32" "wsock32" "ws2_32" "iphlpapi")
-    if(THREADING AND Threads_FOUND)
-      target_link_libraries(${LIBRARY_SHARED} ${CMAKE_THREAD_LIBS_INIT})
-      if (WITH_STATIC)
-        target_link_libraries(${LIBRARY_STATIC} ${CMAKE_THREAD_LIBS_INIT})
-      endif()
-    endif()
+	target_link_libraries(${LIBRARY_SHARED} PRIVATE "wsock32" "ws2_32" "iphlpapi")
+	target_link_libraries(${LIBRARY_STATIC} PRIVATE "wsock32" "ws2_32" "iphlpapi")
+	target_link_libraries(${NONBLOCKING_SERVER_EXAMPLE} PRIVATE "wsock32")
+	target_link_libraries(${TESTLO} PRIVATE "wsock32")
 
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
         COMPILE_DEFINITIONS "LIBLO_DLL")
