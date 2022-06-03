@@ -519,7 +519,7 @@ static int send_data(lo_address a, lo_server from, char *data,
     if (!a->ai) {
         ret = lo_address_resolve(a);
         if (ret)
-            return ret;
+            return (int) ret;
     }
     // Re-use existing socket?
     if (from && a->protocol == LO_UDP) {
@@ -530,7 +530,7 @@ static int send_data(lo_address a, lo_server from, char *data,
         if (a->socket == -1) {
             ret = create_socket(a);
             if (ret)
-                return ret;
+                return (int) ret;
 
             // If we are sending TCP, we may later receive on sending
             // socket, so add it to the from server's socket list.
@@ -559,12 +559,12 @@ static int send_data(lo_address a, lo_server from, char *data,
             struct addrinfo* ai;
             if (a->addr.size == sizeof(struct in_addr)) {
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
-                           (const char*)&a->addr.a, a->addr.size);
+                           (const char*)&a->addr.a, (socklen_t) a->addr.size);
             }
 #ifdef ENABLE_IPV6
             else if (a->addr.size == sizeof(struct in6_addr)) {
                 setsockopt(sock, IPPROTO_IP, IPV6_MULTICAST_IF,
-                           (const char*)&a->addr.a, a->addr.size);
+                           (const char*)&a->addr.a, (socklen_t) a->addr.size);
             }
 #endif
             if (a->ttl >= 0) {
@@ -610,7 +610,7 @@ static int send_data(lo_address a, lo_server from, char *data,
         a->errstr = NULL;
     }
 
-    return ret;
+    return (int) ret;
 }
 
 
