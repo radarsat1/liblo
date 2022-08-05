@@ -15,7 +15,6 @@ include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(TestBigEndian)
-include(GNUInstallDirs)
 
 set(PROJECT liblo)
 set(PACKAGE_NAME "${PROJECT}")
@@ -24,6 +23,9 @@ if (WITH_CPP_TESTS)
 else()
   project(${PROJECT} LANGUAGES C)
 endif()
+
+# Note: Must occur after project()
+include(GNUInstallDirs)
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1.0)
     set_property(TARGET ${LIBRARY} PROPERTY C_STANDARD 11)
