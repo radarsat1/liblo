@@ -75,6 +75,7 @@ endif()
 if (WITH_TOOLS)
   set(OSCDUMP oscdump)
   set(OSCSEND oscsend)
+  set(OSCSENDFILE oscsendfile)
 endif()
 if (WITH_TESTS)
   set(TESTLO testlo)
@@ -92,7 +93,7 @@ if (WITH_EXAMPLES)
   set(NONBLOCKING_SERVER_EXAMPLE nonblocking_server_example)
 endif()
 
-set(TOOLS ${OSCDUMP} ${OSCSEND})
+set(TOOLS ${OSCDUMP} ${OSCSEND} ${OSCSENDFILE})
 set(TESTS ${TESTLO} ${SUBTEST})
 list(APPEND TESTS ${CPPTEST})
 set(EXAMPLES ${EXAMPLE_CLIENT} ${EXAMPLE_SERVER}
@@ -127,6 +128,7 @@ set(LIBRARY_HEADERS
 
 set(OSCDUMP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscdump.c)
 set(OSCSEND_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscsend.c)
+set(OSCSENDFILE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscsendfile.c)
 set(TESTLO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/testlo.c)
 set(SUBTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/subtest.c)
 if (WITH_CPP_TESTS)
@@ -171,7 +173,7 @@ endif()
 set(BUILD_LANGUAGE C CACHE STRING "Build language (C or CXX)")
 mark_as_advanced(BUILD_LANGUAGE)
 set_source_files_properties(
-    ${LIBRARY_SOURCES} ${OSCDUMP_SOURCES} ${OSCSEND_SOURCES}
+    ${LIBRARY_SOURCES} ${OSCDUMP_SOURCES} ${OSCSEND_SOURCES} ${OSCSENDFILE_SOURCES}
     ${TESTLO_SOURCES} ${EXAMPLE_CLIENT_SOURCES}
     ${EXAMPLE_SERVER_SOURCES} ${EXAMPLE_TCP_ECHO_SERVER_SOURCES}
     ${NONBLOCKING_SERVER_EXAMPLE_SOURCES}
@@ -192,6 +194,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(${OSCDUMP} ${OSCDUMP_SOURCES})
   add_executable(${OSCSEND} ${OSCSEND_SOURCES})
+  add_executable(${OSCSENDFILE} ${OSCSENDFILE_SOURCES})
 endif()
 
 # Tests
@@ -424,6 +427,18 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}.pc
     @ONLY)
 add_definitions(-DHAVE_CONFIG_H)
+
+install(
+    TARGETS ${LIBRARY_STATIC} ${LIBRARY_SHARED} ${OSCDUMP} ${OSCSEND} ${OSCSENDFILE}
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin)
+install(
+    FILES ${LIBRARY_HEADERS}
+    DESTINATION include/lo)
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}Config.cmake
+    DESTINATION lib/cmake/${PROJECT})
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}.pc
     DESTINATION lib/pkgconfig)
