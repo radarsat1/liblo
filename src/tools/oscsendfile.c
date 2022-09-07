@@ -267,7 +267,7 @@ double timetag_double(const lo_timetag tt)
 void timetag_multiply(lo_timetag *tt, double d)
 {
     d *= timetag_double(*tt);
-    tt->sec = floor(d);
+    tt->sec = (uint32_t) d;
     d -= tt->sec;
     tt->frac = (uint32_t) (d * (double)(1LL<<32));
 }
