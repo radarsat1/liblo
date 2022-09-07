@@ -452,13 +452,13 @@ char *lo_url_get_path(const char *url)
         return path;
     }
     if (sscanf(url, "osc.unix://%*[^/]%s", path)) {
-        int i = strlen(path)-1;
+        int i = (int) strlen(path)-1;
         if (path[i]=='/') // remove trailing slash
             path[i] = 0;
         return path;
     }
     if (sscanf(url, "osc.%*[^:]://%s", path)) {
-        int i = strlen(path)-1;
+        int i = (int) strlen(path)-1;
         if (path[i]=='/') // remove trailing slash
             path[i] = 0;
         return path;
@@ -559,7 +559,7 @@ void lo_address_init_with_sockaddr(lo_address a,
     a->host = (char*) malloc(INET_ADDRSTRLEN);
     a->port = (char*) malloc(8);
 
-    err = getnameinfo((struct sockaddr *)sa, sa_len,
+    err = getnameinfo((struct sockaddr *)sa, (socklen_t) sa_len,
                       a->host, INET_ADDRSTRLEN, a->port, 8,
                       NI_NUMERICHOST | NI_NUMERICSERV);
 

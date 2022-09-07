@@ -220,7 +220,7 @@ lo_timetag lo_bundle_get_timestamp(lo_bundle b)
 
 unsigned int lo_bundle_count(lo_bundle b)
 {
-    return b->len;
+    return (unsigned int) b->len;
 }
 
 size_t lo_bundle_length(lo_bundle b)

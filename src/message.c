@@ -479,7 +479,7 @@ int lo_message_add_infinitum(lo_message m)
 static int lo_message_add_typechar(lo_message m, char t)
 {
     if (m->typelen + 1 >= m->typesize) {
-        int new_typesize = m->typesize * 2;
+        int new_typesize = (int) m->typesize * 2;
         char *new_types = 0;
         if (!new_typesize)
             new_typesize = LO_DEF_TYPE_SIZE;
@@ -501,9 +501,9 @@ static int lo_message_add_typechar(lo_message m, char t)
 
 static void *lo_message_add_data(lo_message m, size_t s)
 {
-    uint32_t old_dlen = m->datalen;
-    int new_datasize = m->datasize;
-    int new_datalen = m->datalen + s;
+    uint32_t old_dlen = (uint32_t) m->datalen;
+    int new_datasize = (int) m->datasize;
+    int new_datalen = (int) (m->datalen + s);
     void *new_data = 0;
 
     if (!new_datasize)
@@ -528,7 +528,7 @@ static void *lo_message_add_data(lo_message m, size_t s)
 
 int lo_strsize(const char *s)
 {
-    return (NULL != s)? (4 * (strlen(s) / 4 + 1)) : 0;
+    return (NULL != s)? (4 * ((int) strlen(s) / 4 + 1)) : 0;
 }
 
 size_t lo_arg_size(lo_type type, void *data)
@@ -804,7 +804,7 @@ size_t lo_message_length(lo_message m, const char *path)
 
 int lo_message_get_argc(lo_message m)
 {
-    return m->typelen - 1;
+    return (int) m->typelen - 1;
 }
 
 lo_arg **lo_message_get_argv(lo_message m)
@@ -817,7 +817,7 @@ lo_arg **lo_message_get_argv(lo_message m)
         return m->argv;
     }
 
-    argc = m->typelen - 1;
+    argc = (int) m->typelen - 1;
     types = m->types + 1;
     ptr = (char*) m->data;
 
@@ -860,7 +860,7 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
     ptr = (char*) to + lo_strsize(path) + lo_strsize(m->types);
     memcpy(ptr, m->data, m->datalen);
 
-    argc = m->typelen - 1;
+    argc = (int) m->typelen - 1;
     for (i = 0; i < argc; ++i) {
         size_t len = lo_arg_size((lo_type) types[i], ptr);
         lo_arg_network_endian((lo_type) types[i], ptr);
@@ -874,7 +874,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
 {
     lo_message msg = NULL;
     char *types = NULL, *ptr = NULL;
-    int i = 0, argc = 0, remain = size, res = 0, len;
+    int i = 0, argc = 0, remain = (int) size, res = 0, len;
 
     if (remain <= 0) {
         res = LO_ESIZE;
@@ -899,7 +899,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     msg->refcount = 0;
 
     // path
-    len = lo_validate_string(data, remain);
+    len = (int) lo_validate_string(data, remain);
     if (len < 0) {
         res = LO_EINVALIDPATH;  // invalid path string
         goto fail;
@@ -917,7 +917,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
         goto fail;
     }
     types = (char*) data + len;
-    len = lo_validate_string(types, remain);
+    len = (int) lo_validate_string(types, remain);
     if (len < 0) {
         res = LO_EINVALIDTYPE;  // invalid type tag string
         goto fail;
@@ -949,7 +949,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     ptr = (char*) msg->data;
 
     ++types;
-    argc = msg->typelen - 1;
+    argc = (int) msg->typelen - 1;
     if (argc) {
         msg->argv = (lo_arg **) calloc(argc, sizeof(lo_arg *));
         if (NULL == msg->argv) {
@@ -959,7 +959,7 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     }
 
     for (i = 0; remain >= 0 && i < argc; ++i) {
-        len = lo_validate_arg((lo_type) types[i], ptr, remain);
+        len = (int) lo_validate_arg((lo_type) types[i], ptr, remain);
         if (len < 0) {
             res = LO_EINVALIDARG;       // invalid argument
             goto fail;
@@ -1025,7 +1025,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian)
     int size;
     int i;
 
-    size = lo_arg_size(type, data);
+    size = (int) lo_arg_size(type, data);
     if (size == 4 || type == LO_BLOB) {
         if (bigendian) {
             val32.nl = lo_otoh32(*(int32_t *) data);
