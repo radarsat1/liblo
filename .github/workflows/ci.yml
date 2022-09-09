@@ -1,0 +1,106 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  Linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run: sudo apt-get install g++-8 autoconf-archive curl zlib1g-dev
+    - name: autogen
+      run:
+        pwd
+        && mkdir $PWD/inst
+        && env NOCONFIGURE=1 am_opt=--copy ./autogen.sh
+        && (./configure --enable-static --prefix=$PWD/inst || (cat config.log; false))
+    - name: make
+      run: make && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
+    - name: make test
+      run: make test
+    - name: make dist
+      run: make dist
+    - uses: actions/upload-artifact@v3
+      with:
+        path: |
+          liblo*.tar.gz
+
+  MacOS-Latest:
+    runs-on: macOS-latest
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run: brew install autoconf-archive automake
+    - name: liblo autogen arm64
+      run:
+        pwd
+        && mkdir $PWD/inst
+        && (./autogen.sh CFLAGS="-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk --target=arm64-apple-darwin"  CXXFLAGS="-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk --target=arm64-apple-darwin" LDFLAGS="-Wc,--target=arm64-apple-darwin" --host=aarch64-apple-darwin --enable-static --prefix=$PWD/inst || (cat config.log; false))
+    - name: liblo make arm64 part 1
+      continue-on-error: false
+      run:
+        make install
+    - name: liblo make arm64 part 2
+      run:
+        cd ./src/.libs
+        && clang -dynamiclib -Wl,-undefined -Wl,dynamic_lookup -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk --target=arm64-apple-darwin -o liblo.7.dylib liblo_la-pattern_match.o liblo_la-blob.o liblo_la-timetag.o liblo_la-address.o liblo_la-version.o liblo_la-bundle.o liblo_la-method.o liblo_la-message.o liblo_la-send.o liblo_la-server.o liblo_la-server_thread.o -lz -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -install_name /Users/runner/work/liblo/liblo/inst/lib/liblo.7.dylib -compatibility_version 12 -current_version 12.1 -Wl,-single_module
+        && cd ../..
+        && mv ./src/.libs/liblo.7.dylib ./inst/lib/liblo.7.dylib.arm64
+        && file ./inst/lib/liblo.7.dylib.arm64
+        && mv ./inst/lib/liblo.a ./inst/lib/liblo.a.arm64
+        && lipo -info ./inst/lib/liblo.a.arm64
+    - name: liblo autogen x86_64
+      run:
+        make clean
+        && (./autogen.sh --enable-static --prefix=$PWD/inst || (cat config.log; false))
+    - name: liblo make x86_64
+      run:
+        make
+        && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false))
+        && make install
+        && mv ./inst/lib/liblo.7.dylib ./inst/lib/liblo.7.dylib.x86_64
+        && file ./inst/lib/liblo.7.dylib.x86_64
+        && mv ./inst/lib/liblo.a ./inst/lib/liblo.a.x86_64
+        && lipo -info ./inst/lib/liblo.a.x86_64
+    - name: liblo universal binary
+      run:
+        pwd
+        && find inst
+        && cd ./inst/lib
+        && lipo -create -output ./liblo.a ./liblo.a.arm64 ./liblo.a.x86_64
+        && lipo -info ./liblo.a
+        && rm ./liblo.a.*
+        && file ./liblo.7.dylib.arm64
+        && file ./liblo.7.dylib.x86_64
+        && lipo -create -output ./liblo.7.dylib ./liblo.7.dylib.arm64 ./liblo.7.dylib.x86_64
+        && file ./liblo.7.dylib
+        && rm ./liblo.7.dylib.*
+        && cd ../..
+    - name: make test
+      run: make test
+    - uses: actions/upload-artifact@v3
+      with:
+        path: ./inst/lib/liblo.7.dylib
+
+  MacOS-10:
+    runs-on: macOS-10.15
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run: brew install autoconf-archive automake
+    - name: autogen
+      run: pwd && mkdir $PWD/inst && (./autogen.sh --enable-static --prefix=$PWD/inst || (cat config.log; false))
+    - name: make
+      run: make && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
+    - name: make test
+      run: make test
