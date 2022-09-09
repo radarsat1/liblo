@@ -232,7 +232,9 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	target_link_libraries(${LIBRARY_SHARED} PRIVATE "wsock32" "ws2_32" "iphlpapi")
-	target_link_libraries(${LIBRARY_STATIC} PRIVATE "wsock32" "ws2_32" "iphlpapi")
+  if (WITH_STATIC)
+	  target_link_libraries(${LIBRARY_STATIC} PRIVATE "wsock32" "ws2_32" "iphlpapi")
+  endif()
 	target_link_libraries(${NONBLOCKING_SERVER_EXAMPLE} PRIVATE "wsock32")
 	target_link_libraries(${TESTLO} PRIVATE "wsock32")
 
@@ -401,10 +403,12 @@ set_property(TARGET ${LIBRARY_SHARED} PROPERTY
     INTERFACE_${LIBRARY_SHARED}_MAJOR_VERSION ${CURRENT_MINUS_AGE})
 set_property(TARGET ${LIBRARY_SHARED} APPEND PROPERTY
     COMPATIBLE_INTERFACE_STRING ${LIBRARY_SHARED}_MAJOR_VERSION)
-set_property(TARGET ${LIBRARY_STATIC} PROPERTY
+if (WITH_STATIC)
+  set_property(TARGET ${LIBRARY_STATIC} PROPERTY
     INTERFACE_${LIBRARY_STATIC}_MAJOR_VERSION ${CURRENT_MINUS_AGE})
-set_property(TARGET ${LIBRARY_STATIC} APPEND PROPERTY
+  set_property(TARGET ${LIBRARY_STATIC} APPEND PROPERTY
     COMPATIBLE_INTERFACE_STRING ${LIBRARY_STATIC}_MAJOR_VERSION)
+endif()
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}ConfigVersion.cmake"
     VERSION "${LO_VERSION}"
