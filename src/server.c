@@ -1359,7 +1359,6 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
                 sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
 
                 i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
-                init_context(&s->contexts[i]);
 
                 /* after adding a new socket, call select()/poll()
                  * again, since we are supposed to block until a
@@ -1395,7 +1394,7 @@ int lo_server_wait(lo_server s, int timeout)
 
 int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 {
-    int i, j, sched_timeout;
+    int i, j, k, sched_timeout;
 
     if (!status)
         status = alloca(sizeof(int) * num_servers);
@@ -1419,19 +1418,23 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 
   again:
     num_sockets = 0;
-    for (j = 0; j < num_servers; j++) {
+    for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             if (lo_server_buffer_contains_msg(s[j], i)) {
                 status[j] = 1;
+		++k;
             }
             ++num_sockets;
         }
     }
 
+    // Return immediately if one or more servers already have messages waiting.
+    if (k > 0)
+      return k;
+
     struct pollfd *sockets = alloca(sizeof(struct pollfd) * num_sockets);
 
     sched_timeout = timeout;
-    int k;
     for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             sockets[k].fd = s[j]->sockets[i].fd;
@@ -1460,8 +1463,6 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
                 i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
                 if (i < 0)
                     closesocket(sock);
-
-                init_context(&s[j]->contexts[i]);
 
                 lo_timetag_now(&now);
 
@@ -1546,8 +1547,6 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
                     i = lo_server_add_socket(s[j], sock, 0, &addr, addr_len);
                     if (i < 0)
                         closesocket(sock);
-
-                    init_context(&s[j]->contexts[i]);
 
                     lo_timetag_now(&now);
 
@@ -1763,13 +1762,14 @@ int lo_server_add_socket(lo_server s, int socket, lo_address a,
         if (!sc)
             return -1;
         s->contexts = (struct socket_context *) sc;
-        memset((char*)sc + s->sockets_alloc*sizeof(*s->contexts),
-               0, s->sockets_alloc*sizeof(*s->contexts));
 
         s->sockets_alloc *= 2;
     }
 
+    /* Initialize new socket and context */
     s->sockets[s->sockets_len].fd = socket;
+    init_context(&s->contexts[s->sockets_len]);
+
     s->sockets_len++;
 
     /* Update socket-indexed array of sources */

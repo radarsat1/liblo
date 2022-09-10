@@ -154,6 +154,8 @@ void test_bundle(lo_server_thread st, lo_address a);
 void test_nonblock();
 void test_unix_sockets();
 void test_tcp();
+void test_tcp_slip1();
+void test_tcp_slip2();
 void test_tcp_nonblock();
 void cleanup(lo_server_thread st, lo_address a);
 
@@ -182,11 +184,13 @@ int main()
     test_pattern(a);
     test_subtest(st);
     test_bundle(st, a);
+    test_tcp_nonblock();
+    cleanup(st, a);
     test_nonblock();
     test_unix_sockets();
     test_tcp();
-    test_tcp_nonblock();
-    cleanup(st, a);
+    test_tcp_slip1();
+    test_tcp_slip2();
 #else
 	done = 1;
 #endif
@@ -1718,6 +1722,8 @@ void test_tcp()
     DOING("test_tcp");
     
     ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", foo_handler, ts);
+    lo_server_add_method(ts, "/reply", "s", reply_handler, NULL);
     addr = lo_server_get_url(ts);
     ta = lo_address_new_from_url(addr);
     if (lo_address_errno(ta)) {
@@ -1728,7 +1734,74 @@ void test_tcp()
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_server_recv(ts) == 16);
+    TEST(lo_server_recv_noblock(ts, 5000) == 16);
+    TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 5.0f, 6) == 24);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
+    TEST(lo_server_recv_noblock(ts, 5000) == 20); // reply
+    free(addr);
+    lo_server_free(ts);
+    lo_address_free(ta);
+}
+
+void test_tcp_slip1()
+{
+    /* TCP tests */
+    lo_address ta;
+    lo_server ts;
+    char *addr;
+
+    DOING("test_tcp_slip1");
+
+    ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", foo_handler, ts);
+    lo_server_add_method(ts, "/reply", "s", reply_handler, NULL);
+    addr = lo_server_get_url(ts);
+    ta = lo_address_new_from_url(addr);
+    lo_address_set_stream_slip(ta, LO_SLIP_SINGLE);
+    if (lo_address_errno(ta)) {
+        printf("err: %s\n", lo_address_errstr(ta));
+        exit(1);
+    }
+    TEST(lo_server_get_protocol(ts) == LO_TCP);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 17);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 17);
     TEST(lo_server_recv(ts) == 16);
+    TEST(lo_server_recv_noblock(ts, 5000) == 16);
+    TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 7.0f, 8) == 25);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
+    TEST(lo_server_recv_noblock(ts, 5000) == 20); // reply
+    free(addr);
+    lo_server_free(ts);
+    lo_address_free(ta);
+}
+
+void test_tcp_slip2()
+{
+    /* TCP tests */
+    lo_address ta;
+    lo_server ts;
+    char *addr;
+
+    DOING("test_tcp_slip2");
+
+    ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", foo_handler, ts);
+    lo_server_add_method(ts, "/reply", "s", reply_handler, NULL);
+    addr = lo_server_get_url(ts);
+    ta = lo_address_new_from_url(addr);
+    lo_address_set_stream_slip(ta, LO_SLIP_DOUBLE);
+    if (lo_address_errno(ta)) {
+        printf("err: %s\n", lo_address_errstr(ta));
+        exit(1);
+    }
+    TEST(lo_server_get_protocol(ts) == LO_TCP);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 18);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 18);
+    TEST(lo_server_recv(ts) == 16);
+    TEST(lo_server_recv(ts) == 16);
+    TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 9.0f, 10) == 26);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
+    TEST(lo_server_recv_noblock(ts, 5000) == 20); // reply
     free(addr);
     lo_server_free(ts);
     lo_address_free(ta);
