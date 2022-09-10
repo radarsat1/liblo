@@ -282,7 +282,7 @@ static void* thread_func(void *data)
     }
 
     while (st->active) {
-        lo_server_recv_noblock(st->s, 10);
+        lo_server_recv_noblock(st->s, 100);
     }
     st->done = 1;
 
