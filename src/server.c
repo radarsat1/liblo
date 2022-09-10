@@ -1394,7 +1394,7 @@ int lo_server_wait(lo_server s, int timeout)
 
 int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 {
-    int i, j, sched_timeout;
+    int i, j, k, sched_timeout;
 
     if (!status)
         status = alloca(sizeof(int) * num_servers);
@@ -1418,19 +1418,23 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 
   again:
     num_sockets = 0;
-    for (j = 0; j < num_servers; j++) {
+    for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             if (lo_server_buffer_contains_msg(s[j], i)) {
                 status[j] = 1;
+		++k;
             }
             ++num_sockets;
         }
     }
 
+    // Return immediately if one or more servers already have messages waiting.
+    if (k > 0)
+      return k;
+
     struct pollfd *sockets = alloca(sizeof(struct pollfd) * num_sockets);
 
     sched_timeout = timeout;
-    int k;
     for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             sockets[k].fd = s[j]->sockets[i].fd;
