@@ -543,6 +543,7 @@ void lo_address_copy(lo_address to, lo_address from)
         to->port = strdup(from->port);
     }
     to->protocol = from->protocol;
+    to->flags = from->flags;
     to->ttl = from->ttl;
     to->addr = from->addr;
     if (from->addr.iface)
