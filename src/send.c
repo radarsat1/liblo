@@ -459,12 +459,14 @@ static int send_data(lo_address a, lo_server from, char *data,
             ret = create_socket(a);
             if (ret)
                 return (int) ret;
+        }
 
-            // If we are sending TCP, we may later receive on sending
-            // socket, so add it to the from server's socket list.
-            if (from && a->protocol == LO_TCP
-                && (a->socket >= from->sources_len
-                    || from->sources[a->socket].host == NULL))
+        // If we are sending TCP, we may later receive on sending
+        // socket, so add it to the from server's socket list.
+        if (from && a->protocol == LO_TCP)
+        {
+            if (a->socket >= from->sources_len
+                || from->sources[a->socket].host == NULL)
             {
                 lo_server_add_socket(from, a->socket, a, 0, 0);
 
