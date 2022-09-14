@@ -28,7 +28,13 @@
 #include <errno.h>
 #include <config.h>
 #include <limits.h>
-#include <unistd.h>
+#ifdef _MSC_VER
+  #if (__STDC_VERSION__ < 201112L)
+    #define strtok_r strtok_s
+  #endif
+#else
+  #include <unistd.h>
+#endif
 #include <lo/lo.h>
 
 static FILE* input_file = 0;
@@ -354,7 +360,11 @@ int send_file(lo_address target, double speed) {
             lo_timetag_now(&tt_now);
             double wait_time = timetag_diff(*tt_last, tt_now);
             if (wait_time > 0.) {
-                usleep(wait_time * 1000000);
+#if defined(WIN32) || defined(_MSC_VER)
+                Sleep((DWORD)(wait_time * 1000));
+#else
+                usleep((useconds_t)(wait_time * 1000000));
+#endif
             }
             if (b) {
                 ret = lo_send_bundle(target, b);
@@ -376,7 +386,11 @@ int send_file(lo_address target, double speed) {
         lo_timetag_now(&tt_now);
         double wait_time = timetag_diff(*tt_last, tt_now);
         if (wait_time > 0.) {
-            usleep(wait_time * 1000000);
+#if defined(WIN32) || defined(_MSC_VER)
+            Sleep((DWORD)(wait_time * 1000));
+#else
+            usleep((useconds_t)(wait_time * 1000000));
+#endif
         }
         lo_send_bundle(target, b);
     }
