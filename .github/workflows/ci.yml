@@ -111,10 +111,15 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Run windows build script
+    - name: Build
       shell: pwsh
       run: |
         mkdir bld
         cd bld\
         cmake ..\cmake
         cmake --build . --target all_build --config Release
+    - name: Test
+      shell: pwsh
+      run: |
+        cd bld\tests\Release
+        .\testlo.exe
