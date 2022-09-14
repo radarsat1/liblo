@@ -116,7 +116,7 @@ jobs:
       run: |
         mkdir bld
         cd bld\
-        cmake ..\cmake
+        cmake ..\cmake -DCMAKE_BUILD_TYPE=Release
         cmake --build . --target all_build --config Release
     - name: Test
       shell: pwsh
