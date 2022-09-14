@@ -121,5 +121,6 @@ jobs:
     - name: Test
       shell: pwsh
       run: |
+        tree
         cd bld\tests\Release
         .\testlo.exe
