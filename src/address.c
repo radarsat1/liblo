@@ -190,10 +190,12 @@ static void lo_address_resolve_source(lo_address a)
 
         a->host = strdup(hostname);
         a->port = strdup(portname);
+#if !defined(WIN32) && !defined(_MSC_VER)
     } else if (a->protocol== LO_UNIX) {
         struct sockaddr_un * addr = (struct sockaddr_un *) &s->addr;
         a->host = strdup("");
         a->port = strdup(addr->sun_path);
+#endif
     } else {
         a->host = strdup("");
         a->port = strdup("");
