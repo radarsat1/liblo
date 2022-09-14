@@ -116,13 +116,13 @@ jobs:
       run: |
         mkdir bld
         cd bld\
-        cmake ..\cmake -DCMAKE_BUILD_TYPE=Release
-        cmake --build . --target all_build --config Release
+        cmake ..\cmake -DCMAKE_BUILD_TYPE=Debug
+        cmake --build . --target all_build --config Debug
     - name: Test
       shell: pwsh
       run: |
-        dir bld\tests\Release
-        dir bld\x64\Release\ALL_BUILD
-        cd bld\tests\Release
+        dir bld\tests\Debug
+        dir bld\x64\Debug\ALL_BUILD
+        cd bld\tests\Debug
         dir
         .\testlo.exe
