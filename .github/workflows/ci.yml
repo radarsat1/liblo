@@ -104,3 +104,17 @@ jobs:
       run: make && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
     - name: make test
       run: make test
+
+  Windows-Latest:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Run windows build script
+      shell: pwsh
+      run: |
+        mkdir bld
+        cd bld\
+        cmake ..\cmake
+        cmake --build . --target all_build --config Release
