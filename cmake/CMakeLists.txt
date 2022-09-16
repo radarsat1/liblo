@@ -423,8 +423,8 @@ install(FILES
 # install pkgconfig file
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
-set(libdir "\${exec_prefix}/lib")
-set(includedir "\${prefix}/include")
+set(libdir ${CMAKE_INSTALL_FULL_LIBDIR})
+set(includedir ${CMAKE_INSTALL_FULL_INCLUDEDIR})
 set(LIBPTHREAD ${CMAKE_THREAD_LIBS_INIT})
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../${PROJECT}.pc.in
@@ -434,15 +434,15 @@ add_definitions(-DHAVE_CONFIG_H)
 
 install(
     TARGETS ${LIBRARY_STATIC} ${LIBRARY_SHARED} ${OSCDUMP} ${OSCSEND} ${OSCSENDFILE}
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin)
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(
     FILES ${LIBRARY_HEADERS}
     DESTINATION include/lo)
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}Config.cmake
-    DESTINATION lib/cmake/${PROJECT})
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT})
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT}.pc
-    DESTINATION lib/pkgconfig)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
