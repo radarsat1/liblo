@@ -1309,8 +1309,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     poll(s->sockets, s->sockets_len, -1);
 
     for (i = s->sockets_len - 1; i >= 0 && !data; --i) {
-        if (s->sockets[i].revents == POLLERR
-            || s->sockets[i].revents == POLLHUP) {
+        if (s->sockets[i].revents & (POLLERR | POLLHUP)) {
             if (i > 0) {
                 closesocket(s->sockets[i].fd);
                 lo_server_del_socket(s, i, s->sockets[i].fd);
@@ -1422,7 +1421,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
         for (i = 0; i < s[j]->sockets_len; i++) {
             if (lo_server_buffer_contains_msg(s[j], i)) {
                 status[j] = 1;
-		++k;
+                ++k;
             }
             ++num_sockets;
         }
@@ -1454,28 +1453,33 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
     // If poll() was reporting a new connection on the listening
     // socket rather than a ready message, accept it and check again.
     for (j = 0, k = 0; j < num_servers; j++) {
-        if (sockets[k].revents && sockets[k].revents != POLLERR
-            && sockets[k].revents != POLLHUP) {
-            if (s[j]->protocol == LO_TCP) {
-                int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
-                                  &addr_len);
-
-                i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
-                if (i < 0)
-                    closesocket(sock);
-
-                lo_timetag_now(&now);
-
-                double diff = lo_timetag_diff(now, then);
-
-                timeout -= (int)(diff*1000);
-                if (timeout < 0)
-                    timeout = 0;
-
-                goto again;
+        if (sockets[k].revents) {
+            if (sockets[k].revents & POLLHUP) {
+                close(sockets[k].fd);
+                sockets[k].fd = -1;
             }
-            else {
-                status[j] = 1;
+            else if (!(sockets[k].revents & POLLERR)) {
+                if (s[j]->protocol == LO_TCP) {
+                    int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
+                                      &addr_len);
+
+                    i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
+                    if (i < 0)
+                        closesocket(sock);
+
+                    lo_timetag_now(&now);
+
+                    double diff = lo_timetag_diff(now, then);
+
+                    timeout -= (int)(diff*1000);
+                    if (timeout < 0)
+                        timeout = 0;
+
+                    goto again;
+                }
+                else {
+                    status[j] = 1;
+                }
             }
         }
         k += s[j]->sockets_len;
@@ -1483,9 +1487,15 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 
     for (j = 0, k = 1; j < num_servers; j++, k++) {
         for (i = 1; i < s[j]->sockets_len; i++, k++) {
-            if (sockets[k].revents && sockets[k].revents != POLLERR
-                && sockets[k].revents != POLLHUP)
+            if (!sockets[k].revents)
+                continue;
+            if (POLLHUP & sockets[k].revents) {
+                close(sockets[k].fd);
+                sockets[k].fd = -1;
+            }
+            else if (!(sockets[k].revents & POLLERR)) {
                 status[j] = 1;
+            }
         }
     }
 
@@ -1657,8 +1667,7 @@ int lo_server_recv(lo_server s)
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
 
         for (i = 0; i < s->sockets_len; i++) {
-            if (s->sockets[i].revents == POLLERR
-                || s->sockets[i].revents == POLLHUP)
+            if (s->sockets[i].revents & (POLLERR | POLLHUP))
                 return 0;
 
             if (s->sockets[i].revents)
