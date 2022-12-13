@@ -1454,11 +1454,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
     // socket rather than a ready message, accept it and check again.
     for (j = 0, k = 0; j < num_servers; j++) {
         if (sockets[k].revents) {
-            if (sockets[k].revents & POLLHUP) {
-                close(sockets[k].fd);
-                sockets[k].fd = -1;
-            }
-            else if (!(sockets[k].revents & POLLERR)) {
+            if (sockets[k].revents & (POLLIN | POLLPRI)) {
                 if (s[j]->protocol == LO_TCP) {
                     int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
                                       &addr_len);
@@ -1485,17 +1481,16 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
         k += s[j]->sockets_len;
     }
 
-    for (j = 0, k = 1; j < num_servers; j++, k++) {
-        for (i = 1; i < s[j]->sockets_len; i++, k++) {
+    for (j = num_servers - 1, k = num_sockets - 1; j >= 0; j--, k--) {
+        for (i = s[j]->sockets_len - 1; i > 0; i--, k--) {
             if (!sockets[k].revents)
                 continue;
-            if (POLLHUP & sockets[k].revents) {
-                close(sockets[k].fd);
-                sockets[k].fd = -1;
+            if (sockets[k].revents & (POLLERR | POLLHUP)) {
+                closesocket(sockets[k].fd);
+                lo_server_del_socket(s[j], i, sockets[k].fd);
             }
-            else if (!(sockets[k].revents & POLLERR)) {
+            else
                 status[j] = 1;
-            }
         }
     }
 
@@ -1667,11 +1662,17 @@ int lo_server_recv(lo_server s)
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
 
         for (i = 0; i < s->sockets_len; i++) {
-            if (s->sockets[i].revents & (POLLERR | POLLHUP))
-                return 0;
-
-            if (s->sockets[i].revents)
-                break;
+            if (!s->sockets[i].revents)
+                continue;
+            if (s->sockets[i].revents & (POLLERR | POLLHUP)) {
+                if (i > 0) {
+                    closesocket(s->sockets[i].fd);
+                    lo_server_del_socket(s, i, s->sockets[i].fd);
+                    continue;
+                } else
+                    return 0;
+            }
+            break;
         }
 
         if (i >= s->sockets_len) {

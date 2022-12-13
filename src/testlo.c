@@ -825,6 +825,7 @@ void *test_tcp_thread(void *context)
         return (void*)1;
 #endif
     }
+    lo_server_max_msg_size(s, 1024);
 
     lo_server_add_method(s, "/test", "is", test_handler, 0);
     lo_server_add_method(s, "/ok", "", ok_handler, 0);
@@ -834,7 +835,6 @@ void *test_tcp_thread(void *context)
         recv_times += 1;
         if (!lo_server_recv_noblock(s, 0))
             SLEEP_MS(300);
-        lo_server_max_msg_size(s, 1024);
     }
 
     printf("Freeing.\n");
@@ -931,6 +931,8 @@ void test_tcp_halfsend(int stream_type)
         rc = send(sock, msg+33, msglen-33, 0);
         if (rc != (msglen-33)) printf("Error sending3, rc = %d\n", rc);
         else printf("Sent3.\n");
+
+        SLEEP_MS(1000);
     }
 
     closesocket(sock);
