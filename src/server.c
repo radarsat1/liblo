@@ -1819,8 +1819,10 @@ void lo_server_del_socket(lo_server s, int index, int socket)
     lo_address_free_mem(&s->sources[s->sockets[index].fd]);
     cleanup_context(&s->contexts[index]);
 
-    for (i = index + 1; i < s->sockets_len; i++)
+    for (i = index + 1; i < s->sockets_len; i++) {
         s->sockets[i - 1] = s->sockets[i];
+        s->contexts[i - 1] = s->contexts[i];
+    }
     s->sockets_len--;
 }
 
