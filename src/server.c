@@ -1309,8 +1309,7 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     poll(s->sockets, s->sockets_len, -1);
 
     for (i = s->sockets_len - 1; i >= 0 && !data; --i) {
-        if (s->sockets[i].revents == POLLERR
-            || s->sockets[i].revents == POLLHUP) {
+        if (s->sockets[i].revents & (POLLERR | POLLHUP)) {
             if (i > 0) {
                 closesocket(s->sockets[i].fd);
                 lo_server_del_socket(s, i, s->sockets[i].fd);
@@ -1422,7 +1421,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
         for (i = 0; i < s[j]->sockets_len; i++) {
             if (lo_server_buffer_contains_msg(s[j], i)) {
                 status[j] = 1;
-		++k;
+                ++k;
             }
             ++num_sockets;
         }
@@ -1454,37 +1453,43 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
     // If poll() was reporting a new connection on the listening
     // socket rather than a ready message, accept it and check again.
     for (j = 0, k = 0; j < num_servers; j++) {
-        if (sockets[k].revents && sockets[k].revents != POLLERR
-            && sockets[k].revents != POLLHUP) {
-            if (s[j]->protocol == LO_TCP) {
-                int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
-                                  &addr_len);
+        if (sockets[k].revents) {
+            if (sockets[k].revents & (POLLIN | POLLPRI)) {
+                if (s[j]->protocol == LO_TCP) {
+                    int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
+                                      &addr_len);
 
-                i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
-                if (i < 0)
-                    closesocket(sock);
+                    i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
+                    if (i < 0)
+                        closesocket(sock);
 
-                lo_timetag_now(&now);
+                    lo_timetag_now(&now);
 
-                double diff = lo_timetag_diff(now, then);
+                    double diff = lo_timetag_diff(now, then);
 
-                timeout -= (int)(diff*1000);
-                if (timeout < 0)
-                    timeout = 0;
+                    timeout -= (int)(diff*1000);
+                    if (timeout < 0)
+                        timeout = 0;
 
-                goto again;
-            }
-            else {
-                status[j] = 1;
+                    goto again;
+                }
+                else {
+                    status[j] = 1;
+                }
             }
         }
         k += s[j]->sockets_len;
     }
 
-    for (j = 0, k = 1; j < num_servers; j++, k++) {
-        for (i = 1; i < s[j]->sockets_len; i++, k++) {
-            if (sockets[k].revents && sockets[k].revents != POLLERR
-                && sockets[k].revents != POLLHUP)
+    for (j = num_servers - 1, k = num_sockets - 1; j >= 0; j--, k--) {
+        for (i = s[j]->sockets_len - 1; i > 0; i--, k--) {
+            if (!sockets[k].revents)
+                continue;
+            if (sockets[k].revents & (POLLERR | POLLHUP)) {
+                closesocket(sockets[k].fd);
+                lo_server_del_socket(s[j], i, sockets[k].fd);
+            }
+            else
                 status[j] = 1;
         }
     }
@@ -1657,12 +1662,17 @@ int lo_server_recv(lo_server s)
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
 
         for (i = 0; i < s->sockets_len; i++) {
-            if (s->sockets[i].revents == POLLERR
-                || s->sockets[i].revents == POLLHUP)
-                return 0;
-
-            if (s->sockets[i].revents)
-                break;
+            if (!s->sockets[i].revents)
+                continue;
+            if (s->sockets[i].revents & (POLLERR | POLLHUP)) {
+                if (i > 0) {
+                    closesocket(s->sockets[i].fd);
+                    lo_server_del_socket(s, i, s->sockets[i].fd);
+                    continue;
+                } else
+                    return 0;
+            }
+            break;
         }
 
         if (i >= s->sockets_len) {
@@ -1809,8 +1819,10 @@ void lo_server_del_socket(lo_server s, int index, int socket)
     lo_address_free_mem(&s->sources[s->sockets[index].fd]);
     cleanup_context(&s->contexts[index]);
 
-    for (i = index + 1; i < s->sockets_len; i++)
+    for (i = index + 1; i < s->sockets_len; i++) {
         s->sockets[i - 1] = s->sockets[i];
+        s->contexts[i - 1] = s->contexts[i];
+    }
     s->sockets_len--;
 }
 

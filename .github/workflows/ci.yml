@@ -10,7 +10,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: install dependencies
-      run: sudo apt-get install g++-8 autoconf-archive curl zlib1g-dev
+      run: sudo apt-get install g++-9 autoconf-archive curl zlib1g-dev
     - name: autogen
       run:
         pwd
