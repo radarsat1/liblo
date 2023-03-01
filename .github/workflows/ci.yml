@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   Linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v3
       with:
@@ -30,6 +31,7 @@ jobs:
 
   MacOS-Latest:
     runs-on: macOS-latest
+    timeout-minutes: 20
     env:
       CC: clang
       CXX: clang++
@@ -92,6 +94,7 @@ jobs:
 
   Windows-Latest:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v3
       with:
