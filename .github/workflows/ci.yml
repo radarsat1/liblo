@@ -5,8 +5,9 @@ on: [push, pull_request]
 jobs:
   Linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: install dependencies
@@ -30,11 +31,12 @@ jobs:
 
   MacOS-Latest:
     runs-on: macOS-latest
+    timeout-minutes: 20
     env:
       CC: clang
       CXX: clang++
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: install dependencies
@@ -90,25 +92,11 @@ jobs:
       with:
         path: ./inst/lib/liblo.7.dylib
 
-  MacOS-10:
-    runs-on: macOS-10.15
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: install dependencies
-      run: brew install autoconf-archive automake
-    - name: autogen
-      run: pwd && mkdir $PWD/inst && (./autogen.sh --enable-static --prefix=$PWD/inst || (cat config.log; false))
-    - name: make
-      run: make && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
-    - name: make test
-      run: make test
-
   Windows-Latest:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: Run windows build script
