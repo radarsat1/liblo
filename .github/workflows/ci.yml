@@ -19,7 +19,7 @@ jobs:
         && env NOCONFIGURE=1 am_opt=--copy ./autogen.sh
         && (./configure --enable-static --prefix=$PWD/inst || (cat config.log; false))
     - name: make
-      run: make && sed -i src/Makefile -e 's/if \($(TESTS_ENVIRONMENT)\) \($${dir}$$tst\)/if echo \2 && \1 \2/' && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
+      run: make && (cd src && ls testlo && ./testlo && ls test_bidirectional_tcp && ./test_bidirectional_tcp && ls cpp_test && ./cpp_test) && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
     - name: make test
       run: make test
     - name: make dist
