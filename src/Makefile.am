@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = serial-tests
+
 SUBDIRS = .
 if COMPILE_TOOLS
 SUBDIRS += tools
