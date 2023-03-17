@@ -19,7 +19,7 @@ jobs:
         && env NOCONFIGURE=1 am_opt=--copy ./autogen.sh
         && (./configure --enable-static --prefix=$PWD/inst || (cat config.log; false))
     - name: make
-      run: make && (cd src && ls testlo && ./testlo && ls test_bidirectional_tcp && ./test_bidirectional_tcp && ls cpp_test && ./cpp_test) && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
+      run: make && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
     - name: make test
       run: make test
     - name: make dist
@@ -66,6 +66,7 @@ jobs:
     - name: liblo make x86_64
       run:
         make
+        && (cd src && ls testlo && ./testlo && ls test_bidirectional_tcp && ./test_bidirectional_tcp && ls cpp_test && ./cpp_test)
         && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false))
         && make install
         && mv ./inst/lib/liblo.7.dylib ./inst/lib/liblo.7.dylib.x86_64
