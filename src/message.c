@@ -1008,7 +1008,7 @@ void lo_message_pp(lo_message m)
     if (d != end) {
         fprintf(stderr,
                 "liblo warning: type and data do not match (off by %ld) in message %p\n",
-                labs((char*) d - (char*) end), m);
+                llabs((char*) d - (char*) end), m);
     }
 }
 
