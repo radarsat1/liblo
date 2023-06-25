@@ -2289,7 +2289,6 @@ int lo_server_del_lo_method(lo_server s, lo_method m)
             free((void *) it->path);
             free((void *) it->typespec);
             free(it);
-            it = prev;
             return 0;
         }
         prev = it;
