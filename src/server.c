@@ -1331,9 +1331,10 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
     FD_ZERO(&ps);
     for (i = (s->sockets_len - 1); i >= 0; --i) {
         FD_SET(s->sockets[i].fd, &ps);
+#ifndef WIN32
         if (s->sockets[i].fd > nfds)
             nfds = s->sockets[i].fd;
-
+#endif
         if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
             *psock = s->sockets[i].fd;
             return data;
@@ -1524,9 +1525,10 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
     for (j = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             FD_SET(s[j]->sockets[i].fd, &ps);
+#ifndef WIN32
             if (s[j]->sockets[i].fd > nfds)
                 nfds = s[j]->sockets[i].fd;
-
+#endif
             if (lo_server_buffer_contains_msg(s[j], i)) {
                 status[j] = 1;
             }
@@ -1693,9 +1695,10 @@ int lo_server_recv(lo_server s)
         FD_ZERO(&ps);
         for (i = 0; i < s->sockets_len; i++) {
             FD_SET(s->sockets[i].fd, &ps);
+#ifndef WIN32
             if (s->sockets[i].fd > nfds)
                 nfds = s->sockets[i].fd;
-
+#endif
             if (s->protocol == LO_TCP
                 && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
             {
