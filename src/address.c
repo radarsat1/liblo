@@ -684,12 +684,12 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
             if (strcmp(iface, aa->AdapterName)==0)
                 found = 1;
             else {
-				WCHAR ifaceW[256];
-				MultiByteToWideChar(CP_ACP, 0, iface, strlen(iface),
-									ifaceW, 256);
-				if (lstrcmpW(ifaceW, aa->FriendlyName)==0)
-					found = 1;
-			}
+                WCHAR ifaceW[256];
+                MultiByteToWideChar(CP_ACP, 0, iface, -1,
+                                    ifaceW, 256);
+                if (lstrcmpW(ifaceW, aa->FriendlyName)==0)
+                    found = 1;
+            }
         }
         if (ip) {
             PIP_ADAPTER_UNICAST_ADDRESS pua = aa->FirstUnicastAddress;
