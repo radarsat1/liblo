@@ -30,7 +30,7 @@
 typedef SSIZE_T ssize_t;
 #endif
 
-#ifndef UINT_PTR
+#if !defined(UINT_PTR) && !defined(WIN32)
   #ifdef HAVE_UINTPTR_T
     #include <stdint.h>
     #define UINT_PTR uintptr_t
