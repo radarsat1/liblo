@@ -681,7 +681,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
              0)) {
             err = geterror();
 #ifdef WIN32
-            if (err == EINVAL || err == WSAEADDRINUSE) {
+            if (err == WSAEINVAL || err == WSAEADDRINUSE) {
 #else
             if (err == EINVAL || err == EADDRINUSE) {
 #endif
