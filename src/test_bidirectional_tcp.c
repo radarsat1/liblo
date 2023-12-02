@@ -1,5 +1,8 @@
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #include <process.h>
+#include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -21,17 +24,17 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
     lo_address a = lo_message_get_source(data);
     int prot = lo_address_get_protocol(a);
 
-    printf("%p.%s, from %s:%s:%s\n", s, path,
+    fprintf(stderr, "%p.%s, from %s:%s:%s\n", s, path,
            (prot==LO_UDP) ? "UDP"
            : (prot==LO_TCP) ? "TCP"
            : (prot==LO_UNIX) ? "UNIX" : "?",
            lo_address_get_hostname(a),
            lo_address_get_port(a));
 
-    printf("%p.address fd: %d\n", s, ((int*)a)[1]);
+    fprintf(stderr, "%p.address fd: %d\n", s, ((int*)a)[1]);
 
     lo_send_from(a, s, LO_TT_IMMEDIATE, "/reply", 0);
-    printf("%p.reply sent\n", s);
+    fprintf(stderr, "%p.reply sent\n", s);
 
     return 0;
 }
@@ -42,12 +45,12 @@ unsigned __attribute__((stdcall)) sendthread(void *arg)
 void *sendthread(void *arg)
 #endif
 {
-    printf("Start of sendthread\n");
+    fprintf(stderr, "Start of sendthread\n");
 
     lo_server s = lo_server_new_with_proto("7772", LO_TCP, 0);
     if (!s) { printf("no server2\n"); exit(1); }
 
-    printf("%p.sending thread\n", s);
+    fprintf(stderr, "%p.sending thread\n", s);
 
     lo_server_add_method(s, 0, 0, generic_handler, s);
 
@@ -55,15 +58,22 @@ void *sendthread(void *arg)
 
     lo_send_from(a, s, LO_TT_IMMEDIATE, "/test", 0);
 
-    printf("%p.message sent\n", s);
-    printf("%p.sending thread waiting\n", s);
+    fprintf(stderr, "%p.message sent\n", s);
+    fprintf(stderr, "%p.sending thread waiting\n", s);
     lo_server_recv(s);
-    printf("%p.sending thread received\n", s);
+    fprintf(stderr, "%p.sending thread received\n", s);
 
-    printf("%p.freeing address\n", s);
+    /* Do not close the socket immediatelly, wait 1 second for recv */
+#if defined(WIN32) || defined(_MSC_VER)
+    Sleep(1000);
+#else
+    sleep(1);
+#endif
+
+    fprintf(stderr, "%p.freeing address\n", s);
     lo_address_free(a);
 
-    printf("%p.freeing\n", s);
+    fprintf(stderr, "%p.freeing\n", s);
     lo_server_free(s);
 
     return 0;
@@ -71,18 +81,18 @@ void *sendthread(void *arg)
 
 int main()
 {
-    printf("Starting test_bidirectional_tcp\n");
+    fprintf(stderr, "Starting test_bidirectional_tcp\n");
 
     /* start a new server on port 7771 */
     lo_server s = lo_server_new_with_proto("7771", LO_TCP, 0);
     if (!s) { printf("no server\n"); exit(1); }
 
-    printf("Server started\n");
+    fprintf(stderr, "Server started\n");
 
     /* add method that will match any path and args */
     lo_server_add_method(s, 0, 0, generic_handler, s);
 
-    printf("%p.server fd: %d\n", s, lo_server_get_socket_fd(s));
+    fprintf(stderr, "%p.server fd: %d\n", s, lo_server_get_socket_fd(s));
 
 #ifdef HAVE_WIN32_THREADS
     HANDLE thr = (HANDLE)_beginthreadex(NULL, 0, &sendthread, s, 0, NULL);
@@ -91,13 +101,13 @@ int main()
     pthread_create(&thr, 0, sendthread, s);
 #endif
 
-    printf("%p.receiving1..\n", s);
+    fprintf(stderr, "%p.receiving1..\n", s);
     lo_server_recv(s);
-    printf("%p.done receiving1\n", s);
+    fprintf(stderr, "%p.done receiving1\n", s);
 
-    printf("%p.receiving2..\n", s);
+    fprintf(stderr, "%p.receiving2..\n", s);
     lo_server_recv(s);
-    printf("%p.done receiving2\n", s);
+    fprintf(stderr, "%p.done receiving2\n", s);
 
 #ifdef HAVE_WIN32_THREADS
     WaitForSingleObject(thr, INFINITE);
@@ -106,11 +116,11 @@ int main()
     pthread_join(thr, 0);
 #endif
 
-    printf("%p.freeing\n", s);
+    fprintf(stderr, "%p.freeing\n", s);
     lo_server_free(s);
 
     /* If it gets here without hanging we are good. */
-    printf("TEST SUCCESSFUL\n");
+    fprintf(stderr, "TEST SUCCESSFUL\n");
 
     return 0;
 }

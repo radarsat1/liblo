@@ -1287,6 +1287,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     server_url = lo_server_thread_get_url(st);
     printf("Server URL: %s\n", server_url);
     a = lo_address_new_from_url(server_url);
+    TEST(a);
     free(server_url);
 
     /* add method that will match the path /foo/bar, with two numbers, coerced
