@@ -507,7 +507,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         free(s);
         return 0;
     }
-
+puts("1");
     s->sockets[0].fd = -1;
     s->max_msg_size = LO_DEFAULT_MAX_MSG_SIZE;
 
@@ -556,7 +556,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
         return NULL;
     }
-
+puts("2");
 #ifdef ENABLE_IPV6
     /* Determine the address family based on provided IP string or
        multicast group, if available, otherwise let the operating
@@ -577,6 +577,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         service = port;
     }
     do {
+    puts("3");
         int ret;
         if (!port) {
             /* not a good way to get random numbers, but its not critical */
@@ -604,7 +605,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
             used = it;
             s->sockets[0].fd = socket(it->ai_family, hints.ai_socktype, 0);
-
+puts("4");
             if (s->sockets[0].fd != -1
                 && it->ai_family == AF_INET
                 && hints.ai_socktype == SOCK_DGRAM)
@@ -624,7 +625,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             lo_server_free(s);
             return NULL;
         }
-
+puts("5");
 #ifdef ENABLE_IPV6
     unsigned int v6only_off = 0;
     if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY,
@@ -675,7 +676,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
              }
 #endif
         }}
-
+puts("6");
         if ((used != NULL) &&
             (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
              0)) {
@@ -695,7 +696,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             return NULL;
         }
     } while (!used && tries++ < 16);
-
+puts("7");
     if (!used) {
         lo_throw(s, LO_NOPORT, "cannot find free port", NULL);
 
@@ -732,7 +733,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         lo_throw(s, LO_UNKNOWNPROTO, "unknown protocol family", NULL);
         s->port = atoi(port);
     }
-
+puts("8");
     return s;
 }
 
