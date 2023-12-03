@@ -112,4 +112,4 @@ jobs:
       shell: pwsh
       run: |
         cd bld\
-        ctest
+        ctest --rerun-failed --output-on-failure
