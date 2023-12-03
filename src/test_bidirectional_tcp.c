@@ -1,6 +1,5 @@
 #if defined(WIN32) || defined(_MSC_VER)
 #include <process.h>
-#include <windows.h>
 #else
 #include <unistd.h>
 #endif
