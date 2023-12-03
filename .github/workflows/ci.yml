@@ -110,5 +110,7 @@ jobs:
         cmake --build . --target all_build --config Release
     - name: Run tests
       run: |
-        cd bld\
+        ls -l        # List files in the current directory for debugging
+        cd bld/
+        ls -l tests/Release   # List files in the tests/Release directory for debugging
         tests/Release/testlo.exe
