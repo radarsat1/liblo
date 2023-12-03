@@ -112,4 +112,4 @@ jobs:
       shell: pwsh
       run: |
         cd bld\
-        tests/testlo
+        tests/Release/testlo.exe
