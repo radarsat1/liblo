@@ -109,7 +109,6 @@ jobs:
         cmake ..\cmake -DCMAKE_BUILD_TYPE=Release
         cmake --build . --target all_build --config Release
     - name: Run tests
-      shell: pwsh
       run: |
         cd bld\
         tests/Release/testlo.exe
