@@ -39,7 +39,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 #ifdef HAVE_WIN32_THREADS
-unsigned __attribute__((stdcall)) sendthread(void *arg)
+unsigned __stdcall sendthread(void *arg)
 #else
 void *sendthread(void *arg)
 #endif
