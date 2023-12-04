@@ -110,5 +110,5 @@ jobs:
         cmake --build . --target all_build --config Release
     - name: Run tests
       run: |
-        cd bld\
-        "$env:GITHUB_ACTION_PATH\tests\Release\testlo.exe"
+        cd bld
+        ctest --rerun-failed --output-on-failure
