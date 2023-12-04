@@ -109,6 +109,6 @@ jobs:
         cmake ..\cmake -DCMAKE_BUILD_TYPE=Release
         cmake --build . --target all_build --config Release
     - name: Run tests
-      run: >
-        cd bld/;
+      run: |
+        cd bld/
         $env:GITHUB_ACTION_PATH/tests/Release/testlo.exe
