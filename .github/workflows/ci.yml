@@ -111,7 +111,7 @@ jobs:
     - name: Run testlo
       run: >
         cd bld/;
-        $env:GITHUB_ACTION_PATH/tests/Release/testlo.exe
+        "$env:GITHUB_ACTION_PATH\tests\Release\testlo.exe"
     - name: Run tests
       run: |
         cd bld\
