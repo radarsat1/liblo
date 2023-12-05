@@ -108,7 +108,6 @@ jobs:
         cd bld\
         cmake ..\cmake -DCMAKE_BUILD_TYPE=Release
         cmake --build . --target all_build --config Release
-    - name: testlo
     - name: Run testlo
       run: >
         cd bld/;
