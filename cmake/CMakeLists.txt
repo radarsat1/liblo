@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 option(WITH_TOOLS "Enable building tools." ON)
 option(WITH_TESTS "Enable building tests." ON)
@@ -7,9 +7,9 @@ option(WITH_CPP_TESTS "Enable building C++ wrapper tests." ON)
 option(WITH_STATIC "Enable building static library." OFF)
 option(THREADING "Build with threading support." ON)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+#if(CMAKE_SYSTEM_NAME MATCHES "Windows")   
   set(WITH_STATIC 1)
-endif()
+#endif()
 
 if (WITH_STATIC)
   message(STATUS "If you are using the static library build, please keep in mind (and inform yourself of the implications) that liblo is licensed with LGPL v2.1+.")
