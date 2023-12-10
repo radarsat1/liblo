@@ -1451,7 +1451,10 @@ void test_subtest(lo_server_thread st)
 #ifdef WIN32
     {
         char cwd[2048];
-        _getcwd(cwd, 2048);
+        // Calculate path to subtest.exe
+        GetModuleFileName(NULL, cwd, MAX_PATH);
+        char *lastBackslash = strrchr(cwd, '\\');
+        *lastBackslash = 0; // Null-terminate at the last backslash to get the directory
         snprintf(cmd, 2048, "%s" PATHDELIM "subtest" EXTEXE, cwd);
     }
     printf("spawning subtest with `%s'\n", cmd);
