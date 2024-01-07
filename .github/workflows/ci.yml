@@ -66,6 +66,7 @@ jobs:
     - name: liblo make x86_64
       run:
         make
+        && (cd src && ls testlo && ./testlo && ls test_bidirectional_tcp && ./test_bidirectional_tcp && ls cpp_test && ./cpp_test)
         && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false))
         && make install
         && mv ./inst/lib/liblo.7.dylib ./inst/lib/liblo.7.dylib.x86_64
