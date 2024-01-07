@@ -44,6 +44,8 @@ unsigned __stdcall sendthread(void *arg)
 void *sendthread(void *arg)
 #endif
 {
+    fprintf(stderr, "Start of sendthread\n");
+
     lo_server s = lo_server_new_with_proto("7772", LO_TCP, 0);
     if (!s) { printf("no server2\n"); exit(1); }
 
@@ -78,9 +80,13 @@ void *sendthread(void *arg)
 
 int main()
 {
+    fprintf(stderr, "Starting test_bidirectional_tcp\n");
+
     /* start a new server on port 7771 */
     lo_server s = lo_server_new_with_proto("7771", LO_TCP, 0);
     if (!s) { printf("no server\n"); exit(1); }
+
+    fprintf(stderr, "Server started\n");
 
     /* add method that will match any path and args */
     lo_server_add_method(s, 0, 0, generic_handler, s);

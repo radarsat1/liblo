@@ -1740,7 +1740,10 @@ void test_tcp()
     TEST(lo_server_get_protocol(ts) == LO_TCP);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
-    TEST(lo_server_recv(ts) == 16);
+    int res = lo_server_recv(ts);
+    fprintf(stderr, "tcp-test: %d\n", res);
+    fprintf(stdout, "tcp-test: %d\n", res);
+    TEST(res == 16);
     TEST(lo_server_recv_noblock(ts, 5000) == 16);
     TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 5.0f, 6) == 24);
     TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
