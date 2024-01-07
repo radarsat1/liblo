@@ -79,6 +79,7 @@ if (WITH_TOOLS)
 endif()
 if (WITH_TESTS)
   set(TESTLO testlo)
+  set(TESTTCP test_bidirectional_tcp)
   set(SUBTEST subtest)
   if (WITH_CPP_TESTS)
     set(CPPTEST cpp_test)
@@ -94,7 +95,7 @@ if (WITH_EXAMPLES)
 endif()
 
 set(TOOLS ${OSCDUMP} ${OSCSEND} ${OSCSENDFILE})
-set(TESTS ${TESTLO} ${SUBTEST})
+set(TESTS ${TESTLO} ${TESTTCP} ${SUBTEST})
 list(APPEND TESTS ${CPPTEST})
 set(EXAMPLES ${EXAMPLE_CLIENT} ${EXAMPLE_SERVER}
   ${EXAMPLE_TCP_ECHO_SERVER} ${NONBLOCKING_SERVER_EXAMPLE})
@@ -130,6 +131,7 @@ set(OSCDUMP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscdump.c)
 set(OSCSEND_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscsend.c)
 set(OSCSENDFILE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/tools/oscsendfile.c)
 set(TESTLO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/testlo.c)
+set(TESTTCP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/test_bidirectional_tcp.c)
 set(SUBTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/subtest.c)
 if (WITH_CPP_TESTS)
     set(CPPTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../src/cpp_test.cpp)
@@ -174,7 +176,7 @@ set(BUILD_LANGUAGE C CACHE STRING "Build language (C or CXX)")
 mark_as_advanced(BUILD_LANGUAGE)
 set_source_files_properties(
     ${LIBRARY_SOURCES} ${OSCDUMP_SOURCES} ${OSCSEND_SOURCES} ${OSCSENDFILE_SOURCES}
-    ${TESTLO_SOURCES} ${EXAMPLE_CLIENT_SOURCES}
+    ${TESTLO_SOURCES} ${TESTTCP_SOURCES} ${EXAMPLE_CLIENT_SOURCES}
     ${EXAMPLE_SERVER_SOURCES} ${EXAMPLE_TCP_ECHO_SERVER_SOURCES}
     ${NONBLOCKING_SERVER_EXAMPLE_SOURCES}
     PROPERTIES LANGUAGE ${BUILD_LANGUAGE})
@@ -201,7 +203,9 @@ endif()
 if (WITH_TESTS)
   add_executable(${TESTLO} ${TESTLO_SOURCES})
   add_executable(${SUBTEST} ${SUBTEST_SOURCES})
+  add_executable(${TESTTCP} ${TESTTCP_SOURCES})
   target_link_libraries(${TESTLO} PRIVATE Threads::Threads)
+  target_link_libraries(${TESTTCP} PRIVATE Threads::Threads)
 endif()
 if (WITH_CPP_TESTS)
   add_executable(${CPPTEST} ${CPPTEST_SOURCES})
@@ -237,6 +241,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   endif()
 	target_link_libraries(${NONBLOCKING_SERVER_EXAMPLE} PRIVATE "wsock32")
 	target_link_libraries(${TESTLO} PRIVATE "wsock32")
+	target_link_libraries(${TESTTCP} PRIVATE "wsock32")
 
     set_target_properties(${LIBRARY_SHARED} PROPERTIES
         COMPILE_DEFINITIONS "LIBLO_DLL")
