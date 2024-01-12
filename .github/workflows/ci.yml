@@ -108,3 +108,7 @@ jobs:
         cd bld\
         cmake ..\cmake -DCMAKE_BUILD_TYPE=Release -DWITH_STATIC=ON
         cmake --build . --target all_build --config Release
+    - name: Run tests
+      run: |
+        cd bld\
+        ctest -V
