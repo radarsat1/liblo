@@ -634,8 +634,9 @@ namespace lo {
         {
           LO_CHECK_BEFORE;
           for (auto &i : _handlers) {
-            std::remove_if(i.second.begin(), i.second.end(),
+            auto it = std::remove_if(i.second.begin(), i.second.end(),
                            [&](std::unique_ptr<handler>& h){return h->method == m;});
+            i.second.erase(it, i.second.end());
           }
           return lo_server_del_lo_method(server, m);
         }
