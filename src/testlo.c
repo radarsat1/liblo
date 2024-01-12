@@ -1287,6 +1287,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     server_url = lo_server_thread_get_url(st);
     printf("Server URL: %s\n", server_url);
     a = lo_address_new_from_url(server_url);
+    TEST(a);
     free(server_url);
 
     /* add method that will match the path /foo/bar, with two numbers, coerced
@@ -1449,9 +1450,13 @@ void test_subtest(lo_server_thread st)
 
 #ifdef WIN32
     {
-        char cwd[2048];
-        _getcwd(cwd, 2048);
-        snprintf(cmd, 2048, "%s" PATHDELIM "subtest" EXTEXE, cwd);
+        char cwd[MAX_PATH];
+        // Calculate path to subtest.exe
+        GetModuleFileName(NULL, cwd, MAX_PATH);
+        const char* pathdelim_str = PATHDELIM;
+        char *lastBackslash = strrchr(cwd, *pathdelim_str);
+        *lastBackslash = 0; // Null-terminate at the last backslash to get the directory
+        snprintf(cmd, sizeof(cmd), "%s" PATHDELIM "subtest" EXTEXE, cwd);
     }
     printf("spawning subtest with `%s'\n", cmd);
     for (i=0; i<2; i++) {
