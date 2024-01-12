@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 option(WITH_TOOLS "Enable building tools." ON)
 option(WITH_TESTS "Enable building tests." ON)
@@ -274,7 +274,12 @@ foreach(PROG ${PROGRAMS})
     target_include_directories(${PROG} PUBLIC
         "$<BUILD_INTERFACE:${LO_BUILD_INCLUDE_DIRS}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
-  target_link_libraries(${PROG} PUBLIC ${LIBRARY_SHARED})
+  if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    # For some yet unknown reasons, Windows has trouble finding the DLL
+    target_link_libraries(${PROG} PUBLIC ${LIBRARY_STATIC})
+  else()
+    target_link_libraries(${PROG} PUBLIC ${LIBRARY_SHARED})
+  endif()
 endforeach(PROG)
 
 foreach(PROG ${TOOLS})
