@@ -311,6 +311,10 @@ int lots_handler(const char *path, const char *types, lo_arg ** argv,
     TEST(types[12] == 'F');
     TEST(types[13] == 'N');
     TEST(types[14] == 'I');
+    b = (lo_blob) argv[15];
+    d = (unsigned char *) lo_blob_dataptr(b);
+    TEST(types[15] == 'b' && lo_blob_datasize(b) == 0);
+    TEST(d == NULL);
 
     printf("\n");
 
@@ -538,13 +542,14 @@ void test_deserialise()
     char data[256];
     int result = 0;
 
-    lo_blob btest;
+    lo_blob btest, btest_empty;
     lo_timetag tt = { 0x1, 0x80000000 };
     lo_blob b = NULL;
 
     DOING("test_deserialise");
 
     btest = lo_blob_new(sizeof(testdata), testdata);
+    btest_empty = lo_blob_new(0, NULL);
 
     // build a message
     lo_message msg = lo_message_new();
@@ -564,9 +569,10 @@ void test_deserialise()
     lo_message_add_false(msg);  // 12 F
     lo_message_add_nil(msg);    // 13 N
     lo_message_add_infinitum(msg);      // 14 I
+    lo_message_add_blob(msg, btest_empty); // 15 b
 
     // test types, args
-    TEST(15 == lo_message_get_argc(msg));
+    TEST(16 == lo_message_get_argc(msg));
     types = lo_message_get_types(msg);
     TEST(NULL != types);
     argv = lo_message_get_argv(msg);
@@ -591,6 +597,11 @@ void test_deserialise()
     TEST('F' == types[12] && NULL == argv[12]);
     TEST('N' == types[13] && NULL == argv[13]);
     TEST('I' == types[14] && NULL == argv[14]);
+    TEST('b' == types[15]);
+    b = (lo_blob) argv[15];
+    TEST(lo_blob_datasize(b) == 0);
+    TEST(4 == lo_blobsize(b));
+    TEST(lo_blob_dataptr(b) == NULL);
 
     // serialise it
     len = lo_message_length(msg, "/foo");
@@ -598,7 +609,7 @@ void test_deserialise()
     buf = (char*) calloc(len, sizeof(char));
     size = 0;
     tmp = (char*) lo_message_serialise(msg, "/foo", buf, &size);
-    TEST(tmp == buf && size == len && 92 == len);
+    TEST(tmp == buf && size == len && 96 == len);
     lo_message_free(msg);
 
     // deserialise it
@@ -609,7 +620,7 @@ void test_deserialise()
     TEST(NULL != msg);
 
     // repeat same test as above
-    TEST(15 == lo_message_get_argc(msg));
+    TEST(16 == lo_message_get_argc(msg));
     types = lo_message_get_types(msg);
     TEST(NULL != types);
     argv = lo_message_get_argv(msg);
@@ -634,6 +645,10 @@ void test_deserialise()
     TEST('F' == types[12] && NULL == argv[12]);
     TEST('N' == types[13] && NULL == argv[13]);
     TEST('I' == types[14] && NULL == argv[14]);
+    b = (lo_blob) argv[15];
+    TEST(lo_blob_datasize(b) == 0);
+    TEST(4 == lo_blobsize(b));
+    TEST(lo_blob_dataptr(b) == NULL);
 
     // serialise it again, compare
     len = lo_message_length(msg, "/foo");
@@ -641,10 +656,11 @@ void test_deserialise()
     buf2 = (char*) calloc(len, sizeof(char));
     size = 0;
     tmp = (char*) lo_message_serialise(msg, "/foo", buf2, &size);
-    TEST(tmp == buf2 && size == len && 92 == len);
+    TEST(tmp == buf2 && size == len && 96 == len);
     TEST(!memcmp(buf, buf2, len));
     lo_message_free(msg);
 
+    lo_blob_free(btest_empty);
     lo_blob_free(btest);
     free(buf);
     free(buf2);
@@ -1240,6 +1256,22 @@ void test_blob()
     }
 
     lo_blob_free(btest);
+
+    /* Same for the empty blob */
+
+    lo_blob btest_empty;
+
+    btest_empty = lo_blob_new(0, NULL);
+
+    if (lo_blob_datasize(btest_empty) != 0 || lo_blobsize(btest_empty) != 4) {
+        printf("blob is %d (%d) bytes long, should be 0 (4)\n",
+               lo_blob_datasize(btest_empty), lo_blobsize(btest_empty));
+        lo_arg_pp(LO_BLOB, btest_empty);
+        printf(" <- blob\n");
+        exit(1);
+    }
+
+    lo_blob_free(btest_empty);
 }
 
 void test_server_thread(lo_server_thread *pst, lo_address *pa)
@@ -1247,12 +1279,13 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     lo_address a;
     char *server_url;
     lo_server_thread st, sta, stb;
-    lo_blob btest;
+    lo_blob btest, btest_empty;
     lo_timetag tt = { 0x1, 0x80000000 };
 
     DOING("test_server_thread");
 
     btest = lo_blob_new(sizeof(testdata), testdata);
+    btest_empty = lo_blob_new(0, NULL);
 
     sta = lo_server_thread_new("7591", error);
     stb = lo_server_thread_new("7591", rep_error);
@@ -1298,7 +1331,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 
     lo_server_thread_add_method(st, "/reply", "s", reply_handler, NULL);
 
-    lo_server_thread_add_method(st, "/lotsofformats", "fisbmhtdSccTFNI",
+    lo_server_thread_add_method(st, "/lotsofformats", "fisbmhtdSccTFNIb",
                                 lots_handler, NULL);
 
     lo_server_thread_add_method(st, "/coerce", "dfhiSs",
@@ -1353,9 +1386,9 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 #ifndef _MSC_VER                /* MS compiler refuses to compile this case */
     lo_send(a, "/bar", "ff", 0.12345678f, 1.0 / 0.0);
 #endif
-    lo_send(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123,
+    lo_send(a, "/lotsofformats", "fisbmhtdSccTFNIb", 0.12345678f, 123,
             "123", btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999,
-            "sym", 'X', 'Y');
+            "sym", 'X', 'Y', btest_empty);
     lo_send(a, "/coerce", "fdihsS", 0.1f, 0.2, 123, 124LL, "aaa", "bbb");
     lo_send(a, "/coerce", "ffffss", 0.1f, 0.2f, 123.0, 124.0, "aaa",
             "bbb");
@@ -1382,6 +1415,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
         lo_server_free(s);
     }
 
+    lo_blob_free(btest_empty);
     lo_blob_free(btest);
 
     *pst = st;
@@ -1390,18 +1424,19 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 
 void test_message(lo_address a)
 {
-    lo_blob btest;
+    lo_blob btest, btest_empty;
     lo_timetag tt = { 0x1, 0x80000000 };
     lo_message m;
 
     DOING("test_message");
 
     btest = lo_blob_new(sizeof(testdata), testdata);
+    btest_empty = lo_blob_new(0, NULL);
 
     TEST(test_varargs
-         (a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
+         (a, "/lotsofformats", "fisbmhtdSccTFNIb", 0.12345678f, 123, "123",
           btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999, "sym", 'X',
-          'Y', LO_ARGS_END) == 0);
+          'Y', btest_empty, LO_ARGS_END) == 0);
 
 #ifdef __GNUC__
 #ifndef USE_ANSI_C
@@ -1422,13 +1457,14 @@ void test_message(lo_address a)
 
     // test lo_message_add
     m = lo_message_new();
-    TEST(lo_message_add(m, "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
+    TEST(lo_message_add(m, "fisbmhtdSccTFNIb", 0.12345678f, 123, "123",
                         btest, midi_data, 0x0123456789abcdefULL, tt,
-                        0.9999, "sym", 'X', 'Y') == 0);
+                        0.9999, "sym", 'X', 'Y', btest_empty) == 0);
 
 	lo_send_message(a, "/lotsofformats", m);
 
     lo_message_free(m);
+    lo_blob_free(btest_empty);
     lo_blob_free(btest);
 }
 

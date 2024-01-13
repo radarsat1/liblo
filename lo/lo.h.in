@@ -225,6 +225,8 @@ uint32_t lo_blob_datasize(lo_blob b);
 /**
  * \brief Return a pointer to the start of the blob data to allow contents to
  * be changed.
+ *
+ * If the size is 0, this will return a NULL-pointer.
  */
 void *lo_blob_dataptr(lo_blob b);
 
