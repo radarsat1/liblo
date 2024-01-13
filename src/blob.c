@@ -24,7 +24,7 @@ lo_blob lo_blob_new(int32_t size, const void *data)
 {
     lo_blob b;
 
-    if (size < 1) {
+    if (size < 0) {
         return NULL;
     }
 
@@ -32,7 +32,7 @@ lo_blob lo_blob_new(int32_t size, const void *data)
 
     b->size = size;
 
-    if (data) {
+    if (size && data) {
         memcpy((char*) b + sizeof(uint32_t), data, size);
     }
 
@@ -51,7 +51,9 @@ uint32_t lo_blob_datasize(lo_blob b)
 
 void *lo_blob_dataptr(lo_blob b)
 {
-    return (char*) b + sizeof(uint32_t);
+    return b->size
+        ? (char*) b + sizeof(uint32_t)
+        : NULL;
 }
 
 uint32_t lo_blobsize(lo_blob b)
