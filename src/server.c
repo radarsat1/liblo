@@ -250,6 +250,7 @@ lo_server lo_server_new_multicast_iface(const char *group, const char *port,
 lo_server lo_server_new_with_proto(const char *port, int proto,
                                    lo_err_handler err_h)
 {
+    fprintf(stderr, "-4");
     return lo_server_new_with_proto_internal(NULL, port, 0, 0, proto, err_h, 0);
 }
 
@@ -452,14 +453,14 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     char pnum[16];
     const char *service;
     int err = 0;
-
+fprintf(stderr, "-4\n");
 #if defined(WIN32) || defined(_MSC_VER)
     /* Windows Server 2003 or later (Vista, 7, etc.) must join the
      * multicast group before bind(), but Windows XP must join
      * after bind(). */
     int wins2003_or_later = detect_windows_server_2003_or_later();
 #endif
-
+fprintf(stderr, "-3\n");
     // Set real protocol, if Default is requested
     if (proto == LO_DEFAULT) {
 #if !defined(WIN32) && !defined(_MSC_VER)
@@ -469,11 +470,12 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 #endif
             proto = LO_UDP;
     }
+fprintf(stderr, "-2\n");
 #if defined(WIN32) || defined(_MSC_VER)
     if (!initWSock())
         return NULL;
 #endif
-
+fprintf(stderr, "-1\n");
     s = (lo_server) calloc(1, sizeof(struct _lo_server));
     if (!s)
         return 0;
@@ -499,7 +501,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
     s->bundle_handler_user_data = NULL;
     s->addr_if.iface = 0;
     s->addr_if.size = 0;
-
+fprintf(stderr, "0\n");
     if (!(s->sockets && s->contexts && s->sources)) {
         free(s->sockets);
         free(s->contexts);
@@ -507,7 +509,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         free(s);
         return 0;
     }
-
+fprintf(stderr, "1\n");
     s->sockets[0].fd = -1;
     s->max_msg_size = LO_DEFAULT_MAX_MSG_SIZE;
 
@@ -556,7 +558,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
 
         return NULL;
     }
-
+fprintf(stderr, "2\n");
 #ifdef ENABLE_IPV6
     /* Determine the address family based on provided IP string or
        multicast group, if available, otherwise let the operating
@@ -577,6 +579,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         service = port;
     }
     do {
+    fprintf(stderr, "3\n");
         int ret;
         if (!port) {
             /* not a good way to get random numbers, but its not critical */
@@ -604,7 +607,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         for (it = ai; it && s->sockets[0].fd == -1; it = it->ai_next) {
             used = it;
             s->sockets[0].fd = socket(it->ai_family, hints.ai_socktype, 0);
-
+fprintf(stderr, "4\n");
             if (s->sockets[0].fd != -1
                 && it->ai_family == AF_INET
                 && hints.ai_socktype == SOCK_DGRAM)
@@ -624,7 +627,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             lo_server_free(s);
             return NULL;
         }
-
+fprintf(stderr, "5\n");
 #ifdef ENABLE_IPV6
     unsigned int v6only_off = 0;
     if (setsockopt(s->sockets[0].fd, IPPROTO_IPV6, IPV6_V6ONLY,
@@ -675,7 +678,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
              }
 #endif
         }}
-
+fprintf(stderr, "6\n");
         if ((used != NULL) &&
             (bind(s->sockets[0].fd, used->ai_addr, used->ai_addrlen) <
              0)) {
@@ -695,7 +698,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
             return NULL;
         }
     } while (!used && tries++ < 16);
-
+fprintf(stderr, "7\n");
     if (!used) {
         lo_throw(s, LO_NOPORT, "cannot find free port", NULL);
 
@@ -732,7 +735,7 @@ lo_server lo_server_new_with_proto_internal(const char *group,
         lo_throw(s, LO_UNKNOWNPROTO, "unknown protocol family", NULL);
         s->port = atoi(port);
     }
-
+fprintf(stderr, "8\n");
     return s;
 }
 
@@ -1645,10 +1648,13 @@ int lo_server_recv(lo_server s)
 
   again:
     if (sched_time > 0.01) {
+        fprintf(stderr, "r1\n");
         if (sched_time > 10.0) {
+            fprintf(stderr, "r2\n");
             sched_time = 10.0;
         }
 #ifdef HAVE_POLL
+        fprintf(stderr, "r3\n");
         for (i = 0; i < s->sockets_len; i++) {
             s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
             s->sockets[i].revents = 0;
@@ -1660,8 +1666,11 @@ int lo_server_recv(lo_server s)
                 goto got_data;
             }
         }
+        fprintf(stderr, "r4\n");
 
         poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
+
+fprintf(stderr, "r5\n");
 
         for (i = 0; i < s->sockets_len; i++) {
             if (!s->sockets[i].revents)
@@ -1676,6 +1685,8 @@ int lo_server_recv(lo_server s)
             }
             break;
         }
+        
+        fprintf(stderr, "r6\n");
 
         if (i >= s->sockets_len) {
             sched_time = lo_server_next_event_delay(s);
@@ -1685,13 +1696,14 @@ int lo_server_recv(lo_server s)
 
             return dispatch_queued(s, 0);
         }
+        fprintf(stderr, "r7\n");
 #else
 #ifdef HAVE_SELECT
 #if defined(WIN32) || defined(_MSC_VER)
         if (!initWSock())
             return 0;
 #endif
-
+fprintf(stderr, "r8\n");
         FD_ZERO(&ps);
         for (i = 0; i < s->sockets_len; i++) {
             FD_SET(s->sockets[i].fd, &ps);
@@ -1706,14 +1718,14 @@ int lo_server_recv(lo_server s)
                 goto got_data;
             }
         }
-
+fprintf(stderr, "r9\n");
         stimeout.tv_sec = sched_time;
         stimeout.tv_usec = (sched_time - stimeout.tv_sec) * 1.e6;
         res = select(nfds + 1, &ps, NULL, NULL, &stimeout);
         if (res == SOCKET_ERROR) {
             return 0;
         }
-
+fprintf(stderr, "r10\n");
         if (!res) {
             sched_time = lo_server_next_event_delay(s);
 
@@ -1722,25 +1734,31 @@ int lo_server_recv(lo_server s)
 
             return dispatch_queued(s, 0);
         }
+        fprintf(stderr, "r11\n");
 #endif
 #endif
     } else {
+    fprintf(stderr, "r12\n");
         return dispatch_queued(s, 0);
     }
     if (s->protocol == LO_TCP) {
+        fprintf(stderr, "r13\n");
         data = lo_server_recv_raw_stream(s, &size, &sock);
     } else {
         data = lo_server_recv_raw(s, &size);
     }
+    fprintf(stderr, "r14\n");
 
     if (!data) {
         return 0;
     }
   got_data:
+  fprintf(stderr, "r15\n");
     if (dispatch_data(s, data, size, sock) < 0) {
         free(data);
         return -1;
     }
+    fprintf(stderr, "r16\n");
     free(data);
     return (int) size;
 }

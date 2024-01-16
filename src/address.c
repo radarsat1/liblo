@@ -602,15 +602,24 @@ int lo_address_resolve(lo_address a)
 #endif
         hints.ai_socktype =
             a->protocol == LO_UDP ? SOCK_DGRAM : SOCK_STREAM;
-
-        if ((ret = getaddrinfo(host, lo_address_get_port(a), &hints, &ai))) {
-            a->errnum = ret;
-            a->errstr = gai_strerror(ret);
-            a->ai = NULL;
-            a->ai_first = NULL;
-            return -1;
-        }
         
+        /*if (getaddrinfo(host, lo_address_get_port(a), &hints, &ai)) {
+            usleep(100000);
+            if (getaddrinfo(host, lo_address_get_port(a), &hints, &ai)) {
+                usleep(200000);
+                if (getaddrinfo(host, lo_address_get_port(a), &hints, &ai)) {
+                    usleep(400000);*/
+                    if ((ret = getaddrinfo(host, lo_address_get_port(a), &hints, &ai))) {
+                        puts("MAC ERROR!");
+                        a->errnum = ret;
+                        a->errstr = gai_strerror(ret);
+                        a->ai = NULL;
+                        a->ai_first = NULL;
+                        return -1;
+                    }
+/*                }
+            }
+        }*/
         a->ai = ai;
         a->ai_first = ai;
     }
