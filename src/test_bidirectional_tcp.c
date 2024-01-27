@@ -1,5 +1,7 @@
-#ifdef WIN32
+#if defined(WIN32) || defined(_MSC_VER)
 #include <process.h>
+#else
+#include <unistd.h>
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -37,7 +39,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 #ifdef HAVE_WIN32_THREADS
-unsigned __attribute__((stdcall)) sendthread(void *arg)
+unsigned __stdcall sendthread(void *arg)
 #else
 void *sendthread(void *arg)
 #endif
@@ -59,6 +61,13 @@ void *sendthread(void *arg)
     printf("%p.sending thread received\n", s);
 
     printf("%p.freeing address\n", s);
+    /* Do not close the socket immediatelly, wait 1 second for recv */
+#if defined(WIN32) || defined(_MSC_VER)
+    Sleep(1000);
+#else
+    sleep(1);
+#endif
+
     lo_address_free(a);
 
     printf("%p.freeing\n", s);
@@ -69,7 +78,7 @@ void *sendthread(void *arg)
 
 int main()
 {
-    /* start a new server on port 7770 */
+    /* start a new server on port 7771 */
     lo_server s = lo_server_new_with_proto("7771", LO_TCP, 0);
     if (!s) { printf("no server\n"); exit(1); }
 
