@@ -2612,3 +2612,6 @@ GENERATE_LEGEND        = YES
 # The default value is: YES.
 
 DOT_CLEANUP            = YES
+
+# Improve look
+HTML_EXTRA_STYLESHEET  = doxygen-awesome.css

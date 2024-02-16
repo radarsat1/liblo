@@ -5,7 +5,7 @@ CLEANFILES=doxygen-build.stamp
 
 DOX=reference.doxygen
 
-EXTRA_DIST=
+EXTRA_DIST=doxygen-awesome.css doxygen-awesome-css-README.md doxygen-awesome-css-LICENSE
 
 INSTIMAGES=html/doxygen.png
 
