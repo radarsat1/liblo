@@ -1,5 +1,33 @@
 
 --------------------------------------------
+2024-02-16: Release 0.32
+--------------------------------------------
+
+We are pleased to present stable release 0.32 of LibLo, the
+lightweight, easy to use implementation of the Open Sound Control
+protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+Changes of note since the 0.32 release include:
+
+- Consider subnet-specific broadcast addresses.
+- OSC path validation during deserialization.
+- Redefine opaque types as pointers to structs.
+- Add lo_server_config struct and corresponding server init functions.
+- Add support for pattern matching in method names.
+- Support optionally encoding messages with double-END SLIP.
+- Improvements to CMake build.
+- lo_servers_wait: return immediately if any server already has a message waiting.
+- Allow creating size-0 blobs.
+
+In C++ bindings:
+- Support for std::string_view if C++17.
+- Fix that del_method did not actually delete it from the std::vector.
+
+--------------------------------------------
 2019-02-28: Release 0.31
 --------------------------------------------
 
