@@ -49,6 +49,10 @@ if (MSVC)
     /D_CRT_NONSTDC_NO_DEPRECATE
     /D_WINSOCK_DEPRECATED_NO_WARNINGS)
 
+  # liblo fails to build as a dynamic library on MSVC
+  set(WITH_STATIC ON)
+  message(STATUS "Building as static lib as dynamic builds fail on MSVC")
+
   # On Windows we do not wish the default behaviour of removing "lib"
   # from "liblo.dll".
   if ("${CMAKE_SHARED_LIBRARY_PREFIX}" STREQUAL "")
