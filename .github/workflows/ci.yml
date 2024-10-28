@@ -29,8 +29,8 @@ jobs:
         path: |
           liblo*.tar.gz
 
-  MacOS-Latest:
-    runs-on: macOS-latest
+  MacOS:
+    runs-on: macOS-13
     timeout-minutes: 20
     env:
       CC: clang
