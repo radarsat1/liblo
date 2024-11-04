@@ -90,6 +90,10 @@ static int reuseport_supported = 1;
 
 static int lo_can_coerce_spec(const char *a, const char *b);
 static int lo_can_coerce(char a, char b);
+static int lo_servers_wait_internal(lo_server *s, int *status,
+                                    int *queued, int num_servers,
+                                    int timeout);
+static int lo_server_recv_internal(lo_server s);
 static void dispatch_method(lo_server s, const char *path,
                             lo_message msg, int sock);
 static int dispatch_data(lo_server s, void *data,
@@ -892,13 +896,24 @@ int lo_server_enable_queue(lo_server s, int enable,
     return prev;
 }
 
+static
 void *lo_server_recv_raw(lo_server s, size_t * size)
 {
     char *buffer = NULL;
     int ret, heap_buffer = 0;
     void *data = NULL;
 
-    if (s->max_msg_size > 4096) {
+#if defined(WIN32) || defined(_MSC_VER)
+    if (!initWSock()) {
+        return NULL;
+    }
+#endif
+
+    if (s->max_msg_size<=0) {
+        return NULL;
+    }
+    else if (s->max_msg_size > 4096) {
+        // TODO: can we use a static buffer here instead?
         buffer = (char*) malloc(s->max_msg_size);
         heap_buffer = 1;
     }
@@ -908,18 +923,6 @@ void *lo_server_recv_raw(lo_server s, size_t * size)
 
     if (!buffer)
         return NULL;
-
-    if (s->max_msg_size<=0) {
-        if (heap_buffer) free(buffer);
-        return NULL;
-    }
-
-#if defined(WIN32) || defined(_MSC_VER)
-    if (!initWSock()) {
-        if (heap_buffer) free(buffer);
-        return NULL;
-    }
-#endif
 
     s->addr_len = sizeof(s->addr);
 
@@ -1060,6 +1063,8 @@ clear_buffer:
     return 0;
 }
 
+/*! \internal Copy received data into buffer, return pointer to
+ *  message if buffer contains a complete message. */
 static
 void *lo_server_buffer_copy_for_dispatch(lo_server s, int isock, size_t *psize)
 {
@@ -1100,12 +1105,6 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     *pdata = 0;
 
   again:
-
-    // Check if there is already a message waiting in the buffer.
-    if ((*pdata = lo_server_buffer_copy_for_dispatch(s, isock, psize))) {
-        // There could be more data, so return true.
-        return 1;
-    }
 
     buffer_bytes_left = (int) (sc->buffer_size - sc->buffer_read_offset);
 
@@ -1272,21 +1271,20 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 static
 void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 {
-    struct sockaddr_storage addr;
-    socklen_t addr_len = sizeof(addr);
     int i;
     void *data = NULL;
     int sock = -1;
-#ifdef HAVE_SELECT
-#ifndef HAVE_POLL
-    fd_set ps;
-    int nfds = 0;
-#endif
-#endif
 
     assert(psock != NULL);
 
-  again:
+#ifndef HAVE_POLL
+#ifdef HAVE_SELECT
+#if defined(WIN32) || defined(_MSC_VER)
+    if (!initWSock())
+        return NULL;
+#endif
+#endif
+#endif
 
     /* check sockets in reverse order so that already-open sockets
      * have priority.  this allows checking for closed sockets even
@@ -1295,81 +1293,11 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
      * deleting a socket, since deleting sockets doesn't affect the
      * order of the array to the left of the index. */
 
-#ifdef HAVE_POLL
-    for (i = 0; i < s->sockets_len; i++) {
-        s->sockets[i].events = POLLIN | POLLPRI;
-        s->sockets[i].revents = 0;
-
-        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
-            *psock = s->sockets[i].fd;
-            return data;
-        }
-    }
-
-    poll(s->sockets, s->sockets_len, -1);
-
-    for (i = s->sockets_len - 1; i >= 0 && !data; --i) {
-        if (s->sockets[i].revents & (POLLERR | POLLHUP)) {
-            if (i > 0) {
-                closesocket(s->sockets[i].fd);
-                lo_server_del_socket(s, i, s->sockets[i].fd);
-                continue;
-            } else
-                return NULL;
-        }
+    for (i = 0; i < s->sockets_len && !data; i++) {
         if (s->sockets[i].revents) {
             sock = s->sockets[i].fd;
-
-#else
-#ifdef HAVE_SELECT
-#if defined(WIN32) || defined(_MSC_VER)
-    if (!initWSock())
-        return NULL;
-#endif
-
-    nfds = 0;
-    FD_ZERO(&ps);
-    for (i = (s->sockets_len - 1); i >= 0; --i) {
-        FD_SET(s->sockets[i].fd, &ps);
-#ifndef WIN32
-        if (s->sockets[i].fd > nfds)
-            nfds = s->sockets[i].fd;
-#endif
-        if ((data = lo_server_buffer_copy_for_dispatch(s, i, size))) {
-            *psock = s->sockets[i].fd;
-            return data;
-        }
-    }
-
-    if (select(nfds + 1, &ps, NULL, NULL, NULL) == SOCKET_ERROR)
-        return NULL;
-
-    for (i = 0; i < s->sockets_len && !data; i++) {
-        if (FD_ISSET(s->sockets[i].fd, &ps)) {
-            sock = s->sockets[i].fd;
-
-#endif
-#endif
-
             if (sock == -1)
                 return NULL;
-
-            /* zeroeth socket is listening for new connections */
-            if (sock == s->sockets[0].fd) {
-                sock = accept(sock, (struct sockaddr *) &addr, &addr_len);
-
-                i = lo_server_add_socket(s, sock, 0, &addr, addr_len);
-
-                /* after adding a new socket, call select()/poll()
-                 * again, since we are supposed to block until a
-                 * message is received. */
-                goto again;
-            }
-
-            if (i < 0) {
-                closesocket(sock);
-                return NULL;
-            }
 
             /* Handle incoming socket data */
             if (lo_server_recv_raw_stream_socket(s, i, size, &data)
@@ -1389,17 +1317,32 @@ void *lo_server_recv_raw_stream(lo_server s, size_t * size, int *psock)
 
 int lo_server_wait(lo_server s, int timeout)
 {
-    return lo_servers_wait(&s, 0, 1, timeout);
+    return lo_servers_wait_internal(&s, 0, 0, 1, timeout);
 }
 
 int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 {
-    int i, j, k, sched_timeout;
+    int *queued = alloca(sizeof(int) * num_servers);
+    int ret = lo_servers_wait_internal(s, status, queued, num_servers, timeout);
+    if (status) {
+        int i;
+        for (i = 0; i < num_servers; i++)
+            status[i] |= queued[i];
+    }
+    return ret;
+}
+
+static
+int lo_servers_wait_internal(lo_server *s, int *status, int *queued, int num_servers, int timeout)
+{
+    int i, j, k, res, sched_timeout;
 
     if (!status)
         status = alloca(sizeof(int) * num_servers);
+    if (!queued)
+        queued = alloca(sizeof(int) * num_servers);
     for (i = 0; i < num_servers; i++)
-        status[i] = 0;
+        status[i] = queued[i] = 0;
 
     lo_timetag now, then;
 #ifdef HAVE_SELECT
@@ -1423,6 +1366,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
             if (lo_server_buffer_contains_msg(s[j], i)) {
                 status[j] = 1;
                 ++k;
+                break;
             }
             ++num_sockets;
         }
@@ -1439,7 +1383,7 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
         for (i = 0; i < s[j]->sockets_len; i++) {
             sockets[k].fd = s[j]->sockets[i].fd;
             sockets[k].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-            sockets[k].revents = 0;
+            sockets[k].revents = s[j]->sockets[i].revents = 0;
             ++k;
         }
         int server_timeout = lo_server_next_event_delay(s[j]) * 1000;
@@ -1449,14 +1393,16 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 
     lo_timetag_now(&then);
 
-    poll(sockets, num_sockets, timeout > sched_timeout ? sched_timeout : timeout);
+    res = poll(sockets, num_sockets, timeout > sched_timeout ? sched_timeout : timeout);
 
-    // If poll() was reporting a new connection on the listening
-    // socket rather than a ready message, accept it and check again.
-    for (j = 0, k = 0; j < num_servers; j++) {
-        if (sockets[k].revents) {
-            if (sockets[k].revents & (POLLIN | POLLPRI)) {
-                if (s[j]->protocol == LO_TCP) {
+    if (res == -1)
+        return -1;
+    else if (res) {
+        for (j = 0, k = 0; j < num_servers; j++) {
+            if (s[j]->protocol == LO_TCP) {
+                if (sockets[k].revents & (POLLIN | POLLPRI)) {
+                    // If poll() was reporting a new connection on the listening
+                    // socket rather than a ready message, accept it and check again.
                     int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
                                       &addr_len);
 
@@ -1474,41 +1420,54 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
 
                     goto again;
                 }
-                else {
-                    status[j] = 1;
+                sockets[k].revents = 0;
+                for (i = 1, ++k; i < s[j]->sockets_len; i++, k++) {
+                    if (!sockets[k].revents)
+                        continue;
+                    if (sockets[k].revents & (POLLERR | POLLHUP)) {
+                        closesocket(sockets[k].fd);
+                        lo_server_del_socket(s[j], i, sockets[k].fd);
+                    }
+                    else {
+                        s[j]->sockets[i].revents = POLLIN;
+                        status[j] = 1;
+                    }
                 }
             }
-        }
-        k += s[j]->sockets_len;
-    }
-
-    for (j = num_servers - 1, k = num_sockets - 1; j >= 0; j--, k--) {
-        for (i = s[j]->sockets_len - 1; i > 0; i--, k--) {
-            if (!sockets[k].revents)
-                continue;
-            if (sockets[k].revents & (POLLERR | POLLHUP)) {
-                closesocket(sockets[k].fd);
-                lo_server_del_socket(s[j], i, sockets[k].fd);
+            else {
+                if (sockets[k].revents) {
+                    s[j]->sockets[0].revents = POLLIN;
+                    status[j] = 1;
+                }
+                ++k;
             }
-            else
-                status[j] = 1;
         }
-    }
-
-    for (j = 0; j < num_servers; j++) {
-        if (lo_server_next_event_delay(s[j]) < 0.01)
-            status[j] = 1;
     }
 #else
 #ifdef HAVE_SELECT
-    int res, to, nfds = 0;
+    int to, num_fds;
 
 #if defined(WIN32) || defined(_MSC_VER)
-    if (!initWSock())
-        return 0;
+    if (!initWSock()) {
+        return -1;
+    }
 #endif
 
   again:
+    num_fds = 0;
+    for (j = 0, k = 0; j < num_servers; j++) {
+        for (i = 0; i < s[j]->sockets_len; i++) {
+            if (lo_server_buffer_contains_msg(s[j], i)) {
+                status[j] = 1;
+                ++k;
+                break;
+            }
+        }
+    }
+
+    // Return immediately if one or more servers already have messages waiting.
+    if (k > 0)
+      return k;
 
     sched_timeout = timeout;
     for (j = 0; j < num_servers; j++) {
@@ -1524,22 +1483,21 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
     FD_ZERO(&ps);
     for (j = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
+            s[j]->sockets[i].revents = 0;
             FD_SET(s[j]->sockets[i].fd, &ps);
 #ifndef WIN32
-            if (s[j]->sockets[i].fd > nfds)
-                nfds = s[j]->sockets[i].fd;
+            if (s[j]->sockets[i].fd > num_fds)
+                num_fds = s[j]->sockets[i].fd;
 #endif
-            if (lo_server_buffer_contains_msg(s[j], i)) {
-                status[j] = 1;
-            }
         }
     }
 
     lo_timetag_now(&then);
-    res = select(nfds + 1, &ps, NULL, NULL, &stimeout);
+
+    res = select(num_fds + 1, &ps, NULL, NULL, &stimeout);
 
     if (res == SOCKET_ERROR)
-        return 0;
+        return -1;
     else if (res) {
         for (j = 0; j < num_servers; j++) {
             if (FD_ISSET(s[j]->sockets[0].fd, &ps)) {
@@ -1582,26 +1540,29 @@ int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout)
                     goto again;
                 }
                 else {
+                    s[j]->sockets[0].revents = POLLIN;
                     status[j] = 1;
                 }
             }
             for (i = 1; i < s[j]->sockets_len; i++) {
-                if (FD_ISSET(s[j]->sockets[i].fd, &ps))
+                if (FD_ISSET(s[j]->sockets[i].fd, &ps)) {
+                    s[j]->sockets[i].revents = POLLIN;
                     status[j] = 1;
+                }
             }
         }
     }
+#endif
+#endif
 
     for (j = 0; j < num_servers; j++) {
         if (lo_server_next_event_delay(s[j]) < 0.01) {
-            status[j] = 1;
+            queued[j] = 1;
         }
     }
-#endif
-#endif
 
     for (i = 0, j = 0; i < num_servers; i++)
-        j += status[i];
+        j += (status[i] | queued[i]);
 
     return j;
 }
@@ -1610,13 +1571,34 @@ int lo_servers_recv_noblock(lo_server *s, int *recvd, int num_servers,
                             int timeout)
 {
     int i, total_bytes = 0;
-    if (!lo_servers_wait(s, recvd, num_servers, timeout)) {
-        return 0;
-    }
-    for (i = 0; i < num_servers; i++) {
-        if (recvd[i]) {
-            recvd[i] = lo_server_recv(s[i]);
-            total_bytes += recvd[i];
+    int *queued = alloca(sizeof(int) * num_servers);
+
+    lo_timetag then;
+    lo_timetag_now(&then);
+
+again:
+    if (lo_servers_wait_internal(s, recvd, queued, num_servers, timeout) > 0) {
+        for (i = 0; i < num_servers; i++) {
+            // a new message might be queued for future dispatch, in which case
+            // any queued messages that are ready should take precedence
+            if (recvd[i] && (recvd[i] = lo_server_recv_internal(s[i])) > 0) {
+                // new message was received and dispatched
+                total_bytes += recvd[i];
+            }
+            else if (queued[i]) {
+                // queued message is ready for dispatch
+                recvd[i] = dispatch_queued(s[i], 0);
+                total_bytes += recvd[i];
+            }
+            else {
+                // if the received message was queued we need to keep waiting
+                lo_timetag now;
+                lo_timetag_now(&now);
+                double diff = lo_timetag_diff(now, then);
+                timeout -= (int)(diff*1000);
+                if (timeout > 0.01)
+                    goto again;
+            }
         }
     }
     return total_bytes;
@@ -1628,121 +1610,65 @@ int lo_server_recv_noblock(lo_server s, int timeout)
     return lo_servers_recv_noblock(&s, &status, 1, timeout);
 }
 
+// we can make this more efficient:
+// - use semaphore to ensure server only receiving on one thread
+// - use one preallocated buffer per server for receiving
+// - don't copy again unless queueing
+
 int lo_server_recv(lo_server s)
+{
+    int ret, recvd, queued;
+    while ((ret = lo_servers_wait_internal(&s, &recvd, &queued, 1, 100)) == 0) {}
+    if (ret > 0) {
+        // new messages might be queued for future dispatch, in which case any queued msgs that are ready should take precedence
+        if (recvd && (ret = lo_server_recv_internal(s))) {
+            // new message was received and dispatched
+            return ret;
+        }
+        else if (queued) {
+            // queued message is ready for dispatch
+            return dispatch_queued(s, 0);
+        }
+    }
+    return 0;
+}
+
+// This function only handles incoming data, not previously queued messages
+static
+int lo_server_recv_internal(lo_server s)
 {
     void *data;
     size_t size;
-    double sched_time = lo_server_next_event_delay(s);
     int sock = -1;
     int i;
-#ifdef HAVE_SELECT
-#ifndef HAVE_POLL
-    fd_set ps;
-    struct timeval stimeout;
-    int res, nfds = 0;
-#endif
-#endif
 
-  again:
-    if (sched_time > 0.01) {
-        if (sched_time > 10.0) {
-            sched_time = 10.0;
-        }
-#ifdef HAVE_POLL
-        for (i = 0; i < s->sockets_len; i++) {
-            s->sockets[i].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-            s->sockets[i].revents = 0;
-
-            if (s->protocol == LO_TCP
-                && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
-            {
-                sock = s->sockets[i].fd;
-                goto got_data;
-            }
-        }
-
-        poll(s->sockets, s->sockets_len, (int) (sched_time * 1000.0));
-
-        for (i = 0; i < s->sockets_len; i++) {
-            if (!s->sockets[i].revents)
-                continue;
-            if (s->sockets[i].revents & (POLLERR | POLLHUP)) {
-                if (i > 0) {
-                    closesocket(s->sockets[i].fd);
-                    lo_server_del_socket(s, i, s->sockets[i].fd);
-                    continue;
-                } else
-                    return 0;
-            }
-            break;
-        }
-
-        if (i >= s->sockets_len) {
-            sched_time = lo_server_next_event_delay(s);
-
-            if (sched_time > 0.01)
-                goto again;
-
-            return dispatch_queued(s, 0);
-        }
-#else
-#ifdef HAVE_SELECT
-#if defined(WIN32) || defined(_MSC_VER)
-        if (!initWSock())
-            return 0;
-#endif
-
-        FD_ZERO(&ps);
-        for (i = 0; i < s->sockets_len; i++) {
-            FD_SET(s->sockets[i].fd, &ps);
-#ifndef WIN32
-            if (s->sockets[i].fd > nfds)
-                nfds = s->sockets[i].fd;
-#endif
-            if (s->protocol == LO_TCP
-                && (data = lo_server_buffer_copy_for_dispatch(s, i, &size)))
-            {
-                sock = s->sockets[i].fd;
-                goto got_data;
-            }
-        }
-
-        stimeout.tv_sec = sched_time;
-        stimeout.tv_usec = (sched_time - stimeout.tv_sec) * 1.e6;
-        res = select(nfds + 1, &ps, NULL, NULL, &stimeout);
-        if (res == SOCKET_ERROR) {
-            return 0;
-        }
-
-        if (!res) {
-            sched_time = lo_server_next_event_delay(s);
-
-            if (sched_time > 0.01)
-                goto again;
-
-            return dispatch_queued(s, 0);
-        }
-#endif
-#endif
-    } else {
-        return dispatch_queued(s, 0);
-    }
     if (s->protocol == LO_TCP) {
+        for (i = 0; i < s->sockets_len; i++) {
+            // first check if there are additional messages in the buffer
+            if ((data = lo_server_buffer_copy_for_dispatch(s, i, &size))) {
+                sock = s->sockets[i].fd;
+                goto got_data;
+            }
+            if (s->sockets[i].revents)
+                break;
+        }
         data = lo_server_recv_raw_stream(s, &size, &sock);
-    } else {
+    }
+    else {
         data = lo_server_recv_raw(s, &size);
     }
 
     if (!data) {
         return 0;
     }
+
   got_data:
-    if (dispatch_data(s, data, size, sock) < 0) {
-        free(data);
+    i = dispatch_data(s, data, size, sock);
+    free(data);
+    if (i < 0) {
         return -1;
     }
-    free(data);
-    return (int) size;
+    return i ? (int) size : 0;
 }
 
 int lo_server_add_socket(lo_server s, int socket, lo_address a,
@@ -1829,8 +1755,8 @@ void lo_server_del_socket(lo_server s, int index, int socket)
     s->sockets_len--;
 }
 
-static int dispatch_data(lo_server s, void *data,
-                         size_t size, int sock)
+static
+int dispatch_data(lo_server s, void *data, size_t size, int sock)
 {
     int result = 0;
     char *path = (char*) data;
@@ -1861,6 +1787,7 @@ static int dispatch_data(lo_server s, void *data,
         pos += 4;
         remain -= 8;
 
+        // TODO: surely the bundle start/stop handlers shouldn't be called here if the contents will be queued?!
         if (s->bundle_start_handler)
             s->bundle_start_handler(ts, s->bundle_handler_user_data);
 
@@ -1887,15 +1814,17 @@ static int dispatch_data(lo_server s, void *data,
                 lo_message_incref(msg);
 
                 // test for immediate dispatch
-                if ((ts.sec == LO_TT_IMMEDIATE.sec
-                     && ts.frac == LO_TT_IMMEDIATE.frac)
-                    || lo_timetag_diff(ts, now) <= 0.0
-                    || (s->flags & LO_SERVER_ENQUEUE) == 0)
+                if ((s->flags & LO_SERVER_ENQUEUE) == 0
+                    || (   ts.sec == LO_TT_IMMEDIATE.sec
+                        && ts.frac == LO_TT_IMMEDIATE.frac)
+                    || lo_timetag_diff(ts, now) <= 0.0)
                 {
                     dispatch_method(s, pos, msg, sock);
                     lo_message_free(msg);
                 } else {
                     queue_data(s, ts, pos, msg, sock);
+                    // set size to 0 for return
+                    size = 0;
                 }
             }
 
