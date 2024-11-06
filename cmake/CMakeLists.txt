@@ -6,6 +6,7 @@ option(WITH_EXAMPLES "Enable building examples." ON)
 option(WITH_CPP_TESTS "Enable building C++ wrapper tests." ON)
 option(WITH_STATIC "Enable building static library." OFF)
 option(THREADING "Build with threading support." ON)
+option(WITH_POLL "Build with poll support." ON)
 
 if (WITH_STATIC)
   message(STATUS "If you are using the static library build, please keep in mind (and inform yourself of the implications) that liblo is licensed with LGPL v2.1+.")
@@ -141,7 +142,9 @@ set(EXAMPLE_SERVER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/example_serve
 set(EXAMPLE_TCP_ECHO_SERVER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/example_tcp_echo_server.c)
 set(NONBLOCKING_SERVER_EXAMPLE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/nonblocking_server_example.c)
 
-check_symbol_exists(poll poll.h HAVE_POLL)
+if (WITH_POLL)
+    check_symbol_exists(poll poll.h HAVE_POLL)
+endif()
 check_symbol_exists(select sys/select.h HAVE_SELECT)
 if(NOT HAVE_POLL AND NOT HAVE_SELECT)
   if(CMAKE_SYSTEM_NAME MATCHES "Windows")

@@ -210,7 +210,6 @@ AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is
                  AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])
                  is_windows=yes],[AC_MSG_RESULT(no)])
 ])
-AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
 AC_CHECK_FUNC([setvbuf], [AC_DEFINE(HAVE_SETVBUF, [1], [Define to 1 if setvbuf() is available.])])
 
 AM_CONDITIONAL(WINDOWS, test x$is_windows = xyes)
@@ -259,6 +258,17 @@ AM_CONDITIONAL([COMPILE_TESTS],[test x$enable_tests != xno])
 AM_CONDITIONAL([COMPILE_TOOLS],[test x$enable_tools != xno])
 AM_CONDITIONAL([COMPILE_EXAMPLES],[test x$enable_examples != xno])
 AM_CONDITIONAL([ENABLE_NETWORK_TESTS],[test x$enable_network_tests != xno])
+
+# Check if poll is wanted
+AC_ARG_ENABLE(poll,
+  [  --disable-poll        Disable compiling with poll support],
+  [want_poll=$enableval],
+  [want_poll=yes])
+
+# Check for whether poll is wanted, and if so, did we find it.
+if test "x$want_poll" = "xyes"; then
+  AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
+fi
 
 if ! test x$enable_network_tests = xno; then
   AC_DEFINE(ENABLE_NETWORK_TESTS, [1],
