@@ -1,7 +1,9 @@
 /*
- * oscsend - Send OpenSound Control message.
+ * oscsendfile - Send OpenSound Control message.
  *
  * Copyright (C) 2016 Joseph Malloch <joseph.malloch@gmail.com>
+ *
+ * Adapted from oscsend:
  * Copyright (C) 2008 Kentaro Fukuchi <kentaro@fukuchi.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -45,8 +47,8 @@ void usage(void)
     printf("oscsendfile version %s\n"
            "Copyright (C) 2016 Joseph Malloch\n"
            "  adapted from oscsend.c (C) 2008 Kentaro Fukuchi\n\n"
-           "Usage: oscsend hostname port file <speed>\n"
-           "or     oscsend url file <speed>\n"
+           "Usage: oscsendfile hostname port file <speed>\n"
+           "or     oscsendfile url file <speed>\n"
            "Send OpenSound Control messages from a file via UDP.\n\n"
            "Description\n"
            "hostname: specifies the remote host's name.\n"
@@ -55,7 +57,7 @@ void usage(void)
            "          e.g. UDP        \"osc.udp://localhost:9000\"\n"
            "               Multicast  \"osc.udp://224.0.1.9:9000\"\n"
            "               TCP        \"osc.tcp://localhost:9000\"\n"
-           "speed   : specifies a speed multiplier.\n",
+           "speed   : specifies a speed multiplier (must be > 0).\n",
            VERSION);
            printf("Example\n"
            "$ oscsendfile localhost 7777 myfile.txt 2.5\n");
@@ -219,15 +221,19 @@ lo_message create_message(char **argv)
             }
         case LO_TRUE:
             lo_message_add_true(message);
+            ++argi;
             break;
         case LO_FALSE:
             lo_message_add_false(message);
+            ++argi;
             break;
         case LO_NIL:
             lo_message_add_nil(message);
+            ++argi;
             break;
         case LO_INFINITUM:
             lo_message_add_infinitum(message);
+            ++argi;
             break;
         default:
             fprintf(stderr, "Type '%c' is not supported or invalid.\n",
@@ -451,6 +457,10 @@ int main(int argc, char **argv)
     if (argc > i+1) {
         // optional speed argument
         speed = atof(argv[i+1]);
+        if (speed <= 0.0) {
+            fprintf(stderr, "Negative speed multiplier is not supported.\n");
+            exit(1);
+        }
     }
     ret = send_file(target, speed);
 
