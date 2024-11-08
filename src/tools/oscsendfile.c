@@ -221,15 +221,19 @@ lo_message create_message(char **argv)
             }
         case LO_TRUE:
             lo_message_add_true(message);
+            ++argi;
             break;
         case LO_FALSE:
             lo_message_add_false(message);
+            ++argi;
             break;
         case LO_NIL:
             lo_message_add_nil(message);
+            ++argi;
             break;
         case LO_INFINITUM:
             lo_message_add_infinitum(message);
+            ++argi;
             break;
         default:
             fprintf(stderr, "Type '%c' is not supported or invalid.\n",
