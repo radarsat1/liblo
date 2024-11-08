@@ -63,68 +63,68 @@ void init(lo::Server &s)
         int _j;
     };
 
-    s.add_method("test0", "i", test3(j,"test0"));
-    s.del_method("test0", "i");
+    s.add_method("/test0", "i", test3(j,"/test0"));
+    s.del_method("/test0", "i");
 
-    s.add_method("test1", "i", test1, 0);
-    s.add_method("test2", "i", test2);
-    s.add_method("test3", "i", test3(j, "test3"));
+    s.add_method("/test1", "i", test1, 0);
+    s.add_method("/test2", "i", test2);
+    s.add_method("/test3", "i", test3(j, "/test3"));
 
-    s.add_method("test4", "i",
-                  [j](lo_arg **argv, int argc)
-                  {
-                      printf("test4: %d, %d\n", j, argv[0]->i);
-                      return 0;
-                  });
-
-    j *= 2;
-    s.add_method("test5", "i",
-                  [j](lo_arg **argv, int argc, lo_message msg)
-                  {
-                      printf("test5: %d, %d -- ", j, argv[0]->i);
-                      lo_message_pp(msg);
-                      return 0;
-                  });
+    s.add_method("/test4", "i",
+                 [j](lo_arg **argv, int argc)
+                 {
+                     printf("/test4: %d, %d\n", j, argv[0]->i);
+                     return 0;
+                 });
 
     j *= 2;
-    s.add_method("test6", "i",
-                  [j](lo_message msg)
-                  {
-                      printf("test6: %d -- ", j);
-                      lo_message_pp(msg);
-                      return 0;
-                  });
+    s.add_method("/test5", "i",
+                 [j](lo_arg **argv, int argc, lo_message msg)
+                 {
+                     printf("/test5: %d, %d -- ", j, argv[0]->i);
+                     lo_message_pp(msg);
+                     return 0;
+                 });
 
     j *= 2;
-    s.add_method("test7", "i", [j](){printf("test7: %d\n", j); return 0;});
+    s.add_method("/test6", "i",
+                 [j](lo_message msg)
+                 {
+                     printf("/test6: %d -- ", j);
+                     lo_message_pp(msg);
+                     return 0;
+                 });
+
     j *= 2;
-    s.add_method("test8", "i", [j](){printf("test8a: %d\n", j);});
+    s.add_method("/test7", "i", [j](){printf("/test7: %d\n", j); return 0;});
     j *= 2;
-    s.add_method("test8", "i", [j](){printf("test8b: %d\n", j);});
+    s.add_method("/test8", "i", [j](){printf("/test8a: %d\n", j);});
+    j *= 2;
+    s.add_method("/test8", "i", [j](){printf("/test8b: %d\n", j);});
 
     j*=2;
-    s.add_method("test9", "i", [j](const char *path, const char *types, lo_arg **argv, int argc)
-                  {printf("test9.1: %d, %s, %s, %d\n", j, path, types, argv[0]->i); return 1;});
+    s.add_method("/test9", "i", [j](const char *path, const char *types, lo_arg **argv, int argc)
+                 {printf("/test9.1: %d, %s, %s, %d\n", j, path, types, argv[0]->i); return 1;});
     j*=2;
-    s.add_method("test10", "i", [j](const char *types, lo_arg **argv, int argc)
-                  {printf("test10.1: %d, %s, %d\n", j, types, argv[0]->i); return 1;});
+    s.add_method("/test10", "i", [j](const char *types, lo_arg **argv, int argc)
+                 {printf("/test10.1: %d, %s, %d\n", j, types, argv[0]->i); return 1;});
     j*=2;
-    s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
-                  {printf("test11.1: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg); return 1;});
+    s.add_method("/test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
+                 {printf("/test11.1: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg); return 1;});
 
     j*=2;
-    s.add_method("test9", "i", [j](const char *path, const char *types, lo_arg **argv, int argc)
-                  {printf("test9.2: %d, %s, %s, %d\n", j, path, types, argv[0]->i);});
+    s.add_method("/test9", "i", [j](const char *path, const char *types, lo_arg **argv, int argc)
+                 {printf("/test9.2: %d, %s, %s, %d\n", j, path, types, argv[0]->i);});
     j*=2;
-    s.add_method("test10", "i", [j](const char *types, lo_arg **argv, int argc)
-                  {printf("test10.2: %d, %s, %d\n", j, types, argv[0]->i);});
+    s.add_method("/test10", "i", [j](const char *types, lo_arg **argv, int argc)
+                 {printf("/test10.2: %d, %s, %d\n", j, types, argv[0]->i);});
     j*=2;
-    s.add_method("test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
-                 {printf("test11.2: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
+    s.add_method("/test11", "is", [j](const char *types, lo_arg **argv, int argc, lo_message msg)
+                 {printf("/test11.2: %d, %s, %d, %s -- ", j, types, argv[0]->i, &argv[1]->s); lo_message_pp(msg);});
 
     j*=2;
-    s.add_method("test12", "i", [j](const lo::Message m)
-                 {printf("test12 (j=%d) source: %s\n", j, m.source().url().c_str());});
+    s.add_method("/test12", "i", [j](const lo::Message m)
+                 {printf("/test12 (j=%d) source: %s\n", j, m.source().url().c_str());});
 
     s.add_method(0, 0, [](const char *path, lo_message m){printf("generic: %s ", path); lo_message_pp(m);});
 
@@ -168,37 +168,38 @@ int main()
     printf("iface: %s\n", a.iface().c_str());
 #endif
 
-    a.send_from(st, "test1", "i", 20);
-    a.send("test2", "i", 40);
-    a.send("test3", "i", 60);
-    a.send("test4", "i", 80);
-    a.send("test5", "i", 100);
-    a.send("test6", "i", 120);
-    a.send("test7", "i", 140);
-    a.send("test8", "i", 160);
-    a.send("test9", "i", 180);
-    a.send("test10", std::string("i"), 200);
+    a.send_from(st, "/test1", "i", 20);
+    a.send("/test2", "i", 40);
+    a.send("/test3", "i", 60);
+    a.send("/test4", "i", 80);
+    a.send("/test5", "i", 100);
+    a.send("/test6", "i", 120);
+    a.send("/test7", "i", 140);
+    a.send("/test8", "i", 160);
+    a.send("/test9", "i", 180);
+    a.send("/test10", std::string("i"), 200);
 
     lo::Message m;
     m.add("i", 220);
     m.add_string(std::string("blah"));
-    a.send("test11", m);
+    a.send("/test11", m);
 
     m.add(lo::Blob(4,"asdf"));
     m.add(lo::Blob(std::vector<char>(5, 'a')));
     m.add(lo::Blob(std::array<char,5>{"asdf"}));
-    a.send("blobtest", m);
+    a.send("/blobtest", m);
 
     a.send(
         lo::Bundle({
-                {"test11", lo::Message("is",20,"first in bundle")},
-                {"test11", lo::Message("is",30,"second in bundle")}
-            })
-        );
+            {"/test11", lo::Message("is",20,"first in bundle")},
+            {"/test11", lo::Message("is",30,"second in bundle")}
+        })
+    );
 
-    lo::Bundle b({{"ok1", lo::Message("is",20,"first in bundle")},
-                  lo::Bundle({"ok2", lo::Message("is",30,"second in bundle")})
-                 }, LO_TT_IMMEDIATE);
+    lo::Bundle b({
+        {"/ok1", lo::Message("is",20,"first in bundle")},
+        lo::Bundle({"/ok2", lo::Message("is",30,"second in bundle")})
+    }, LO_TT_IMMEDIATE);
     printf("Bundle:\n"); b.print();
 
     lo::Bundle::Element e(b.get_element(0));
@@ -211,7 +212,7 @@ int main()
            e.bundle.timestamp().sec,
            e.bundle.timestamp().frac);
 
-    a.send("test12", "i", 240);
+    a.send("/test12", "i", 240);
 
     char oscmsg[] = {'/','o','k',0,',','i',0,0,0,0,0,4};
     lo::Message::maybe m2 = lo::Message::deserialise(oscmsg, sizeof(oscmsg));

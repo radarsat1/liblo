@@ -1400,6 +1400,8 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
             -0.00000023001f, 1.0);
     lo_send(a, "/a/b/c/d", "b", btest);
 
+    SLEEP_MS(1000);
+
     /* Delete methods */
     lo_server_thread_del_method(st, "/coerce", "dfhiSs");
     TEST (lo_server_thread_del_lo_method(st, jit) == 0);
