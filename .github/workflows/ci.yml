@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: install dependencies
@@ -24,19 +24,20 @@ jobs:
       run: make test
     - name: make dist
       run: make dist
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
+        name: tarball
         path: |
           liblo*.tar.gz
 
-  MacOS-Latest:
-    runs-on: macOS-latest
+  MacOS:
+    runs-on: macOS-13
     timeout-minutes: 20
     env:
       CC: clang
       CXX: clang++
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: install dependencies
@@ -90,15 +91,16 @@ jobs:
         && cd ../..
     - name: make test
       run: make test
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
+        name: dylib
         path: ./inst/lib/liblo.7.dylib
 
   Windows-Latest:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Run windows build script
@@ -112,3 +114,13 @@ jobs:
       run: |
         cd bld\
         ctest -V
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: [Linux, MacOS]
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: artifact
+          delete-merged: true
