@@ -144,6 +144,9 @@ set(NONBLOCKING_SERVER_EXAMPLE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/n
 
 if (WITH_POLL)
     check_symbol_exists(poll poll.h HAVE_POLL)
+else()
+    message(STATUS "Excluding poll support.")
+    set(HAVE_POLL OFF)
 endif()
 check_symbol_exists(select sys/select.h HAVE_SELECT)
 if(NOT HAVE_POLL AND NOT HAVE_SELECT)
