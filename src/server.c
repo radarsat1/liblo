@@ -1590,14 +1590,15 @@ again:
                 recvd[i] = dispatch_queued(s[i], 0);
                 total_bytes += recvd[i];
             }
-            else {
-                // if the received message was queued we need to keep waiting
-                lo_timetag now;
-                lo_timetag_now(&now);
-                double diff = lo_timetag_diff(now, then);
-                timeout -= (int)(diff*1000);
-                if (timeout > 0.01)
-                    goto again;
+        }
+        if (!total_bytes) {
+            // we need to keep waiting if no received or queued messages are ready for dispatch
+            lo_timetag now;
+            lo_timetag_now(&now);
+            double diff = lo_timetag_diff(now, then);
+            timeout -= (int)(diff*1000);
+            if (timeout > 2) {
+                goto again;
             }
         }
     }
