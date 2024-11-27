@@ -148,7 +148,8 @@ struct socket_context {
 #ifdef HAVE_POLL
     typedef struct pollfd lo_server_fd_type;
 #else
-    typedef struct { int fd; } lo_server_fd_type;
+    typedef struct { int fd; int revents; } lo_server_fd_type;
+    #define POLLIN 0x001
 #endif
 
 typedef struct _lo_server {
