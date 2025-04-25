@@ -44,9 +44,9 @@ void lo_bundle_incref(lo_bundle b)
 }
 
 static
-void lo_bundle_decref(lo_bundle b)
+int lo_bundle_decref(lo_bundle b)
 {
-    b->refcount --;
+    return -- b->refcount;
 }
 
 static lo_bundle *push_to_list(lo_bundle *list, lo_bundle ptr, size_t *len, size_t *size)
@@ -314,13 +314,29 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
 
 void lo_bundle_free(lo_bundle b)
 {
+    size_t i;
+
     if (!b) {
         return;
     }
 
-    lo_bundle_decref(b);
-    if (b->refcount > 0)
+    if (lo_bundle_decref(b) > 0) {
         return;
+    }
+
+    for (i = 0; i < b->len; i++) {
+        lo_element *elmnt = &b->elmnts[i];
+        if (LO_ELEMENT_MESSAGE == elmnt->type) {
+            /* message paths are cached in the bundle and need to be free'd */
+            free((char*)elmnt->content.message.path);
+            /* decrement reference count for message */
+            lo_message_decref(elmnt->content.message.msg);
+        }
+        else {
+            /* decrement reference count for nested bundle */
+            lo_bundle_decref(elmnt->content.bundle);
+        }
+    }
 
     free(b->elmnts);
     free(b);
@@ -356,12 +372,11 @@ void lo_bundle_free_recursive(lo_bundle b)
     if (!b)
         return;
 
-    lo_bundle_decref(b);
-    if (b->refcount > 0)
+    if (lo_bundle_decref(b) > 0)
         return;
 
     for (i = 0; i < b->len; i++)
-	collect_element(&b->elmnts[i]);
+        collect_element(&b->elmnts[i]);
 
     free(b->elmnts);
     free(b);
