@@ -144,8 +144,8 @@ lo_message lo_message_new(void);
  *
  * Messages are reference counted. If a message is multiply referenced,
  * the message's counter should be incremented. It is automatically
- * decremented by lo_message_free lo_message_free_recursive, with
- * lo_message_free_recursive being the preferable method.
+ * decremented by `lo_message_free` or `lo_bundle_free_recursive`, with
+ * `lo_bundle_free_recursive` being the preferable method if bundles are used.
  */
 void lo_message_incref(lo_message m);
 
