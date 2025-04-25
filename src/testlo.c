@@ -1571,7 +1571,7 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_send_bundle(a, b);
 
     /* This should be safe for multiple copies of the same message. */
-    lo_bundle_free_messages(b);
+    lo_bundle_free_recursive(b);
 
     {
         lo_timetag t = { 1, 2 };
