@@ -61,7 +61,7 @@ void lo_arg_pp_internal(lo_type type, void *data, int bigendian);
 // highest power of 2.
 #if 1
 #define lo_pow2_over(a,b) \
-    a = ((b > a) ? (a << ((int)((log(((double)b/(double)a))/0.69315)+1))) : a);
+    a = (a << ((int)((log(((double)b/(double)a))/0.69315)+1)));
 #else
 #define lo_pow2_over(a,b) \
     while (b > a) {a *= 2;}
@@ -93,6 +93,11 @@ lo_message lo_message_new()
 void lo_message_incref(lo_message m)
 {
     m->refcount ++;
+}
+
+int lo_message_decref(lo_message m)
+{
+    return -- m->refcount;
 }
 
 lo_message lo_message_clone(lo_message m)
@@ -132,6 +137,15 @@ void lo_message_free(lo_message m)
         free(m->data);
         free(m->argv);
         free(m);
+    }
+}
+
+void lo_message_clear(lo_message m)
+{
+    if (m) {
+        m->datalen = 0;
+        m->typelen = 1;
+        m->types[1] = '\0';
     }
 }
 
@@ -504,15 +518,16 @@ static void *lo_message_add_data(lo_message m, size_t s)
     uint32_t old_dlen = (uint32_t) m->datalen;
     int new_datasize = (int) m->datasize;
     int new_datalen = (int) (m->datalen + s);
-    void *new_data = 0;
+    void *new_data = m->data;
 
-    if (!new_datasize)
-        new_datasize = LO_DEF_DATA_SIZE;
-
-    lo_pow2_over(new_datasize, new_datalen);
-    new_data = realloc(m->data, new_datasize);
-    if (!new_data)
-        return 0;
+    if (new_datalen > new_datasize) {
+        if (!new_datasize)
+            new_datasize = LO_DEF_DATA_SIZE;
+        lo_pow2_over(new_datasize, new_datalen);
+        new_data = realloc(m->data, new_datasize);
+        if (!new_data)
+            return 0;
+    }
 
     m->datalen = new_datalen;
     m->datasize = new_datasize;

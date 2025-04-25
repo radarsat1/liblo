@@ -150,6 +150,16 @@ lo_message lo_message_new(void);
 void lo_message_incref(lo_message m);
 
 /**
+ * \brief Subtract one from a message's reference count.
+ *
+ * Messages are reference counted. In general decrementing the counter
+ * should be handled automatically using `lo_message_free` or
+ * `lo_bundle_free_recursive`, however if necessary the counter can be
+ * decremented manually.
+ */
+int lo_message_decref(lo_message m);
+
+/**
  * \brief Create a new lo_message object by cloning an already existing one
  */
 lo_message lo_message_clone(lo_message m);
@@ -159,6 +169,11 @@ lo_message lo_message_clone(lo_message m);
  * \ref lo_message_add_int32 lo_message_add*() calls.
  */
 void lo_message_free(lo_message m);
+
+/**
+ * \brief Clear elements from a lo_message but do not free allocated memory.
+ */
+void lo_message_clear(lo_message m);
 
 /**
  * \brief Append a number of arguments to a message.
