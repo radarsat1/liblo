@@ -1571,7 +1571,7 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_send_bundle(a, b);
 
     /* This should be safe for multiple copies of the same message. */
-    lo_bundle_free_messages(b);
+    lo_bundle_free_recursive(b);
 
     {
         lo_timetag t = { 1, 2 };
@@ -1620,8 +1620,8 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
-    lo_message_free(m1);
     lo_bundle_free(b);
+    lo_message_free(m1);
 
     lo_timetag_now(&sched);
 
@@ -1634,8 +1634,8 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_bundle_add_message(b, "/bundle", m1);
 
     lo_send_bundle(a, b);
-    lo_message_free(m1);
     lo_bundle_free(b);
+    lo_message_free(m1);
 
     lo_send_timestamped(a, sched, "/bundle", "s",
                         "lo_send_timestamped() test");

@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "lo_types_internal.h"
+#include "lo_internal.h"
 #include "lo/lo.h"
 
 lo_bundle lo_bundle_new(lo_timetag tt)
@@ -44,9 +45,9 @@ void lo_bundle_incref(lo_bundle b)
 }
 
 static
-void lo_bundle_decref(lo_bundle b)
+int lo_bundle_decref(lo_bundle b)
 {
-    b->refcount --;
+    return -- b->refcount;
 }
 
 static lo_bundle *push_to_list(lo_bundle *list, lo_bundle ptr, size_t *len, size_t *size)
@@ -95,11 +96,11 @@ static lo_bundle *walk_tree(lo_bundle *B, lo_bundle b, size_t *len, size_t *size
 
     res = 0;
     for (i = 0; i < b->len; i++) {
-	if (b->elmnts[i].type == LO_ELEMENT_BUNDLE) {
-	    B = walk_tree(B, b->elmnts[i].content.bundle, len, size, &res);
-	    if (res)
-		break;
-	}
+        if (b->elmnts[i].type == LO_ELEMENT_BUNDLE) {
+            B = walk_tree(B, b->elmnts[i].content.bundle, len, size, &res);
+            if (res)
+                break;
+        }
     }
 
     // pop bundle from parents list
@@ -181,8 +182,8 @@ int lo_bundle_add_message(lo_bundle b, const char *path, lo_message m)
 int lo_bundle_add_bundle(lo_bundle b, lo_bundle n)
 {
     if (!n)
-	return 0;
-    
+        return 0;
+
     return lo_bundle_add_element (b, LO_ELEMENT_BUNDLE, NULL, n);
 }
 
@@ -233,15 +234,16 @@ size_t lo_bundle_length(lo_bundle b)
     }
 
     size += b->len * 4;         /* sizes */
-    for (i = 0; i < b->len; i++)
-	switch (b->elmnts[i].type) {
-	    case LO_ELEMENT_BUNDLE:
-		size += lo_bundle_length(b->elmnts[i].content.bundle);
-		break;
-	    case LO_ELEMENT_MESSAGE:
-		size += lo_message_length(b->elmnts[i].content.message.msg, b->elmnts[i].content.message.path);
-		break;
-	}
+    for (i = 0; i < b->len; i++) {
+        switch (b->elmnts[i].type) {
+            case LO_ELEMENT_BUNDLE:
+                size += lo_bundle_length(b->elmnts[i].content.bundle);
+                break;
+            case LO_ELEMENT_MESSAGE:
+                size += lo_message_length(b->elmnts[i].content.message.msg, b->elmnts[i].content.message.path);
+                break;
+        }
+    }
 
     return size;
 }
@@ -281,25 +283,24 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
     pos += 4;
 
     for (i = 0; i < b->len; i++) {
-	switch (b->elmnts[i].type) {
-	    case LO_ELEMENT_MESSAGE:
-		lo_message_serialise(b->elmnts[i].content.message.msg, b->elmnts[i].content.message.path, pos + 4, &skip);
-		break;
-	    case LO_ELEMENT_BUNDLE:
-		lo_bundle_serialise(b->elmnts[i].content.bundle, pos+4, &skip);
-		break;
-	}
+        switch (b->elmnts[i].type) {
+            case LO_ELEMENT_MESSAGE:
+                lo_message_serialise(b->elmnts[i].content.message.msg,
+                                     b->elmnts[i].content.message.path, pos + 4, &skip);
+                break;
+            case LO_ELEMENT_BUNDLE:
+                lo_bundle_serialise(b->elmnts[i].content.bundle, pos+4, &skip);
+                break;
+        }
 
-	bes = (int32_t *) (void *)pos;
-	*bes = lo_htoo32(skip);
-	pos += skip + 4;
+        bes = (int32_t *) (void *)pos;
+        *bes = lo_htoo32(skip);
+        pos += skip + 4;
 
-	if (pos > (char*) to + s) {
-            fprintf(stderr, "liblo: data integrity error at message %lu\n",
-                    (long unsigned int)i);
-
-	    return NULL;
-	}
+        if (pos > (char*) to + s) {
+            fprintf(stderr, "liblo: data integrity error at message %lu\n", (long unsigned int)i);
+            return NULL;
+        }
     }
     if (pos != (char*) to + s) {
         fprintf(stderr, "liblo: data integrity error\n");
@@ -314,13 +315,29 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
 
 void lo_bundle_free(lo_bundle b)
 {
+    size_t i;
+
     if (!b) {
         return;
     }
 
-    lo_bundle_decref(b);
-    if (b->refcount > 0)
+    if (lo_bundle_decref(b) > 0) {
         return;
+    }
+
+    for (i = 0; i < b->len; i++) {
+        lo_element *elmnt = &b->elmnts[i];
+        if (LO_ELEMENT_MESSAGE == elmnt->type) {
+            /* message paths are cached in the bundle and need to be free'd */
+            free((char*)elmnt->content.message.path);
+            /* decrement reference count for message */
+            lo_message_decref(elmnt->content.message.msg);
+        }
+        else {
+            /* decrement reference count for nested bundle */
+            lo_bundle_decref(elmnt->content.bundle);
+        }
+    }
 
     free(b->elmnts);
     free(b);
@@ -329,18 +346,20 @@ void lo_bundle_free(lo_bundle b)
 static void collect_element(lo_element *elmnt)
 {
     switch (elmnt->type) {
-	case LO_ELEMENT_MESSAGE: {
-	    lo_message msg = elmnt->content.message.msg;
-		lo_message_free(msg);
-        free((char*)elmnt->content.message.path);
-	    break;
-	}
+        case LO_ELEMENT_MESSAGE: {
+            lo_message msg = elmnt->content.message.msg;
+            if (lo_message_decref(msg) <= 0)
+                lo_message_free(msg);
+            free((char*)elmnt->content.message.path);
+            break;
+        }
 
-	case LO_ELEMENT_BUNDLE: {
-	    lo_bundle bndl = elmnt->content.bundle;
-        lo_bundle_free_recursive(bndl);
-	    break;
-	}
+        case LO_ELEMENT_BUNDLE: {
+            lo_bundle bndl = elmnt->content.bundle;
+//            if (lo_bundle_decref(bndl) <= 0)
+            lo_bundle_free_recursive(bndl);
+            break;
+        }
     }
 }
 
@@ -356,12 +375,11 @@ void lo_bundle_free_recursive(lo_bundle b)
     if (!b)
         return;
 
-    lo_bundle_decref(b);
-    if (b->refcount > 0)
+    if (lo_bundle_decref(b) > 0)
         return;
 
     for (i = 0; i < b->len; i++)
-	collect_element(&b->elmnts[i]);
+        collect_element(&b->elmnts[i]);
 
     free(b->elmnts);
     free(b);
@@ -397,18 +415,18 @@ static int *lo_bundle_pp_internal(lo_bundle b, unsigned int offset,
     offset_pp(offset, state);
     printf("bundle─┬─(%08x.%08x)\n", b->ts.sec, b->ts.frac);
     for (i = 0; i < b->len; i++) {
-	state[offset+1] = i != b->len-1 ? 0 : 1;
+        state[offset+1] = i != b->len-1 ? 0 : 1;
 
-	switch(b->elmnts[i].type) {
-	    case LO_ELEMENT_MESSAGE:
-		offset_pp(offset+1, state);
-		printf("%s ", b->elmnts[i].content.message.path);
-		lo_message_pp(b->elmnts[i].content.message.msg);
-		break;
-	    case LO_ELEMENT_BUNDLE:
-		state = lo_bundle_pp_internal(b->elmnts[i].content.bundle, offset+1, state, len);
-		break;
-	}
+        switch(b->elmnts[i].type) {
+            case LO_ELEMENT_MESSAGE:
+                offset_pp(offset+1, state);
+                printf("%s ", b->elmnts[i].content.message.path);
+                lo_message_pp(b->elmnts[i].content.message.msg);
+                break;
+            case LO_ELEMENT_BUNDLE:
+                state = lo_bundle_pp_internal(b->elmnts[i].content.bundle, offset+1, state, len);
+                break;
+        }
     }
 
     return state;

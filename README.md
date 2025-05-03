@@ -91,7 +91,7 @@ using
 
 ## Poll() vs Select()
 
-Some platforms may have both `poll()` and `select()` available for listening efficiently on multiple servers/sockets. In this case, liblo will default to using `poll` since it is comsidered to be more scalable. However, on some platforms (e.g. MacOS) the liblo code path using `select()` is considerably faster so you may wish to explictly disable support for `poll` if your applications do not require extreme scalability and are sensitive to small differences in efficiency. This can be done when compiling the library from source, either using configure:
+Some platforms may have both `poll()` and `select()` available for listening efficiently on multiple servers/sockets. In this case, liblo will default to using `poll` since it is considered to be more scalable. However, on some platforms (e.g. MacOS) the liblo code path using `select()` is considerably faster. You may wish to explictly disable support for `poll` if your applications do not require extreme scalability and are sensitive to small differences in efficiency. This can be done when compiling the library from source, either using configure:
 
     ./configure --disable-poll
 

@@ -146,8 +146,8 @@ int lo_send_timestamped_varargs_internal(lo_address t, const char *file,
         ret = lo_send_bundle(t, b);
     }
 
-    lo_message_free(msg);
     lo_bundle_free(b);
+    lo_message_free(msg);
 
     return ret;
 }
