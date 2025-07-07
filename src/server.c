@@ -1995,10 +1995,7 @@ static void dispatch_method(lo_server s, const char *path,
                     char *tmp;
                     char *sec;
 
-                    int tmplen = (int) strlen(it->path + len) + 1;
-                    tmp = (char*) malloc(strlen(it->path + len) + 1);
-                    strncpy(tmp, it->path + len, tmplen);
-                    tmp[tmplen-1]=0;
+                    tmp = strdup(it->path + len);
                     sec = strchr(tmp, '/');
                     if (sec)
                         *sec = '\0';
