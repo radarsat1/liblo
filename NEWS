@@ -1,5 +1,27 @@
 
 --------------------------------------------
+2025-10-01: Release 0.33
+--------------------------------------------
+
+We are pleased to present stable release 0.33 of LibLo, the
+lightweight, easy to use implementation of the Open Sound Control
+protocol.
+
+Open Sound Control (OSC) is a protocol for communication among
+computers, sound synthesizers, and other multimedia devices that is
+designed for use over modern network transports.
+
+Changes of note since the 0.32 release include:
+
+- Fixed new messages taken precedence over messages queued for earlier dispatch.
+- Add option to disable poll().
+- Skip value entries for LO_TRUE/LO_FALSE/LO_NIL/LO_INFINITUM created by oscdump.
+- Fix waiting logic in lo_servers_recv_noblock.
+- Check sockets in reverse order to improve handling of closed sockets.
+- Add new function lo_message_clear() to allow lo_message structs to be reused.
+- Use strdup() instead of strncpy() in dispatch_method().
+
+--------------------------------------------
 2024-02-16: Release 0.32
 --------------------------------------------
 
@@ -11,7 +33,7 @@ Open Sound Control (OSC) is a protocol for communication among
 computers, sound synthesizers, and other multimedia devices that is
 designed for use over modern network transports.
 
-Changes of note since the 0.32 release include:
+Changes of note since the 0.31 release include:
 
 - Consider subnet-specific broadcast addresses.
 - OSC path validation during deserialization.

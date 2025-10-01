@@ -1,3 +1,12 @@
+2025-10-01 Stephen Sinclair <radarsat1@gmail.com>
+	* Fixed new messages taken precedence over messages queued for earlier dispatch.
+	* Add option to disable poll().
+	* Skip value entries for LO_TRUE/LO_FALSE/LO_NIL/LO_INFINITUM created by oscdump.
+	* Fix waiting logic in lo_servers_recv_noblock.
+	* Check sockets in reverse order to improve handling of closed sockets.
+	* Add new function lo_message_clear() to allow lo_message structs to be reused.
+	* Use strdup() instead of strncpy() in dispatch_method().
+
 2024-02-16 Stephen Sinclair <radarsat1@gmail.com>
 	* Consider subnet-specific broadcast addresses.
 	* OSC path validation during deserialization.
