@@ -15,11 +15,17 @@ DOC_DIR=$(HTML_DIR)
 
 all-local: doxygen-build.stamp
 
+if ENABLE_DOC
 doxygen-build.stamp: $(DOX) ../lo/lo.h ../lo/lo_types.h ../lo/lo_lowlevel.h \
 	../lo/lo_osc_types.h
 	@echo '*** Running doxygen ***'
 	doxygen $(DOX)
 	touch doxygen-build.stamp
+else
+dist-hook:
+	@echo "ERROR: Documentation is disabled (--disable-doc), cannot make dist."
+	@false
+endif
 
 clean-local:
 	rm -f *~ *.bak $(DOC_STAMPS) || true
