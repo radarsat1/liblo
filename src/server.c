@@ -1358,10 +1358,8 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
 #ifdef HAVE_POLL
     socklen_t addr_len = sizeof(struct sockaddr_storage);
     struct sockaddr_storage *addr = alloca (addr_len * num_servers);
-    int num_sockets;
 
-  again:
-    num_sockets = 0;
+    int num_sockets = 0;
     for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             if (lo_server_buffer_contains_msg(s[j], i)) {
@@ -1380,6 +1378,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
 
     struct pollfd *sockets = alloca(sizeof(struct pollfd) * num_sockets);
 
+  again:
     sched_timeout = timeout;
     for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
@@ -1435,7 +1434,10 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                     if (sockets[k].revents & (POLLERR | POLLHUP)) {
                         closesocket(sockets[k].fd);
                         lo_server_del_socket(s[j], i, sockets[k].fd);
-                        s[j]->sockets[i].revents = 0;
+
+                        // adjust index due to shift of s[j]->sockets array
+                        if (++i >= s[j]->sockets_len)
+			    break;
                     }
                     else {
                         s[j]->sockets[i].revents = POLLIN;
