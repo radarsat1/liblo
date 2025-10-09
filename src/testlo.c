@@ -63,6 +63,11 @@
                   ; } \
            else { printf("passed " #cond "\n"); }
 
+#define EXPECT(func, val) {int v; if (!((v=func)==val)) { fprintf(stderr, "FAILED " #func \
+		           " at %s:%d, got %d but expected %d\n", __FILE__, __LINE__, v, val); \
+                           exit(1); } \
+           else { printf("passed " #func " == " #val "\n"); }}
+
 #define DOING(s) printf("\n  == " s "() ==\n\n")
 
 #define HANDLER(h) printf(" <-- " h "_handler()\n")
@@ -1780,9 +1785,7 @@ void test_tcp()
     TEST(lo_server_get_protocol(ts) == LO_TCP);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
-    int rc = 0;
-    TEST((rc=lo_server_recv(ts)) == 16);
-    printf("lo_server_recv(ts): %d\n", rc);
+    EXPECT(lo_server_recv(ts), 16);
     TEST(lo_server_recv_noblock(ts, 5000) == 16);
     TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 5.0f, 6) == 24);
     TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
