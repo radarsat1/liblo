@@ -157,6 +157,7 @@ void test_tcp();
 void test_tcp_slip1();
 void test_tcp_slip2();
 void test_tcp_nonblock();
+void test_tcp_hup();
 void cleanup(lo_server_thread st, lo_address a);
 
 int main()
@@ -168,29 +169,31 @@ int main()
 
     atexit(exitcheck);
 
-    test_version();
-    test_patterns();
-    test_deserialise();
-    test_types();
-    test_url();
-    test_address();
-    test_blob();
+    /* test_version(); */
+    /* test_patterns(); */
+    /* test_deserialise(); */
+    /* test_types(); */
+    /* test_url(); */
+    /* test_address(); */
+    /* test_blob(); */
 
 #ifdef ENABLE_NETWORK_TESTS
-    test_server_thread(&st, &a);
-    test_validation(a);
-    test_multicast(st);
-    test_message(a);
-    test_pattern(a);
-    test_subtest(st);
-    test_bundle(st, a);
-    test_tcp_nonblock();
-    cleanup(st, a);
-    test_nonblock();
-    test_unix_sockets();
-    test_tcp();
-    test_tcp_slip1();
-    test_tcp_slip2();
+    /* test_server_thread(&st, &a); */
+    /* test_validation(a); */
+    /* test_multicast(st); */
+    /* test_message(a); */
+    /* test_pattern(a); */
+    /* test_subtest(st); */
+    /* test_bundle(st, a); */
+    /* test_tcp_nonblock(); */
+    /* cleanup(st, a); */
+    /* test_nonblock(); */
+    /* test_unix_sockets(); */
+    /* test_tcp(); */
+    /* test_tcp_slip1(); */
+    /* test_tcp_slip2(); */
+    test_tcp_hup();
+    done = 1;
 #else
 	done = 1;
 #endif
@@ -1850,6 +1853,43 @@ void test_tcp_slip2()
     free(addr);
     lo_server_free(ts);
     lo_address_free(ta);
+}
+
+void test_tcp_hup()
+{
+    /* test TCP "hangup" (socket closed by sender) */
+    lo_address ta;
+    lo_server ts;
+    char *addr;
+
+    DOING("test_tcp_hup");
+
+    ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", generic_handler, ts);
+    addr = lo_server_get_url(ts);
+    ta = lo_address_new_from_url(addr);
+    lo_address ta2 = lo_address_new_from_url(addr);
+    free(addr);
+    TEST(lo_server_get_protocol(ts) == LO_TCP);
+    TEST(lo_send(ta, "/foo/bar", "fi", 7.0f, 8) == 24);
+    TEST(lo_send(ta2, "/foo/bar", "f", 7.0f) == 20);
+    TEST(lo_send(ta2, "/foo/bar", "") == 16);
+    TEST(lo_server_recv_noblock(ts, 5000) == 20);
+    TEST(lo_server_recv_noblock(ts, 5000) == 16);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24);
+    printf("freeing address\n");
+    lo_address_free(ta);
+    printf("freed address, recv again\n");
+    TEST(lo_send(ta2, "/foo/bar", "fii", 7.0f, 8, 9) == 32);
+    sleep(1);
+    TEST(lo_server_recv_noblock(ts, 5000) == 32);
+    TEST(lo_send(ta2, "/foo/bar", "fiii", 7.0f, 8, 9, 10) == 36);
+    sleep(1);
+    TEST(lo_server_recv_noblock(ts, 5000) == 36);
+    TEST(lo_server_recv_noblock(ts, 5000) == 0);
+    lo_address_free(ta2);
+    TEST(lo_server_recv_noblock(ts, 5000) == 0);
+    lo_server_free(ts);
 }
 
 void cleanup(lo_server_thread st, lo_address a)

@@ -1162,6 +1162,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // Error, or socket was closed.
         // Either way, we remove it from the server.
+	printf("closesocket due to bytes_recv=%d\n", bytes_recv);
         closesocket(s->sockets[isock].fd);
         lo_server_del_socket(s, isock, s->sockets[isock].fd);
         return 0;
@@ -1169,8 +1170,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
     // If unknown, check whether we are in a SLIP stream.
     if (sc->is_slip == -1 && (sc->buffer_read_offset + bytes_recv) >= 4) {
-        sc->is_slip = detect_slip((unsigned char*)(sc->buffer
-												   + sc->buffer_msg_offset));
+        sc->is_slip = detect_slip((unsigned char*)(sc->buffer + sc->buffer_msg_offset));
         sc->slip_state = 0;
 
         // Copy to stack if we just discovered we are in SLIP mode
@@ -1372,6 +1372,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
             ++num_sockets;
         }
     }
+    printf("num_sockets: %d\n", num_sockets);
 
     // Return immediately if one or more servers already have messages waiting.
     if (k > 0) {
@@ -1430,7 +1431,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                  * order of the array to the left of the index. */
 
                 for (i = s[j]->sockets_len - 1, k += i; i > 0; i--, k--) {
-		    printf("i: %d, j: %d\n", i, j);
+		  printf("i: %d, j: %d, sockets[k].revents: %d\n", i, j, sockets[k].revents);
 		    if (!sockets[k].revents)
                         continue;
                     if (sockets[k].revents & (POLLERR | POLLHUP)) {
@@ -1441,6 +1442,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
 		        printf("here1\n");
                         s[j]->sockets[i].revents = 0;
 		        printf("here2\n");
+			/* exit(1); */
                     }
                     else {
                         s[j]->sockets[i].revents = POLLIN;

@@ -293,10 +293,14 @@ char *lo_address_get_url(lo_address a)
 void lo_address_free(lo_address a)
 {
     if (a) {
+      printf("a->socket: %d, a->ownsocket: %d\n", a->socket, a->ownsocket);
         if (a->socket != -1 && a->ownsocket) {
 #ifdef SHUT_WR
-            shutdown(a->socket, SHUT_WR);
+	  //shutdown(a->socket, SHUT_WR);
 #endif
+	    setsockopt(a->socket, SOL_SOCKET, SO_LINGER, &(struct linger){1, 0}, sizeof(struct linger));
+
+	    printf("closesocket\n");
             closesocket(a->socket);
         }
         lo_address_free_mem(a);
