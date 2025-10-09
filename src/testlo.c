@@ -1780,8 +1780,9 @@ void test_tcp()
     TEST(lo_server_get_protocol(ts) == LO_TCP);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
-    printf("lo_server_recv(ts): %d\n", lo_server_recv(ts));
-    TEST(lo_server_recv(ts) == 16);
+    int rc = 0;
+    TEST((rc=lo_server_recv(ts)) == 16);
+    printf("lo_server_recv(ts): %d\n", rc);
     TEST(lo_server_recv_noblock(ts, 5000) == 16);
     TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 5.0f, 6) == 24);
     TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
@@ -1869,6 +1870,7 @@ void test_tcp_hup()
     addr = lo_server_get_url(ts);
     lo_address ta2 = lo_address_new_from_url(addr);
     ta = lo_address_new_from_url(addr);
+    printf("ta->socket: %d\n", ta->socket);
     free(addr);
     TEST(lo_server_get_protocol(ts) == LO_TCP);
     TEST(lo_send(ta, "/foo/bar", "fi", 7.0f, 8) == 24);
