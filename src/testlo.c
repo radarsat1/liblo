@@ -1867,8 +1867,8 @@ void test_tcp_hup()
     ts = lo_server_new_with_proto(NULL, LO_TCP, error);
     lo_server_add_method(ts, "/foo/bar", "fi", generic_handler, ts);
     addr = lo_server_get_url(ts);
-    ta = lo_address_new_from_url(addr);
     lo_address ta2 = lo_address_new_from_url(addr);
+    ta = lo_address_new_from_url(addr);
     free(addr);
     TEST(lo_server_get_protocol(ts) == LO_TCP);
     TEST(lo_send(ta, "/foo/bar", "fi", 7.0f, 8) == 24);
