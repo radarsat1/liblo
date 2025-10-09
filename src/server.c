@@ -1430,12 +1430,17 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                  * order of the array to the left of the index. */
 
                 for (i = s[j]->sockets_len - 1, k += i; i > 0; i--, k--) {
-                    if (!sockets[k].revents)
+		    printf("i: %d, j: %d\n", i, j);
+		    if (!sockets[k].revents)
                         continue;
                     if (sockets[k].revents & (POLLERR | POLLHUP)) {
+		        printf("POLLERR | POLLHUP\n");
                         closesocket(sockets[k].fd);
+		        printf("here0\n");
                         lo_server_del_socket(s[j], i, sockets[k].fd);
+		        printf("here1\n");
                         s[j]->sockets[i].revents = 0;
+		        printf("here2\n");
                     }
                     else {
                         s[j]->sockets[i].revents = POLLIN;
