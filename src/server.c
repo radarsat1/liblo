@@ -1445,8 +1445,11 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
 			/* exit(1); */
                     }
                     else {
+		      printf("xhere0\n");
                         s[j]->sockets[i].revents = POLLIN;
+		      printf("xhere1\n");
                         recvd[j] = 1;
+		      printf("xhere2\n");
                     }
                 }
             }
