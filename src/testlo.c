@@ -169,33 +169,32 @@ int main()
 
     atexit(exitcheck);
 
-    /* test_version(); */
-    /* test_patterns(); */
-    /* test_deserialise(); */
-    /* test_types(); */
-    /* test_url(); */
-    /* test_address(); */
-    /* test_blob(); */
+    test_version();
+    test_patterns();
+    test_deserialise();
+    test_types();
+    test_url();
+    test_address();
+    test_blob();
 
 #ifdef ENABLE_NETWORK_TESTS
-    /* test_server_thread(&st, &a); */
-    /* test_validation(a); */
-    /* test_multicast(st); */
-    /* test_message(a); */
-    /* test_pattern(a); */
-    /* test_subtest(st); */
-    /* test_bundle(st, a); */
-    /* test_tcp_nonblock(); */
-    /* cleanup(st, a); */
-    /* test_nonblock(); */
-    /* test_unix_sockets(); */
-    /* test_tcp(); */
-    /* test_tcp_slip1(); */
-    /* test_tcp_slip2(); */
+    test_server_thread(&st, &a);
+    test_validation(a);
+    test_multicast(st);
+    test_message(a);
+    test_pattern(a);
+    test_subtest(st);
+    test_bundle(st, a);
+    test_tcp_nonblock();
+    test_nonblock();
+    test_unix_sockets();
+    test_tcp();
+    test_tcp_slip1();
+    test_tcp_slip2();
     test_tcp_hup();
-    done = 1;
+    cleanup(st, a);
 #else
-	done = 1;
+    done = 1;
 #endif
 
     return 0;
