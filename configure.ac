@@ -84,7 +84,7 @@ AC_COMPILE_IFELSE(
 # instead of "ll")
 AC_MSG_CHECKING([how to print long long int])
 _CFLAGS="$CFLAGS"
-CFLAGS="$_CFLAGS -Werror -Wall"
+CFLAGS="$_CFLAGS -Wall"
 AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM([#include <stdio.h>],[printf("%lld", (long long int)0);])],
     [printf_ll=\"ll\"],
@@ -251,14 +251,14 @@ if test x"$enable_debug" = "xyes"; then
             CF="$CF $i"
         fi
     done
-	CFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
+	CFLAGS="$CF -O0 -g -Wall -DDEBUG"
     CF=""
     for i in $CXXFLAGS; do
         if ! ((test x"$i" = x-g) || (test x"$i" = x-O2)); then
             CF="$CF $i"
         fi
     done
-	CXXFLAGS="$CF -O0 -g -Wall -Werror -DDEBUG"
+	CXXFLAGS="$CF -O0 -g -Wall -DDEBUG"
 fi
 
 AC_ARG_ENABLE(tests, [  --disable-tests         Disable compiling test programs])
