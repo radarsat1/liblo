@@ -68,7 +68,7 @@ cpp_test_exceptions_LDADD = liblo.la
 
 test: all
 if COMPILE_TESTS
-	for i in $(TESTS); do echo Running $$i; if ! ./$$i; then exit 1; fi; done
+	for i in $(TESTS); do echo Running $$i; if ! ./$$i 2>&1; then exit 1; fi; done
 endif
 
 memtest: all
