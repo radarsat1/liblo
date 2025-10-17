@@ -1435,7 +1435,6 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                     if (sockets[k].revents & (POLLERR | POLLHUP)) {
                         closesocket(sockets[k].fd);
                         lo_server_del_socket(s[j], i, sockets[k].fd);
-                        s[j]->sockets[i].revents = 0;
                     }
                     else {
                         s[j]->sockets[i].revents = POLLIN;
