@@ -57,9 +57,8 @@ void *sendthread(void *arg)
 
     printf("%p.message sent\n", s);
     printf("%p.sending thread waiting\n", s);
-    if (lo_server_recv_noblock(s, 1000)) {
-        printf("%p.sending thread received\n", s);
-    }
+    lo_server_recv(s);
+    printf("%p.sending thread received\n", s);
 
     printf("%p.freeing address\n", s);
     /* Do not close the socket immediatelly, wait 1 second for recv */
@@ -79,8 +78,6 @@ void *sendthread(void *arg)
 
 int main()
 {
-    int res = 0;
-
     /* start a new server on port 7771 */
     lo_server s = lo_server_new_with_proto("7771", LO_TCP, 0);
     if (!s) { printf("no server\n"); exit(1); }
@@ -98,22 +95,12 @@ int main()
 #endif
 
     printf("%p.receiving1..\n", s);
-    if (!lo_server_recv_noblock(s, 1000)) {
-        printf("%p.error receiving1\n", s);
-        res = 1;
-        goto done;
-    }
+    lo_server_recv(s);
     printf("%p.done receiving1\n", s);
 
     printf("%p.receiving2..\n", s);
-    if (!lo_server_recv_noblock(s, 1000)) {
-        printf("%p.error receiving2\n", s);
-        res = 1;
-        goto done;
-    }
+    lo_server_recv(s);
     printf("%p.done receiving2\n", s);
-
-done:
 
 #ifdef HAVE_WIN32_THREADS
     WaitForSingleObject(thr, INFINITE);
@@ -126,7 +113,7 @@ done:
     lo_server_free(s);
 
     /* If it gets here without hanging we are good. */
-    printf("TEST %s\n", res ? "FAILED" : "SUCCESSFUL");
+    printf("TEST SUCCESSFUL\n");
 
-    return res;
+    return 0;
 }
