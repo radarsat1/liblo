@@ -1621,20 +1621,20 @@ int lo_server_recv_noblock(lo_server s, int timeout)
 int lo_server_recv(lo_server s)
 {
     int ret, recvd, queued;
-    while (1) {
-        while ((ret = lo_servers_wait_internal(&s, &recvd, &queued, 1, 100)) == 0) {}
+    do {
+        ret = lo_servers_wait_internal(&s, &recvd, &queued, 1, 100);
         if (ret > 0) {
-            // new messages might be queued for future dispatch, in which case any queued msgs that are ready should take precedence
+            // new messages might be queued for future dispatch,
+            // in which case any queued msgs that are ready should take precedence
             if (recvd && (ret = lo_server_recv_internal(s))) {
                 // new message was received and dispatched
                 return ret;
-            }
-            else if (queued) {
+            } else if (queued) {
                 // queued message is ready for dispatch
                 return dispatch_queued(s, 0);
             }
         }
-    }
+    } while (ret == 0);
     return 0;
 }
 
