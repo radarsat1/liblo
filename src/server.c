@@ -1626,7 +1626,7 @@ int lo_server_recv(lo_server s)
         if (ret > 0) {
             // new messages might be queued for future dispatch,
             // in which case any queued msgs that are ready should take precedence
-            if (recvd && (ret = lo_server_recv_internal(s))) {
+            if (recvd && (ret = lo_server_recv_internal(s)) > 0) {
                 // new message was received and dispatched
                 return ret;
             } else if (queued) {
