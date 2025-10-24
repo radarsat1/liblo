@@ -1435,7 +1435,6 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                     if (sockets[k].revents & (POLLERR | POLLHUP)) {
                         closesocket(sockets[k].fd);
                         lo_server_del_socket(s[j], i, sockets[k].fd);
-                        s[j]->sockets[i].revents = 0;
                     }
                     else {
                         s[j]->sockets[i].revents = POLLIN;
@@ -1622,18 +1621,20 @@ int lo_server_recv_noblock(lo_server s, int timeout)
 int lo_server_recv(lo_server s)
 {
     int ret, recvd, queued;
-    while ((ret = lo_servers_wait_internal(&s, &recvd, &queued, 1, 100)) == 0) {}
-    if (ret > 0) {
-        // new messages might be queued for future dispatch, in which case any queued msgs that are ready should take precedence
-        if (recvd && (ret = lo_server_recv_internal(s))) {
-            // new message was received and dispatched
-            return ret;
+    do {
+        ret = lo_servers_wait_internal(&s, &recvd, &queued, 1, 100);
+        if (ret > 0) {
+            // new messages might be queued for future dispatch,
+            // in which case any queued msgs that are ready should take precedence
+            if (recvd && (ret = lo_server_recv_internal(s)) > 0) {
+                // new message was received and dispatched
+                return ret;
+            } else if (queued) {
+                // queued message is ready for dispatch
+                return dispatch_queued(s, 0);
+            }
         }
-        else if (queued) {
-            // queued message is ready for dispatch
-            return dispatch_queued(s, 0);
-        }
-    }
+    } while (ret == 0);
     return 0;
 }
 
