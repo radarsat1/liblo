@@ -1,3 +1,9 @@
+2025-10-24 Stephen Sinclair <radarsat1@gmail.com>
+	* Fixed lo_server_recv to loop again if partial message is received.
+	* Added --enable-doc option, otherwise error if docs not built.
+	* Fixed test_bidirectional_tcp to avoid use of sleep.
+	* Updated docs to discourage use of lo_server_recv.
+
 2025-10-01 Stephen Sinclair <radarsat1@gmail.com>
 	* Fixed new messages taken precedence over messages queued for earlier dispatch.
 	* Add option to disable poll().

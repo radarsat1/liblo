@@ -1,5 +1,19 @@
 
 --------------------------------------------
+2025-10-24: Release 0.34
+--------------------------------------------
+
+This is a bug fix release that addresses some minor build issues and a
+bug in lo_server_recv() for short-lived TCP streams.
+
+Changes of note since the 0.33 release include:
+
+- Fixed lo_server_recv to loop again if partial message is received.
+- Added --enable-doc option, otherwise error if docs not built.
+- Fixed test_bidirectional_tcp to avoid use of sleep.
+- Updated docs to discourage use of lo_server_recv.
+
+--------------------------------------------
 2025-10-01: Release 0.33
 --------------------------------------------
 
