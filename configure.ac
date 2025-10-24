@@ -53,8 +53,20 @@ AC_PROG_CC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 AM_PROG_CC_C_O
-AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
+
+# Allow documentation to be disabled, otherwise check for doxygen
+AC_ARG_ENABLE([doc],
+  [AS_HELP_STRING([--disable-doc], [Disable building documentation])],
+  [enable_doc=$enableval], [enable_doc=yes])
+
+if test "x$enable_doc" = xyes; then
+  AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
+  test "x$DOXYGEN" = x && AC_MSG_ERROR([doxygen not found, use --disable-doc to skip documentation])
+else
+  DOXYGEN=""
+fi
 AC_SUBST(DOXYGEN)
+AM_CONDITIONAL([ENABLE_DOC], [test "x$enable_doc" = xyes])
 
 # If we can add -Qunused-arguments, add it.
 # This error occurs when ccache and clang are used together.
@@ -300,7 +312,7 @@ else
   test x$have_threads = xyes && test x$with_win32_threads = xyes && echo '== Compile with Win32 threading'
 fi
 test x$HAVE_LAMBDA = xyes && echo '== Compiling C++ bindings' || echo '== Not compiling C++ bindings'
-test x$DOXYGEN = x && echo '== Disabled documentation (no doxygen found)'
+test x$enable_doc = xno && echo '== Disabled documentation (--disable-doc)'
 echo
 
 AC_CONFIG_FILES([

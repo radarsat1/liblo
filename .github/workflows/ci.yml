@@ -11,7 +11,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: install dependencies
-      run: sudo apt-get install g++-9 autoconf-archive curl zlib1g-dev
+      run: sudo apt-get install g++-9 autoconf-archive curl zlib1g-dev doxygen
     - name: autogen
       run:
         pwd
@@ -19,11 +19,11 @@ jobs:
         && env NOCONFIGURE=1 am_opt=--copy ./autogen.sh
         && (./configure --enable-static --prefix=$PWD/inst || (cat config.log; false))
     - name: make
-      run: make && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false)) && make install && find inst
+      run: make
     - name: make test
       run: make test
-    - name: make dist
-      run: make dist
+    - name: make distcheck
+      run: make distcheck
     - uses: actions/upload-artifact@v4
       with:
         name: tarball
@@ -41,7 +41,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: install dependencies
-      run: brew install autoconf-archive automake
+      run: brew install autoconf-archive automake doxygen
     - name: liblo autogen arm64
       run:
         pwd
@@ -69,7 +69,6 @@ jobs:
         make
         && echo -e "\n127.0.0.1 $(hostname)\n" | sudo tee -a /etc/hosts
         && (cd src && ls testlo && ./testlo && ls test_bidirectional_tcp && ./test_bidirectional_tcp && ls cpp_test && ./cpp_test)
-        && (make check || (for i in src/*.log; do echo === $i ===; cat $i; done; false))
         && make install
         && mv ./inst/lib/liblo.7.dylib ./inst/lib/liblo.7.dylib.x86_64
         && file ./inst/lib/liblo.7.dylib.x86_64
