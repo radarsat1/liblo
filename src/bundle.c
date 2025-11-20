@@ -128,11 +128,11 @@ static int lo_bundle_circular(lo_bundle b)
 static int lo_bundle_add_element(lo_bundle b, int type, const char *path, void *elmnt)
 {
     if (b->len >= b->size) {
-	b->size *= 2;
-	b->elmnts = (lo_element*) realloc(b->elmnts,
-                                      b->size * sizeof(lo_element));
-	if (!b->elmnts)
-	    return -1;
+        b->size *= 2;
+        b->elmnts = (lo_element*) realloc(b->elmnts,
+                                          b->size * sizeof(lo_element));
+        if (!b->elmnts)
+            return -1;
     }
 
     b->elmnts[b->len].type = (lo_element_type) type;
@@ -153,8 +153,7 @@ static int lo_bundle_add_element(lo_bundle b, int type, const char *path, void *
 	    (b->len)++;
 
 	    // do not add bundle if a circular reference is found
-	    if (lo_bundle_circular(b))
-        {
+	    if (lo_bundle_circular(b)) {
             // note that this is a special case where we _know_ that
             // decrement should not result in a free, therefore we
             // avoid it explicitly.  otherwise double-free might
