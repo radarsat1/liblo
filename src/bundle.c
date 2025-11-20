@@ -219,6 +219,11 @@ lo_timetag lo_bundle_get_timestamp(lo_bundle b)
     return b->ts;
 }
 
+void lo_bundle_set_timestamp(lo_bundle b, lo_timetag t)
+{
+    b->ts = t;
+}
+
 unsigned int lo_bundle_count(lo_bundle b)
 {
     return (unsigned int) b->len;
@@ -313,15 +318,11 @@ void *lo_bundle_serialise(lo_bundle b, void *to, size_t * size)
     return to;
 }
 
-void lo_bundle_free(lo_bundle b)
+void lo_bundle_clear(lo_bundle b)
 {
     size_t i;
 
     if (!b) {
-        return;
-    }
-
-    if (lo_bundle_decref(b) > 0) {
         return;
     }
 
@@ -339,6 +340,21 @@ void lo_bundle_free(lo_bundle b)
         }
     }
 
+    b->len = 0;
+}
+
+void lo_bundle_free(lo_bundle b)
+{
+    if (!b) {
+        return;
+    }
+
+    if (lo_bundle_decref(b) > 0) {
+        return;
+    }
+
+    lo_bundle_clear(b);
+
     free(b->elmnts);
     free(b);
 }
@@ -348,15 +364,15 @@ static void collect_element(lo_element *elmnt)
     switch (elmnt->type) {
         case LO_ELEMENT_MESSAGE: {
             lo_message msg = elmnt->content.message.msg;
-            if (lo_message_decref(msg) <= 0)
-                lo_message_free(msg);
+            /* do not call lo_message_decref() since it is called in lo_message_free() */
+            lo_message_free(msg);
             free((char*)elmnt->content.message.path);
             break;
         }
 
         case LO_ELEMENT_BUNDLE: {
             lo_bundle bndl = elmnt->content.bundle;
-//            if (lo_bundle_decref(bndl) <= 0)
+            /* do not call lo_bundle_decref() since it is called in lo_bundle_free_recursive() */
             lo_bundle_free_recursive(bndl);
             break;
         }
