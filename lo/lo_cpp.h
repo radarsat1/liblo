@@ -488,6 +488,9 @@ namespace lo {
         lo::Message clone() const
             { LO_CHECK_BEFORE; return lo::Message(lo_message_clone(message)); }
 
+        Message& clear()
+            { lo_message_clear(message); return *this; }
+
         operator lo_message() const
             { return message; }
 

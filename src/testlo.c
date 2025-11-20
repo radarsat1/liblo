@@ -192,7 +192,7 @@ int main()
     test_tcp_slip1();
     test_tcp_slip2();
 #else
-	done = 1;
+    done = 1;
 #endif
 
     return 0;
@@ -1463,7 +1463,11 @@ void test_message(lo_address a)
                         btest, midi_data, 0x0123456789abcdefULL, tt,
                         0.9999, "sym", 'X', 'Y', btest_empty) == 0);
 
-	lo_send_message(a, "/lotsofformats", m);
+    lo_send_message(a, "/lotsofformats", m);
+
+    TEST(lo_message_get_argc(m) == 16);
+    lo_message_clear(m);
+    TEST(lo_message_get_argc(m) == 0);
 
     lo_message_free(m);
     lo_blob_free(btest_empty);
