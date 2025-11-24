@@ -488,6 +488,9 @@ namespace lo {
         lo::Message clone() const
             { LO_CHECK_BEFORE; return lo::Message(lo_message_clone(message)); }
 
+        Message& clear()
+            { lo_message_clear(message); return *this; }
+
         operator lo_message() const
             { return message; }
 
@@ -1087,6 +1090,9 @@ namespace lo {
         lo_timetag timestamp()
             { LO_CHECK_BEFORE; return lo_bundle_get_timestamp(bundle); }
 
+        Bundle& set_timestamp(lo_timetag t)
+            { LO_CHECK_BEFORE; lo_bundle_set_timestamp(bundle, t); return *this; }
+
         void *serialise(void *to, size_t *size) const
             { LO_CHECK_BEFORE; return lo_bundle_serialise(bundle, to, size); }
 
@@ -1095,6 +1101,9 @@ namespace lo {
 
         operator lo_bundle() const
             { return bundle; }
+
+        Bundle& clear()
+            { LO_CHECK_BEFORE; lo_bundle_clear(bundle); return *this; }
 
       protected:
         lo_bundle bundle;

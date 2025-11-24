@@ -192,7 +192,7 @@ int main()
     test_tcp_slip1();
     test_tcp_slip2();
 #else
-	done = 1;
+    done = 1;
 #endif
 
     return 0;
@@ -1463,7 +1463,11 @@ void test_message(lo_address a)
                         btest, midi_data, 0x0123456789abcdefULL, tt,
                         0.9999, "sym", 'X', 'Y', btest_empty) == 0);
 
-	lo_send_message(a, "/lotsofformats", m);
+    lo_send_message(a, "/lotsofformats", m);
+
+    TEST(lo_message_get_argc(m) == 16);
+    lo_message_clear(m);
+    TEST(lo_message_get_argc(m) == 0);
 
     lo_message_free(m);
     lo_blob_free(btest_empty);
@@ -1570,8 +1574,21 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
 
+    TEST(lo_bundle_count(b) == 1);
+    lo_bundle_clear(b);
+    TEST(lo_bundle_count(b) == 0);
+
+    /* add the message again */
+    lo_bundle_add_message(b, "/bundle", m1);
+    TEST(lo_bundle_count(b) == 1);
+
+    lo_message_incref(m1);
+
     /* This should be safe for multiple copies of the same message. */
     lo_bundle_free_recursive(b);
+
+    TEST(lo_message_decref(m1) == 0);
+    lo_message_free(m1);
 
     {
         lo_timetag t = { 1, 2 };

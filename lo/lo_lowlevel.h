@@ -624,6 +624,14 @@ lo_message lo_bundle_get_message(lo_bundle b, int index,
 lo_timetag lo_bundle_get_timestamp(lo_bundle b);
 
 /**
+ * \brief  Get the timestamp associated with a bundle.
+ *
+ * \param b The bundle for which the timestamp should be returned.
+ * \param t The timestamp to write.
+ */
+void lo_bundle_set_timestamp(lo_bundle b, lo_timetag t);
+
+/**
  * \brief  Serialise the bundle object to an area of memory and return a
  * pointer to the serialised form.
  *
@@ -637,6 +645,11 @@ lo_timetag lo_bundle_get_timestamp(lo_bundle b);
  * having the correct endianess and bit-packed structure.
  */
 void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size);
+
+/**
+ * \brief Clear elements from a lo_bundle but do not free allocated memory.
+*/
+void lo_bundle_clear(lo_bundle b);
 
 /**
  * \brief  Frees the memory taken by a bundle object.
