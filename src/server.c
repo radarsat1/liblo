@@ -1178,7 +1178,8 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
             memcpy(stack_buffer, read_into, bytes_recv);
 
             // Make room for size header
-            *(uint32_t*)(sc->buffer + sc->buffer_read_offset) = 0;
+            uint32_t zero = 0;
+            memcpy(sc->buffer + sc->buffer_read_offset, &zero, sizeof(zero));
             sc->buffer_read_offset += sizeof(uint32_t);
         }
     }
@@ -1218,13 +1219,15 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
             if (msg_len)
             {
                 // Store message length header
-                *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = htonl(msg_len);
+                uint32_t net_len = htonl(msg_len);
+                memcpy(sc->buffer + sc->buffer_msg_offset, &net_len, sizeof(net_len));
 
                 // Advance to next message and zero the message length header
                 sc->buffer_msg_offset += msg_len + sizeof(uint32_t);
                 sc->buffer_read_offset += sizeof(uint32_t);
                 buffer_after += sizeof(uint32_t);
-                *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = 0;
+                uint32_t zero = 0;
+                memcpy(sc->buffer + sc->buffer_msg_offset, &zero, sizeof(zero));
             }
 
             // Update how much memory still needs decoding.
