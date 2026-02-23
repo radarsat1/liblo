@@ -1101,7 +1101,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     char *stack_buffer = 0, *read_into;
     uint32_t msg_len;
 	int buffer_bytes_left, bytes_recv;
-	ssize_t bytes_written, size;
+    ssize_t size;
     *pdata = 0;
 
   again:
@@ -1209,9 +1209,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
                            &sc->slip_state, &bytes_read) == 0)
         {
             // We have a whole message in the buffer.
-            size_t bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
-
-            sc->buffer_read_offset += bytes_written;
+            sc->buffer_read_offset = buffer_after - sc->buffer;
 
             msg_len = sc->buffer_read_offset - sc->buffer_msg_offset - sizeof(uint32_t);
 
@@ -1249,8 +1247,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // Any data left over is left in the buffer, so update the
         // read offset to indicate the end of it.
-        bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
-        sc->buffer_read_offset += bytes_written;
+        sc->buffer_read_offset = buffer_after - sc->buffer;
     }
     else
     {
