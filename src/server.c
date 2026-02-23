@@ -1155,7 +1155,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
     if (bytes_recv <= 0)
     {
-        if (errno == EAGAIN)
+        if (bytes_recv < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
             return 0;
 
         // Error, or socket was closed.
