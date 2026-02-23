@@ -1099,8 +1099,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 {
     struct socket_context *sc = &s->contexts[isock];
     char *stack_buffer = 0, *read_into;
+    size_t allocated_stack_size = 0;
+
     uint32_t msg_len;
-	int buffer_bytes_left, bytes_recv;
+    int buffer_bytes_left, bytes_recv;
     ssize_t size;
     *pdata = 0;
 
@@ -1145,7 +1147,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     // In SLIP mode, we instead read into the local stack buffer
     if (sc->is_slip == 1)
     {
-        stack_buffer = (char*) alloca(buffer_bytes_left - sizeof(uint32_t));
+        if ((size_t)buffer_bytes_left > allocated_stack_size) {
+            stack_buffer = (char*) alloca(buffer_bytes_left);
+            allocated_stack_size = buffer_bytes_left;
+        }
         read_into = stack_buffer;
     }
 
@@ -1165,6 +1170,9 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         return 0;
     }
 
+    int decode_len = bytes_recv;
+    char *decode_ptr = read_into;
+
     // If unknown, check whether we are in a SLIP stream.
     if (sc->is_slip == -1 && (sc->buffer_read_offset + bytes_recv) >= 4) {
         sc->is_slip = detect_slip((unsigned char*)(sc->buffer
@@ -1174,8 +1182,20 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         // Copy to stack if we just discovered we are in SLIP mode
         if (sc->is_slip)
         {
-            stack_buffer = (char*) alloca(bytes_recv);
-            memcpy(stack_buffer, read_into, bytes_recv);
+            size_t undecoded = (sc->buffer_read_offset + bytes_recv) - sc->buffer_msg_offset;
+
+            if (undecoded > allocated_stack_size) {
+                stack_buffer = (char*) alloca(undecoded);
+                allocated_stack_size = undecoded;
+            }
+            memcpy(stack_buffer, sc->buffer + sc->buffer_msg_offset, undecoded);
+
+            // Prepare for decode loop below
+            decode_len = (int)undecoded;
+            decode_ptr = stack_buffer;
+
+            // Rewind read offset so we decode into the right memory location
+            sc->buffer_read_offset = sc->buffer_msg_offset;
 
             // Make room for size header
             uint32_t zero = 0;
@@ -1205,7 +1225,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // As long as we find whole messages, dispatch them.
         while (slip_decode((unsigned char**)&buffer_after,
-						   (unsigned char*)stack_buffer, bytes_recv,
+                           (unsigned char*)decode_ptr, decode_len,
                            &sc->slip_state, &bytes_read) == 0)
         {
             // We have a whole message in the buffer.
@@ -1229,12 +1249,12 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
             }
 
             // Update how much memory still needs decoding.
-            bytes_recv -= bytes_read;
-            stack_buffer += bytes_read;
+            decode_len -= bytes_read;
+            decode_ptr += bytes_read;
 
             // We could exceed buffer due to prepending the count
             // prefix, so if we need more buffer room, allocate it.
-            if (bytes_recv + sizeof(uint32_t) > sc->buffer_size - sc->buffer_read_offset)
+            if (decode_len + sizeof(uint32_t) > sc->buffer_size - sc->buffer_read_offset)
             {
                 size_t new_size = sc->buffer_size * 2;
                 char *new_buf = (char*) realloc(sc->buffer, new_size);
