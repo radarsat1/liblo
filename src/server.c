@@ -1131,12 +1131,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
     if ((size_t)size > sc->buffer_size)
     {
+        char *new_buf = (char*) realloc(sc->buffer, size);
+        if (!new_buf) return 0;
+        sc->buffer = new_buf;
         sc->buffer_size = size;
-        sc->buffer = (char*) realloc(sc->buffer, sc->buffer_size);
-        if (!sc->buffer) {
-            // Out of memory
-            return 0;
-        }
     }
 
     // Read as much as we can into the remaining buffer memory.
@@ -1237,8 +1235,11 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
             // prefix, so if we need more buffer room, allocate it.
             if (bytes_recv + sizeof(uint32_t) > sc->buffer_size - sc->buffer_read_offset)
             {
-                sc->buffer_size *= 2;
-                sc->buffer = (char*)  realloc(sc->buffer, sc->buffer_size);
+                size_t new_size = sc->buffer_size * 2;
+                char *new_buf = (char*) realloc(sc->buffer, new_size);
+                if (!new_buf) return 0;
+                sc->buffer = new_buf;
+                sc->buffer_size = new_size;
                 buffer_after = sc->buffer + sc->buffer_read_offset;
             }
         }
