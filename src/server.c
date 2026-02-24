@@ -1099,9 +1099,11 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 {
     struct socket_context *sc = &s->contexts[isock];
     char *stack_buffer = 0, *read_into;
+    size_t allocated_stack_size = 0;
+
     uint32_t msg_len;
-	int buffer_bytes_left, bytes_recv;
-	ssize_t bytes_written, size;
+    int buffer_bytes_left, bytes_recv;
+    ssize_t size;
     *pdata = 0;
 
   again:
@@ -1131,12 +1133,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
     if ((size_t)size > sc->buffer_size)
     {
+        char *new_buf = (char*) realloc(sc->buffer, size);
+        if (!new_buf) return 0;
+        sc->buffer = new_buf;
         sc->buffer_size = size;
-        sc->buffer = (char*) realloc(sc->buffer, sc->buffer_size);
-        if (!sc->buffer) {
-            // Out of memory
-            return 0;
-        }
     }
 
     // Read as much as we can into the remaining buffer memory.
@@ -1147,7 +1147,10 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
     // In SLIP mode, we instead read into the local stack buffer
     if (sc->is_slip == 1)
     {
-        stack_buffer = (char*) alloca(buffer_bytes_left - sizeof(uint32_t));
+        if ((size_t)buffer_bytes_left > allocated_stack_size) {
+            stack_buffer = (char*) alloca(buffer_bytes_left);
+            allocated_stack_size = buffer_bytes_left;
+        }
         read_into = stack_buffer;
     }
 
@@ -1157,7 +1160,7 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
     if (bytes_recv <= 0)
     {
-        if (errno == EAGAIN)
+        if (bytes_recv < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
             return 0;
 
         // Error, or socket was closed.
@@ -1166,6 +1169,9 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         lo_server_del_socket(s, isock, s->sockets[isock].fd);
         return 0;
     }
+
+    int decode_len = bytes_recv;
+    char *decode_ptr = read_into;
 
     // If unknown, check whether we are in a SLIP stream.
     if (sc->is_slip == -1 && (sc->buffer_read_offset + bytes_recv) >= 4) {
@@ -1176,11 +1182,24 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
         // Copy to stack if we just discovered we are in SLIP mode
         if (sc->is_slip)
         {
-            stack_buffer = (char*) alloca(bytes_recv);
-            memcpy(stack_buffer, read_into, bytes_recv);
+            size_t undecoded = (sc->buffer_read_offset + bytes_recv) - sc->buffer_msg_offset;
+
+            if (undecoded > allocated_stack_size) {
+                stack_buffer = (char*) alloca(undecoded);
+                allocated_stack_size = undecoded;
+            }
+            memcpy(stack_buffer, sc->buffer + sc->buffer_msg_offset, undecoded);
+
+            // Prepare for decode loop below
+            decode_len = (int)undecoded;
+            decode_ptr = stack_buffer;
+
+            // Rewind read offset so we decode into the right memory location
+            sc->buffer_read_offset = sc->buffer_msg_offset;
 
             // Make room for size header
-            *(uint32_t*)(sc->buffer + sc->buffer_read_offset) = 0;
+            uint32_t zero = 0;
+            memcpy(sc->buffer + sc->buffer_read_offset, &zero, sizeof(zero));
             sc->buffer_read_offset += sizeof(uint32_t);
         }
     }
@@ -1206,13 +1225,11 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
 
         // As long as we find whole messages, dispatch them.
         while (slip_decode((unsigned char**)&buffer_after,
-						   (unsigned char*)stack_buffer, bytes_recv,
+                           (unsigned char*)decode_ptr, decode_len,
                            &sc->slip_state, &bytes_read) == 0)
         {
             // We have a whole message in the buffer.
-            size_t bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
-
-            sc->buffer_read_offset += bytes_written;
+            sc->buffer_read_offset = buffer_after - sc->buffer;
 
             msg_len = sc->buffer_read_offset - sc->buffer_msg_offset - sizeof(uint32_t);
 
@@ -1220,33 +1237,37 @@ int lo_server_recv_raw_stream_socket(lo_server s, int isock,
             if (msg_len)
             {
                 // Store message length header
-                *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = htonl(msg_len);
+                uint32_t net_len = htonl(msg_len);
+                memcpy(sc->buffer + sc->buffer_msg_offset, &net_len, sizeof(net_len));
 
                 // Advance to next message and zero the message length header
                 sc->buffer_msg_offset += msg_len + sizeof(uint32_t);
                 sc->buffer_read_offset += sizeof(uint32_t);
                 buffer_after += sizeof(uint32_t);
-                *(uint32_t*)(sc->buffer + sc->buffer_msg_offset) = 0;
+                uint32_t zero = 0;
+                memcpy(sc->buffer + sc->buffer_msg_offset, &zero, sizeof(zero));
             }
 
             // Update how much memory still needs decoding.
-            bytes_recv -= bytes_read;
-            stack_buffer += bytes_read;
+            decode_len -= bytes_read;
+            decode_ptr += bytes_read;
 
             // We could exceed buffer due to prepending the count
             // prefix, so if we need more buffer room, allocate it.
-            if (bytes_recv + sizeof(uint32_t) > sc->buffer_size - sc->buffer_read_offset)
+            if (decode_len + sizeof(uint32_t) > sc->buffer_size - sc->buffer_read_offset)
             {
-                sc->buffer_size *= 2;
-                sc->buffer = (char*)  realloc(sc->buffer, sc->buffer_size);
+                size_t new_size = sc->buffer_size * 2;
+                char *new_buf = (char*) realloc(sc->buffer, new_size);
+                if (!new_buf) return 0;
+                sc->buffer = new_buf;
+                sc->buffer_size = new_size;
                 buffer_after = sc->buffer + sc->buffer_read_offset;
             }
         }
 
         // Any data left over is left in the buffer, so update the
         // read offset to indicate the end of it.
-        bytes_written = buffer_after - sc->buffer - sc->buffer_read_offset;
-        sc->buffer_read_offset += bytes_written;
+        sc->buffer_read_offset = buffer_after - sc->buffer;
     }
     else
     {
