@@ -1462,6 +1462,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                         recvd[j] = 1;
                     }
                 }
+                k += s[j]->sockets_len;
             }
             else {
                 if (sockets[k].revents) {
