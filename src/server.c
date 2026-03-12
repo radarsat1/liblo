@@ -1427,6 +1427,9 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                     int sock = accept(sockets[k].fd, (struct sockaddr *) &addr[j],
                                       &addr_len);
 
+                    if (sock == SOCKET_ERROR)
+                        return -1;
+
                     i = lo_server_add_socket(s[j], sock, 0, &addr[j], addr_len);
                     if (i < 0)
                         closesocket(sock);
@@ -1536,6 +1539,9 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                                       (struct sockaddr *) &addr, &addr_len);
                     double diff;
                     struct timeval tvdiff;
+
+                    if (sock == SOCKET_ERROR)
+                        return -1;
 
                     i = lo_server_add_socket(s[j], sock, 0, &addr, addr_len);
                     if (i < 0)
