@@ -151,4 +151,4 @@ EXPORTS
     lo_message_clear                       @148
     lo_message_decref                      @149
     lo_bundle_clear                        @150
-    lo_bundle_get_timestamp                @151
+    lo_bundle_set_timestamp                @151

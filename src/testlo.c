@@ -1582,6 +1582,12 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_bundle_add_message(b, "/bundle", m1);
     TEST(lo_bundle_count(b) == 1);
 
+    TEST(lo_timetag_diff(lo_bundle_get_timestamp(b), t) == 0);
+    t.sec -= 1;
+    TEST(lo_timetag_diff(lo_bundle_get_timestamp(b), t) == 1);
+    lo_bundle_set_timestamp(b, t);
+    TEST(lo_timetag_diff(lo_bundle_get_timestamp(b), t) == 0);
+
     lo_message_incref(m1);
 
     /* This should be safe for multiple copies of the same message. */
