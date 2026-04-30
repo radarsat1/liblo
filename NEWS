@@ -1,3 +1,16 @@
+--------------------------------------------
+2026-04-30: Release 0.35
+--------------------------------------------
+
+This is mainly a bug fix release, but we also add some missing functions for clearing
+bundle memory for reuse.
+
+Changes of note since the 0.34 release include:
+
+- Added Message::clear()
+- Added lo_bundle_clear() and lo_bundle_set_timestamp()
+- Fixed memory safety bugs in lo_server_recv_raw_stream_socket()
+- Fixed indexing bug when listening on multiple sockets.
 
 --------------------------------------------
 2025-10-24: Release 0.34

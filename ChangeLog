@@ -1,3 +1,9 @@
+2026-04-30 Stephen Sinclair <radarsat1@gmail.com>
+	* Added Message::clear()
+	* Added lo_bundle_clear() and lo_bundle_set_timestamp()
+	* Fixed memory safety bugs in lo_server_recv_raw_stream_socket()
+	* Fixed indexing bug when listening on multiple sockets.
+
 2025-10-24 Stephen Sinclair <radarsat1@gmail.com>
 	* Fixed lo_server_recv to loop again if partial message is received.
 	* Added --enable-doc option, otherwise error if docs not built.
