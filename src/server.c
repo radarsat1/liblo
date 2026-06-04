@@ -1421,6 +1421,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
     else if (res) {
         for (j = 0, k = 0; j < num_servers; j++) {
             if (s[j]->protocol == LO_TCP) {
+                int sockets_len = s[j]->sockets_len;
                 if (sockets[k].revents & (POLLIN | POLLPRI)) {
                     // If poll() was reporting a new connection on the listening
                     // socket rather than a ready message, accept it and check again.
@@ -1453,7 +1454,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                  * deleting a socket, since deleting sockets doesn't affect the
                  * order of the array to the left of the index. */
 
-                for (i = s[j]->sockets_len - 1, k += i; i > 0; i--, k--) {
+                for (i = sockets_len - 1, k += i; i > 0; i--, k--) {
                     if (!sockets[k].revents)
                         continue;
                     if (sockets[k].revents & (POLLERR | POLLHUP)) {
@@ -1465,10 +1466,10 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                         recvd[j] = 1;
                     }
                 }
-                k += s[j]->sockets_len;
+                k += sockets_len;
             }
             else {
-                if (sockets[k].revents) {
+                if (POLLIN == sockets[k].revents) {
                     s[j]->sockets[0].revents = POLLIN;
                     recvd[j] = 1;
                 }
