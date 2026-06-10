@@ -1421,7 +1421,10 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
     else if (res) {
         for (j = 0, k = 0; j < num_servers; j++) {
             if (s[j]->protocol == LO_TCP) {
+                // Keep length of sockets array for this server since we modify it below,
+                // as it is needed for moving to the next server.
                 int sockets_len = s[j]->sockets_len;
+
                 if (sockets[k].revents & (POLLIN | POLLPRI)) {
                     // If poll() was reporting a new connection on the listening
                     // socket rather than a ready message, accept it and check again.
