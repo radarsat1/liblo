@@ -1472,20 +1472,22 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                 k += sockets_len;
             }
             else {
-                if (sockets[k].revents & POLLIN) {
-                    s[j]->sockets[0].revents = POLLIN;
-                    recvd[j] = 1;
-                }
-                if (sockets[k].revents & POLLERR) {
-                    // Clear the error by reading SO_ERROR
-                    int err = 0;
-                    socklen_t errlen = sizeof(err);
-                    getsockopt(sockets[k].fd, SOL_SOCKET, SO_ERROR, (void*)&err, &errlen);
-                }
                 if (sockets[k].revents & (POLLNVAL | POLLHUP)) {
                     // Fatal error
                     closesocket(sockets[k].fd);
                     s[j]->sockets[0].fd = -1;
+                }
+                else {
+                    if (sockets[k].revents & POLLERR) {
+                        // Clear the error by reading SO_ERROR
+                        int err = 0;
+                        socklen_t errlen = sizeof(err);
+                        getsockopt(sockets[k].fd, SOL_SOCKET, SO_ERROR, (void*)&err, &errlen);
+                    }
+                    if (sockets[k].revents & POLLIN) {
+                        s[j]->sockets[0].revents = POLLIN;
+                        recvd[j] = 1;
+                    }
                 }
                 ++k;
             }
