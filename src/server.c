@@ -1474,7 +1474,9 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
             else {
                 if (sockets[k].revents & (POLLNVAL | POLLHUP)) {
                     // Fatal error
-                    closesocket(sockets[k].fd);
+                    if (sockets[k].fd != -1) {
+                        closesocket(sockets[k].fd);
+                    }
                     s[j]->sockets[0].fd = -1;
                 }
                 else {
@@ -1482,9 +1484,9 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                         // Clear the error by reading SO_ERROR
                         int err = 0;
                         socklen_t errlen = sizeof(err);
-                        getsockopt(sockets[k].fd, SOL_SOCKET, SO_ERROR, (void*)&err, &errlen);
+                        getsockopt(sockets[k].fd, SOL_SOCKET, SO_ERROR, (char*)&err, &errlen);
                     }
-                    if (sockets[k].revents & POLLIN) {
+                    if (sockets[k].revents & (POLLIN | POLLPRI)) {
                         s[j]->sockets[0].revents = POLLIN;
                         recvd[j] = 1;
                     }
