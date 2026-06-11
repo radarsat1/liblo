@@ -1405,7 +1405,7 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
     for (j = 0, k = 0; j < num_servers; j++) {
         for (i = 0; i < s[j]->sockets_len; i++) {
             sockets[k].fd = s[j]->sockets[i].fd;
-            sockets[k].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+            sockets[k].events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
             sockets[k].revents = s[j]->sockets[i].revents = 0;
             ++k;
         }
@@ -1460,11 +1460,11 @@ int lo_servers_wait_internal(lo_server *s, int *recvd, int *queued, int num_serv
                 for (i = sockets_len - 1, k += i; i > 0; i--, k--) {
                     if (!sockets[k].revents)
                         continue;
-                    if (sockets[k].revents & (POLLERR | POLLHUP)) {
+                    if (sockets[k].revents & (POLLERR | POLLHUP | POLLNVAL)) {
                         closesocket(sockets[k].fd);
                         lo_server_del_socket(s[j], i, sockets[k].fd);
                     }
-                    else {
+                    else if (sockets[k].revents & (POLLIN | POLLPRI)) {
                         s[j]->sockets[i].revents = POLLIN;
                         recvd[j] = 1;
                     }
