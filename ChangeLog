@@ -1,3 +1,59 @@
+2026-06-19 Stephen Sinclair <radarsat1@gmail.com>
+	* Fixed handling of connection closure for multiple TCP servers.
+
+2026-04-30 Stephen Sinclair <radarsat1@gmail.com>
+	* Added Message::clear()
+	* Added lo_bundle_clear() and lo_bundle_set_timestamp()
+	* Fixed memory safety bugs in lo_server_recv_raw_stream_socket()
+	* Fixed indexing bug when listening on multiple sockets.
+
+2025-10-24 Stephen Sinclair <radarsat1@gmail.com>
+	* Fixed lo_server_recv to loop again if partial message is received.
+	* Added --enable-doc option, otherwise error if docs not built.
+	* Fixed test_bidirectional_tcp to avoid use of sleep.
+	* Updated docs to discourage use of lo_server_recv.
+
+2025-10-01 Stephen Sinclair <radarsat1@gmail.com>
+	* Fixed new messages taken precedence over messages queued for earlier dispatch.
+	* Add option to disable poll().
+	* Skip value entries for LO_TRUE/LO_FALSE/LO_NIL/LO_INFINITUM created by oscdump.
+	* Fix waiting logic in lo_servers_recv_noblock.
+	* Check sockets in reverse order to improve handling of closed sockets.
+	* Add new function lo_message_clear() to allow lo_message structs to be reused.
+	* Use strdup() instead of strncpy() in dispatch_method().
+
+2024-02-16 Stephen Sinclair <radarsat1@gmail.com>
+	* Consider subnet-specific broadcast addresses.
+	* OSC path validation during deserialization.
+	* Redefine opaque types as pointers to structs.
+	* Add lo_server_config struct and corresponding server init functions.
+	* Add support for pattern matching in method names.
+	* Support optionally encoding messages with double-END SLIP.
+	* Improvements to CMake build.
+	* lo_servers_wait: return immediately if any server already has a message waiting.
+	* Allow creating size-0 blobs.
+	* Support for std::string_view if C++17.
+	* Fix that del_method did not actually delete it from the std::vector.
+
+2019-02-28 Stephen Sinclair <radarsat1@gmail.com>
+	* oscsend can write to files and stdout.
+	* oscdump can write raw output.
+	* Fixed parsing bug with } and [a-] patterns.
+	* Support for // mattern matching operator.
+	* Support for double-ENDed SLIP packets.
+	* Assertions in C++ header and optional use of exceptions.
+	* Fixed improper use of va_end.
+	* Fix a clang compilation error.
+	* Compatibility with ESP32 embedded platform.
+
+2019-03-03 Stephen Sinclair <radarsat1@gmail.com>
+	* Functions to wait and receive on multiple servers (lo_servers_wait and lo_servers_recv_noblock)
+	* Improvements to the CMake build system.
+	* Remove premake4 files and rely on CMake for building on Windows.
+	* Fix memory leak in lo_server_recv_raw_stream.
+	* C++ wrapper: Fix memory leak on string allocation.
+	* oscdump: Disable line buffering in Windows to support MSYS2 output.
+
 2017-08-11 Stephen Sinclair <radarsat1@gmail.com>
 	* Compatibility fixes (Windows, FreeBSD)
 	* Configure options to modularize the build

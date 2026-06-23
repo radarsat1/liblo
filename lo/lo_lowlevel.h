@@ -31,6 +31,7 @@ extern "C" {
 #include <stdarg.h>
 #include <sys/types.h>
 #ifdef _MSC_VER
+#include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif
 #include <stdint.h>
@@ -55,7 +56,37 @@ typedef SSIZE_T ssize_t;
 typedef long double lo_hires;
 
 
+/**
+ * \brief A configuration struct for initializing \ref lo_server using lo_server_new_from_config().
+ *
+ * User code is responsible for allocating and deallocating memory
+ * pointed to by this struct, including strings for group, port,
+ * iface, ip, etc.  The struct and relevant fields will be copied by
+ * liblo when necessary, therefore it can be deallocated after use.
+ * The size field should be set to sizeof(lo_server_config).  Fields
+ * set to 0 shall be ignored.
+ */
+typedef struct {
+    size_t size;
+    const char *group;
+    const char *port;
+    const char *iface;
+    const char *ip;
+    int proto;
+    lo_err_handler err_handler;
+    void *err_handler_context;
+} lo_server_config;
 
+/**
+ * \brief Used with \ref lo_address_set_stream_slip() to specify whether sent
+ *        messages should be encoded with SLIP, and whether the encoding should
+ *        be single- or double-ENDed.
+ */
+typedef enum {
+	LO_SLIP_NONE   = 0,
+	LO_SLIP_SINGLE = 1,
+	LO_SLIP_DOUBLE = 2
+} lo_slip_encoding;
 
 /**
  * \brief Send a lo_message object to target targ
@@ -138,10 +169,20 @@ lo_message lo_message_new(void);
  *
  * Messages are reference counted. If a message is multiply referenced,
  * the message's counter should be incremented. It is automatically
- * decremented by lo_message_free lo_message_free_recursive, with
- * lo_message_free_recursive being the preferable method.
+ * decremented by `lo_message_free` or `lo_bundle_free_recursive`, with
+ * `lo_bundle_free_recursive` being the preferable method if bundles are used.
  */
 void lo_message_incref(lo_message m);
+
+/**
+ * \brief Subtract one from a message's reference count.
+ *
+ * Messages are reference counted. In general decrementing the counter
+ * should be handled automatically using `lo_message_free` or
+ * `lo_bundle_free_recursive`, however if necessary the counter can be
+ * decremented manually.
+ */
+int lo_message_decref(lo_message m);
 
 /**
  * \brief Create a new lo_message object by cloning an already existing one
@@ -153,6 +194,11 @@ lo_message lo_message_clone(lo_message m);
  * \ref lo_message_add_int32 lo_message_add*() calls.
  */
 void lo_message_free(lo_message m);
+
+/**
+ * \brief Clear elements from a lo_message but do not free allocated memory.
+ */
+void lo_message_clear(lo_message m);
 
 /**
  * \brief Append a number of arguments to a message.
@@ -314,9 +360,12 @@ int lo_message_add_nil(lo_message m);
 int lo_message_add_infinitum(lo_message m);
 
 /**
- * \brief  Returns the source (lo_address) of an incoming message.
+ * \brief  Returns the source (\ref lo_address) of an incoming message.
  *
- * Returns NULL if the message is outgoing. Do not free the returned address.
+ * Returns NULL if the message is outgoing. Do not free the returned
+ * address. This is usually called on the \ref lo_message passed to
+ * \ref lo_method_handler, to set up bidirectional communication.  See
+ * \ref example_tcp_echo_server.c for an example of this.
  */
 lo_address lo_message_get_source(lo_message m);
 
@@ -498,10 +547,10 @@ int lo_address_set_tcp_nodelay(lo_address t, int enable);
  * \brief Set outgoing stream connections (e.g., TCP) to be
  *        transmitted using the SLIP packetizing protocol.
  * \param t The address to set this flag for.
- * \param enable Non-zero to set the flag, zero to unset it.
+ * \param encoding Specify single- or double-ENDed SLIP, or disable SLIP.
  * \return the previous value of this flag.
  */
-int lo_address_set_stream_slip(lo_address t, int enable);
+int lo_address_set_stream_slip(lo_address t, lo_slip_encoding encoding);
 
 /**
  * \brief  Create a new bundle object.
@@ -600,6 +649,14 @@ lo_message lo_bundle_get_message(lo_bundle b, int index,
 lo_timetag lo_bundle_get_timestamp(lo_bundle b);
 
 /**
+ * \brief  Get the timestamp associated with a bundle.
+ *
+ * \param b The bundle for which the timestamp should be returned.
+ * \param t The timestamp to write.
+ */
+void lo_bundle_set_timestamp(lo_bundle b, lo_timetag t);
+
+/**
  * \brief  Serialise the bundle object to an area of memory and return a
  * pointer to the serialised form.
  *
@@ -613,6 +670,11 @@ lo_timetag lo_bundle_get_timestamp(lo_bundle b);
  * having the correct endianess and bit-packed structure.
  */
 void *lo_bundle_serialise(lo_bundle b, void *to, size_t *size);
+
+/**
+ * \brief Clear elements from a lo_bundle but do not free allocated memory.
+*/
+void lo_bundle_clear(lo_bundle b);
 
 /**
  * \brief  Frees the memory taken by a bundle object.
@@ -679,9 +741,9 @@ lo_hires lo_hires_val(lo_type type, lo_arg *p);
  * \brief Create a new server instance.
  *
  * Using lo_server_recv(), lo_servers block until they receive OSC
- * messages.  If you want non-blocking behaviour see
- * lo_server_recv_noblock() or the \ref lo_server_thread_new
- * "lo_server_thread_*" functions.
+ * messages.  Most likely you want non-blocking behaviour, so use of
+ * lo_server_recv_noblock() is encouraged or the \ref lo_server_thread_new
+ * and "lo_server_thread_*" functions.
  *
  * \param port If NULL is passed then an unused UDP port will be chosen by the
  * system, its number may be retrieved with lo_server_thread_get_port()
@@ -697,9 +759,9 @@ lo_server lo_server_new(const char *port, lo_err_handler err_h);
  * \brief Create a new server instance, specifying protocol.
  *
  * Using lo_server_recv(), lo_servers block until they receive OSC
- * messages.  If you want non-blocking behaviour see
- * lo_server_recv_noblock() or the \ref lo_server_thread_new
- * "lo_server_thread_*" functions.
+ * messages.  Most likely you want non-blocking behaviour, so use of
+ * lo_server_recv_noblock() is encouraged or the \ref lo_server_thread_new
+ * and "lo_server_thread_*" functions.
  *
  * \param port If using UDP then NULL may be passed to find an unused port.
  * Otherwise a decimal port number orservice name or may be passed.
@@ -763,6 +825,14 @@ lo_server lo_server_new_from_url(const char *url,
                                  lo_err_handler err_h);
 
 /**
+ * \brief Create a new server instance, using a configuration struct.
+ *
+ * \param config A pre-initialized config struct.  A pointer to it will not be kept.
+ * \return A new lo_server instance.
+ */
+lo_server lo_server_new_from_config(lo_server_config *config);
+
+/**
  * \brief Enables or disables type coercion during message dispatch.
  * \param server The server to toggle this option for.
  * \param enable Non-zero to enable, or zero to disable type coercion.
@@ -782,9 +852,12 @@ void lo_server_free(lo_server s);
  * \param timeout A timeout in milliseconds to wait for the incoming packet.
  * a value of 0 will return immediately.
  *
- * The return value is 1 if there is a message waiting or 0 if
- * there is no message. If there is a message waiting you can now
- * call lo_server_recv() to receive that message.
+ * The return value is 1 if there is a message waiting, 0 if
+ * there is no message, and -1 if there is an error that causes the
+ * function to return early. If there is a message waiting you can now
+ * call lo_server_recv() to receive that message. This is preferable
+ * to using lo_server_recv() alone, since otherwise it may never exit
+ * if no new messages are incoming.
  */
 int lo_server_wait(lo_server s, int timeout);
 
@@ -798,13 +871,17 @@ int lo_server_wait(lo_server s, int timeout);
  * a value of 0 will return immediately.
  *
  * The return value is the number of servers with a message waiting or
- * 0 if there is no message. If there is a message waiting you can now
- * call lo_server_recv() to receive that message.
+ * -1 if there is an error that causes the function to return early.
+ * If there is a message waiting you can now call lo_server_recv()
+ * to receive that message. This is preferable to using lo_server_recv()
+ * alone, since otherwise it may never exit if no new messages are incoming.
  */
 int lo_servers_wait(lo_server *s, int *status, int num_servers, int timeout);
 
 /**
  * \brief Look for an OSC message waiting to be received
+ *
+ * In new programs, this function should be prefered over lo_server_recv().
  *
  * \param s The server to wait for connections on.
  * \param timeout A timeout in milliseconds to wait for the incoming packet.
@@ -835,8 +912,15 @@ int lo_servers_recv_noblock(lo_server *s, int *recvd, int num_servers,
 /**
  * \brief Block, waiting for an OSC message to be received
  *
+ * The blocking behavior of this function is, in most cases,
+ * undesireable, since a program with no incoming messages may never
+ * exit. It is encouraged to use lo_server_recv_noblock() instead,
+ * which is equivalent to lo_server_wait() and then lo_server_recv().
+ *
  * The return value is the number of bytes in the received message. The message
- * will be dispatched to a matching method if one is found.
+ * will be dispatched to a matching method if one is found. In cases where no
+ * message is received but returning is necessary anyway, this function may
+ * return 0.
  */
 int lo_server_recv(lo_server s);
 
@@ -1052,8 +1136,17 @@ uint32_t lo_blobsize(lo_blob b);
  *
  * \param str The string to test
  * \param p   The pattern to test against
+ * \return 1 if true, 0 otherwise.
  */
 int lo_pattern_match(const char *str, const char *p);
+
+/**
+ * \brief Test if a string contains any OSC pattern characters
+ *
+ * \param str The string to test
+ * \return 1 if true, 0 otherwise.
+ */
+int lo_string_contains_pattern(const char *str);
 
 /** \internal \brief the real send function (don't call directly) */
 int lo_send_internal(lo_address t, const char *file, const int line,

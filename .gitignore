@@ -2,6 +2,7 @@
 *~
 *.lo
 *.la
+*.DS_Store
 .deps
 .libs
 /Makefile
@@ -10,6 +11,8 @@
 /autom4te.cache/
 /build/Makefile
 /build/Makefile.in
+/cmake/Makefile
+/cmake/Makefile.in
 /compile
 /config.guess
 /config.h
@@ -55,6 +58,7 @@
 /src/tools/Makefile.in
 /src/tools/oscdump
 /src/tools/oscsend
+/src/tools/oscsendfile
 /stamp-h1
 /test
 /test-driver

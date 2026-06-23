@@ -1,3 +1,8 @@
+#if defined(WIN32) || defined(_MSC_VER)
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,7 +39,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 }
 
 #ifdef HAVE_WIN32_THREADS
-unsigned sendthread(void *arg)
+unsigned __stdcall sendthread(void *arg)
 #else
 void *sendthread(void *arg)
 #endif
@@ -48,12 +53,18 @@ void *sendthread(void *arg)
 
     lo_address a = lo_address_new_with_proto(LO_TCP, "localhost", "7771");
 
+    /* send an initial message, main thread will response with /reply */
     lo_send_from(a, s, LO_TT_IMMEDIATE, "/test", 0);
 
+    /* wait for the response (/reply), handler will again send another /reply back */
     printf("%p.message sent\n", s);
     printf("%p.sending thread waiting\n", s);
     lo_server_recv(s);
     printf("%p.sending thread received\n", s);
+
+    /* wait for the reply but don't hang forever if the port is
+       closed, as this is the last message of this test */
+    lo_server_recv_noblock(s, 1000);
 
     printf("%p.freeing address\n", s);
     lo_address_free(a);
@@ -66,7 +77,7 @@ void *sendthread(void *arg)
 
 int main()
 {
-    /* start a new server on port 7770 */
+    /* start a new server on port 7771 */
     lo_server s = lo_server_new_with_proto("7771", LO_TCP, 0);
     if (!s) { printf("no server\n"); exit(1); }
 
@@ -82,14 +93,17 @@ int main()
     pthread_create(&thr, 0, sendthread, s);
 #endif
 
+    /* wait for the initial message, handler will send /reply */
     printf("%p.receiving1..\n", s);
     lo_server_recv(s);
     printf("%p.done receiving1\n", s);
 
+    /* wait for the second message */
     printf("%p.receiving2..\n", s);
     lo_server_recv(s);
     printf("%p.done receiving2\n", s);
 
+    /* thread will exit when it gets our second reply or after a timeout */
 #ifdef HAVE_WIN32_THREADS
     WaitForSingleObject(thr, INFINITE);
     CloseHandle(thr);

@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 
-AC_INIT([liblo],[0.30],[liblo-devel@lists.sourceforge.net])
+AC_INIT([liblo],[0.36],[liblo-devel@lists.sourceforge.net])
 
 # libtool version: current:revision:age
 #
@@ -15,9 +15,9 @@ AC_INIT([liblo],[0.30],[liblo-devel@lists.sourceforge.net])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-m4_define([lt_current], 11)
-m4_define([lt_revision], 0)
-m4_define([lt_age], 4)
+m4_define([lt_current], 14)
+m4_define([lt_revision], 1)
+m4_define([lt_age], 7)
 
 m4_define([lt_version_info], [lt_current:lt_revision:lt_age])
 m4_define([lt_current_minus_age], [m4_eval(lt_current - lt_age)])
@@ -53,8 +53,20 @@ AC_PROG_CC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 AM_PROG_CC_C_O
-AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
+
+# Allow documentation to be disabled, otherwise check for doxygen
+AC_ARG_ENABLE([doc],
+  [AS_HELP_STRING([--disable-doc], [Disable building documentation])],
+  [enable_doc=$enableval], [enable_doc=yes])
+
+if test "x$enable_doc" = xyes; then
+  AC_CHECK_PROG([DOXYGEN], [doxygen], [doc], [])
+  test "x$DOXYGEN" = x && AC_MSG_ERROR([doxygen not found, use --disable-doc to skip documentation])
+else
+  DOXYGEN=""
+fi
 AC_SUBST(DOXYGEN)
+AM_CONDITIONAL([ENABLE_DOC], [test "x$enable_doc" = xyes])
 
 # If we can add -Qunused-arguments, add it.
 # This error occurs when ccache and clang are used together.
@@ -210,7 +222,6 @@ AC_CHECK_FUNC([select], [AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is
                  AC_DEFINE(HAVE_SELECT, [1], [Define to 1 if select() is available.])
                  is_windows=yes],[AC_MSG_RESULT(no)])
 ])
-AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
 AC_CHECK_FUNC([setvbuf], [AC_DEFINE(HAVE_SETVBUF, [1], [Define to 1 if setvbuf() is available.])])
 
 AM_CONDITIONAL(WINDOWS, test x$is_windows = xyes)
@@ -260,6 +271,17 @@ AM_CONDITIONAL([COMPILE_TOOLS],[test x$enable_tools != xno])
 AM_CONDITIONAL([COMPILE_EXAMPLES],[test x$enable_examples != xno])
 AM_CONDITIONAL([ENABLE_NETWORK_TESTS],[test x$enable_network_tests != xno])
 
+# Check if poll is wanted
+AC_ARG_ENABLE(poll,
+  [  --disable-poll        Disable compiling with poll support],
+  [want_poll=$enableval],
+  [want_poll=yes])
+
+# Check for whether poll is wanted, and if so, did we find it.
+if test "x$want_poll" = "xyes"; then
+  AC_CHECK_FUNC([poll], [AC_DEFINE(HAVE_POLL, [1], [Define to 1 if poll() is available.])])
+fi
+
 if ! test x$enable_network_tests = xno; then
   AC_DEFINE(ENABLE_NETWORK_TESTS, [1],
     [Define this to enable network tests.])
@@ -290,7 +312,7 @@ else
   test x$have_threads = xyes && test x$with_win32_threads = xyes && echo '== Compile with Win32 threading'
 fi
 test x$HAVE_LAMBDA = xyes && echo '== Compiling C++ bindings' || echo '== Not compiling C++ bindings'
-test x$DOXYGEN = x && echo '== Disabled documentation (no doxygen found)'
+test x$enable_doc = xno && echo '== Disabled documentation (--disable-doc)'
 echo
 
 AC_CONFIG_FILES([

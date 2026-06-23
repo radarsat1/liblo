@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #ifdef HAVE_GETIFADDRS
@@ -189,6 +190,12 @@ static void lo_address_resolve_source(lo_address a)
 
         a->host = strdup(hostname);
         a->port = strdup(portname);
+#if !defined(WIN32) && !defined(_MSC_VER)
+    } else if (a->protocol== LO_UNIX) {
+        struct sockaddr_un * addr = (struct sockaddr_un *) &s->addr;
+        a->host = strdup("");
+        a->port = strdup(addr->sun_path);
+#endif
     } else {
         a->host = strdup("");
         a->port = strdup("");
@@ -411,22 +418,22 @@ char *lo_url_get_port(const char *url)
 {
     char *port = (char*) malloc(strlen(url));
 
-    if (sscanf(url, "osc://%*[^:]:%[0-9]", port)) {
+    if (sscanf(url, "osc://%*[^:]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc.%*[^:]://%*[^:]:%[0-9]", port)) {
+    if (sscanf(url, "osc.%*[^:]://%*[^:]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc://[%*[^]]]:%[0-9]", port)) {
+    if (sscanf(url, "osc://[%*[^]]]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc.%*[^:]://[%*[^]]]:%[0-9]", port)) {
+    if (sscanf(url, "osc.%*[^:]://[%*[^]]]:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc://:%[0-9]", port)) {
+    if (sscanf(url, "osc://:%[0-9]", port) > 0) {
         return port;
     }
-    if (sscanf(url, "osc.%*[^:]://:%[0-9]", port)) {
+    if (sscanf(url, "osc.%*[^:]://:%[0-9]", port) > 0) {
         return port;
     }
 
@@ -447,13 +454,13 @@ char *lo_url_get_path(const char *url)
         return path;
     }
     if (sscanf(url, "osc.unix://%*[^/]%s", path)) {
-        int i = strlen(path)-1;
+        int i = (int) strlen(path)-1;
         if (path[i]=='/') // remove trailing slash
             path[i] = 0;
         return path;
     }
     if (sscanf(url, "osc.%*[^:]://%s", path)) {
-        int i = strlen(path)-1;
+        int i = (int) strlen(path)-1;
         if (path[i]=='/') // remove trailing slash
             path[i] = 0;
         return path;
@@ -485,12 +492,19 @@ int lo_address_set_tcp_nodelay(lo_address t, int enable)
     return r;
 }
 
-int lo_address_set_stream_slip(lo_address t, int enable)
+int lo_address_set_stream_slip(lo_address t, lo_slip_encoding encoding)
 {
-    int r = (t->flags & LO_SLIP) != 0;
-    lo_address_set_flags(t, enable
+    int r = t->flags & LO_SLIP_DBL_END
+        ? LO_SLIP_DOUBLE
+        : t->flags & LO_SLIP
+            ? LO_SLIP_SINGLE
+            : LO_SLIP_NONE;
+    lo_address_set_flags(t, encoding > 0
                          ? t->flags | LO_SLIP
                          : t->flags & ~LO_SLIP);
+    lo_address_set_flags(t, encoding > 1
+                         ? t->flags | LO_SLIP_DBL_END
+                         : t->flags & ~LO_SLIP_DBL_END);
     return r;
 }
 
@@ -531,6 +545,7 @@ void lo_address_copy(lo_address to, lo_address from)
         to->port = strdup(from->port);
     }
     to->protocol = from->protocol;
+    to->flags = from->flags;
     to->ttl = from->ttl;
     to->addr = from->addr;
     if (from->addr.iface)
@@ -547,7 +562,7 @@ void lo_address_init_with_sockaddr(lo_address a,
     a->host = (char*) malloc(INET_ADDRSTRLEN);
     a->port = (char*) malloc(8);
 
-    err = getnameinfo((struct sockaddr *)sa, sa_len,
+    err = getnameinfo((struct sockaddr *)sa, (socklen_t) sa_len,
                       a->host, INET_ADDRSTRLEN, a->port, 8,
                       NI_NUMERICHOST | NI_NUMERICSERV);
 
@@ -566,7 +581,7 @@ int lo_address_resolve(lo_address a)
     int ret;
 
     if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
-        struct addrinfo *ai;
+        struct addrinfo *ai=NULL;
         struct addrinfo hints;
         const char* host = lo_address_get_hostname(a);
 #ifdef ENABLE_IPV6
@@ -669,12 +684,12 @@ int lo_inaddr_find_iface(lo_inaddr t, int fam,
             if (strcmp(iface, aa->AdapterName)==0)
                 found = 1;
             else {
-				WCHAR ifaceW[256];
-				MultiByteToWideChar(CP_ACP, 0, iface, strlen(iface),
-									ifaceW, 256);
-				if (lstrcmpW(ifaceW, aa->FriendlyName)==0)
-					found = 1;
-			}
+                WCHAR ifaceW[256];
+                MultiByteToWideChar(CP_ACP, 0, iface, -1,
+                                    ifaceW, 256);
+                if (lstrcmpW(ifaceW, aa->FriendlyName)==0)
+                    found = 1;
+            }
         }
         if (ip) {
             PIP_ADAPTER_UNICAST_ADDRESS pua = aa->FirstUnicastAddress;

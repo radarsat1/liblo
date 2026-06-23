@@ -65,6 +65,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    lo_server_thread_free(st);
+
     return 0;
 }
 

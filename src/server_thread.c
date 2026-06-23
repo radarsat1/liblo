@@ -79,6 +79,7 @@ lo_server_thread lo_server_thread_new_multicast(const char *group,
     return st;
 }
 
+#if defined(WIN32) || defined(_MSC_VER) || defined(HAVE_GETIFADDRS)
 lo_server_thread lo_server_thread_new_multicast_iface(const char *group, const char *port,
 						      const char *iface, const char *ip,
 						      lo_err_handler err_h)
@@ -87,6 +88,7 @@ lo_server_thread lo_server_thread_new_multicast_iface(const char *group, const c
         lo_server_new_multicast_iface(group, port, iface, ip, err_h));
     return st;
 }
+#endif
 
 lo_server_thread lo_server_thread_new_with_proto(const char *port,
                                                  int proto,
@@ -102,6 +104,13 @@ lo_server_thread lo_server_thread_new_from_url(const char *url,
 {
     lo_server_thread st = alloc_server_thread(
         lo_server_new_from_url(url, err_h));
+    return st;
+}
+
+lo_server_thread lo_server_thread_new_from_config(lo_server_config *config)
+{
+    lo_server_thread st = alloc_server_thread(
+        lo_server_new_from_config(config));
     return st;
 }
 
@@ -273,7 +282,7 @@ static void* thread_func(void *data)
     }
 
     while (st->active) {
-        lo_server_recv_noblock(st->s, 10);
+        lo_server_recv_noblock(st->s, 100);
     }
     st->done = 1;
 

@@ -141,6 +141,7 @@ int quit_handler(const char *path, const char *types, lo_arg ** argv,
 
 int test_varargs(lo_address a, const char *path, const char *types, ...);
 int test_version();
+void test_patterns();
 void test_types();
 void test_url();
 void test_address();
@@ -153,6 +154,8 @@ void test_bundle(lo_server_thread st, lo_address a);
 void test_nonblock();
 void test_unix_sockets();
 void test_tcp();
+void test_tcp_slip1();
+void test_tcp_slip2();
 void test_tcp_nonblock();
 void cleanup(lo_server_thread st, lo_address a);
 
@@ -166,6 +169,7 @@ int main()
     atexit(exitcheck);
 
     test_version();
+    test_patterns();
     test_deserialise();
     test_types();
     test_url();
@@ -180,13 +184,15 @@ int main()
     test_pattern(a);
     test_subtest(st);
     test_bundle(st, a);
+    test_tcp_nonblock();
+    cleanup(st, a);
     test_nonblock();
     test_unix_sockets();
     test_tcp();
-    test_tcp_nonblock();
-    cleanup(st, a);
+    test_tcp_slip1();
+    test_tcp_slip2();
 #else
-	done = 1;
+    done = 1;
 #endif
 
     return 0;
@@ -305,6 +311,10 @@ int lots_handler(const char *path, const char *types, lo_arg ** argv,
     TEST(types[12] == 'F');
     TEST(types[13] == 'N');
     TEST(types[14] == 'I');
+    b = (lo_blob) argv[15];
+    d = (unsigned char *) lo_blob_dataptr(b);
+    TEST(types[15] == 'b' && lo_blob_datasize(b) == 0);
+    TEST(d == NULL);
 
     printf("\n");
 
@@ -459,6 +469,7 @@ int test_varargs(lo_address a, const char *path, const char *types, ...)
     else
         printf("lo_message_add_varargs returned %d\n", error);
     lo_message_free(m);
+    va_end(ap);
     return error < 0;
 }
 
@@ -474,6 +485,54 @@ void replace_char(char *str, size_t size, const char find,
     }
 }
 
+void test_patterns()
+{
+    DOING("test_patterns");
+
+    // Test {} pattern
+    TEST(lo_pattern_match("/x1y", "/x{1,10,11}y"));
+    TEST(lo_pattern_match("/x10y", "/x{1,10,11}y"));
+    TEST(lo_pattern_match("/x11y", "/x{1,10,11}y"));
+    TEST(!lo_pattern_match("/x2y", "/x{1,10,11}y"));
+    TEST(!lo_pattern_match("/x12y", "/x{1,10,11}y"));
+    TEST(!lo_pattern_match("/x12y", "/x{11}y"));
+    TEST(lo_pattern_match("/x12y", "/x{12}y"));
+
+    // Test [] pattern
+    TEST(lo_pattern_match("/x1y", "/x[321]y"));
+    TEST(!lo_pattern_match("/x4y", "/x[321]y"));
+    TEST(lo_pattern_match("/x2y", "/x[1-3]y"));
+    TEST(lo_pattern_match("/x3y", "/x[3-2]y"));
+    TEST(lo_pattern_match("/xzy", "/x[3-2z]y"));
+    TEST(lo_pattern_match("/x1y", "/x[!a-z]y"));
+    TEST(!lo_pattern_match("/x1y", "/x[a-z]y"));
+    TEST(lo_pattern_match("/xby", "/x[a-z]y"));
+    // spec 1.0: "A - at the end of the string has no special meaning"
+    TEST(lo_pattern_match("/x-y", "/x[23-]y"));
+    // spec 1.0: "An ! anywhere besides the first character after the
+    // open bracket has no special meaning"
+    TEST(lo_pattern_match("/x!y", "/x[a-z!]y"));
+
+    // Test * pattern
+    TEST(lo_pattern_match("/x123y", "/x*y"));
+    TEST(!lo_pattern_match("/x123y", "/x*z"));
+
+    // Test ? pattern
+    TEST(lo_pattern_match("/x1y", "/x?y"));
+    TEST(lo_pattern_match("/x?y", "/x?y"));
+
+    // Test ?, *, and [] with multiple /
+    TEST(lo_pattern_match("/xy/z", "/*/?"));
+    TEST(!lo_pattern_match("/xy/z", "/?/*"));
+    TEST(lo_pattern_match("/w/xy/z", "/[xyzw]/*/?"));
+
+    // Test '//' from spec 1.1
+    TEST(lo_pattern_match("/z", "//z"));
+    TEST(lo_pattern_match("/xy/z", "//z"));
+    TEST(lo_pattern_match("/xy/z/w/u", "///w/u"));
+    TEST(!lo_pattern_match("/xy/z/w/u", "///z/w"));
+}
+
 void test_deserialise()
 {
     char *buf, *buf2, *tmp;
@@ -483,13 +542,14 @@ void test_deserialise()
     char data[256];
     int result = 0;
 
-    lo_blob btest;
+    lo_blob btest, btest_empty;
     lo_timetag tt = { 0x1, 0x80000000 };
     lo_blob b = NULL;
 
     DOING("test_deserialise");
 
     btest = lo_blob_new(sizeof(testdata), testdata);
+    btest_empty = lo_blob_new(0, NULL);
 
     // build a message
     lo_message msg = lo_message_new();
@@ -509,9 +569,10 @@ void test_deserialise()
     lo_message_add_false(msg);  // 12 F
     lo_message_add_nil(msg);    // 13 N
     lo_message_add_infinitum(msg);      // 14 I
+    lo_message_add_blob(msg, btest_empty); // 15 b
 
     // test types, args
-    TEST(15 == lo_message_get_argc(msg));
+    TEST(16 == lo_message_get_argc(msg));
     types = lo_message_get_types(msg);
     TEST(NULL != types);
     argv = lo_message_get_argv(msg);
@@ -536,6 +597,11 @@ void test_deserialise()
     TEST('F' == types[12] && NULL == argv[12]);
     TEST('N' == types[13] && NULL == argv[13]);
     TEST('I' == types[14] && NULL == argv[14]);
+    TEST('b' == types[15]);
+    b = (lo_blob) argv[15];
+    TEST(lo_blob_datasize(b) == 0);
+    TEST(4 == lo_blobsize(b));
+    TEST(lo_blob_dataptr(b) == NULL);
 
     // serialise it
     len = lo_message_length(msg, "/foo");
@@ -543,7 +609,7 @@ void test_deserialise()
     buf = (char*) calloc(len, sizeof(char));
     size = 0;
     tmp = (char*) lo_message_serialise(msg, "/foo", buf, &size);
-    TEST(tmp == buf && size == len && 92 == len);
+    TEST(tmp == buf && size == len && 96 == len);
     lo_message_free(msg);
 
     // deserialise it
@@ -554,7 +620,7 @@ void test_deserialise()
     TEST(NULL != msg);
 
     // repeat same test as above
-    TEST(15 == lo_message_get_argc(msg));
+    TEST(16 == lo_message_get_argc(msg));
     types = lo_message_get_types(msg);
     TEST(NULL != types);
     argv = lo_message_get_argv(msg);
@@ -579,6 +645,10 @@ void test_deserialise()
     TEST('F' == types[12] && NULL == argv[12]);
     TEST('N' == types[13] && NULL == argv[13]);
     TEST('I' == types[14] && NULL == argv[14]);
+    b = (lo_blob) argv[15];
+    TEST(lo_blob_datasize(b) == 0);
+    TEST(4 == lo_blobsize(b));
+    TEST(lo_blob_dataptr(b) == NULL);
 
     // serialise it again, compare
     len = lo_message_length(msg, "/foo");
@@ -586,10 +656,11 @@ void test_deserialise()
     buf2 = (char*) calloc(len, sizeof(char));
     size = 0;
     tmp = (char*) lo_message_serialise(msg, "/foo", buf2, &size);
-    TEST(tmp == buf2 && size == len && 92 == len);
+    TEST(tmp == buf2 && size == len && 96 == len);
     TEST(!memcmp(buf, buf2, len));
     lo_message_free(msg);
 
+    lo_blob_free(btest_empty);
     lo_blob_free(btest);
     free(buf);
     free(buf2);
@@ -770,6 +841,7 @@ void *test_tcp_thread(void *context)
         return (void*)1;
 #endif
     }
+    lo_server_max_msg_size(s, 1024);
 
     lo_server_add_method(s, "/test", "is", test_handler, 0);
     lo_server_add_method(s, "/ok", "", ok_handler, 0);
@@ -779,7 +851,6 @@ void *test_tcp_thread(void *context)
         recv_times += 1;
         if (!lo_server_recv_noblock(s, 0))
             SLEEP_MS(300);
-        lo_server_max_msg_size(s, 1024);
     }
 
     printf("Freeing.\n");
@@ -876,6 +947,8 @@ void test_tcp_halfsend(int stream_type)
         rc = send(sock, msg+33, msglen-33, 0);
         if (rc != (msglen-33)) printf("Error sending3, rc = %d\n", rc);
         else printf("Sent3.\n");
+
+        SLEEP_MS(1000);
     }
 
     closesocket(sock);
@@ -1183,6 +1256,22 @@ void test_blob()
     }
 
     lo_blob_free(btest);
+
+    /* Same for the empty blob */
+
+    lo_blob btest_empty;
+
+    btest_empty = lo_blob_new(0, NULL);
+
+    if (lo_blob_datasize(btest_empty) != 0 || lo_blobsize(btest_empty) != 4) {
+        printf("blob is %d (%d) bytes long, should be 0 (4)\n",
+               lo_blob_datasize(btest_empty), lo_blobsize(btest_empty));
+        lo_arg_pp(LO_BLOB, btest_empty);
+        printf(" <- blob\n");
+        exit(1);
+    }
+
+    lo_blob_free(btest_empty);
 }
 
 void test_server_thread(lo_server_thread *pst, lo_address *pa)
@@ -1190,12 +1279,13 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     lo_address a;
     char *server_url;
     lo_server_thread st, sta, stb;
-    lo_blob btest;
+    lo_blob btest, btest_empty;
     lo_timetag tt = { 0x1, 0x80000000 };
 
     DOING("test_server_thread");
 
     btest = lo_blob_new(sizeof(testdata), testdata);
+    btest_empty = lo_blob_new(0, NULL);
 
     sta = lo_server_thread_new("7591", error);
     stb = lo_server_thread_new("7591", rep_error);
@@ -1230,6 +1320,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
     server_url = lo_server_thread_get_url(st);
     printf("Server URL: %s\n", server_url);
     a = lo_address_new_from_url(server_url);
+    TEST(a);
     free(server_url);
 
     /* add method that will match the path /foo/bar, with two numbers, coerced
@@ -1240,7 +1331,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 
     lo_server_thread_add_method(st, "/reply", "s", reply_handler, NULL);
 
-    lo_server_thread_add_method(st, "/lotsofformats", "fisbmhtdSccTFNI",
+    lo_server_thread_add_method(st, "/lotsofformats", "fisbmhtdSccTFNIb",
                                 lots_handler, NULL);
 
     lo_server_thread_add_method(st, "/coerce", "dfhiSs",
@@ -1258,6 +1349,8 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
                                 pattern_handler, "bar");
     lo_server_thread_add_method(st, "/pattern/baz", NULL,
                                 pattern_handler, "baz");
+    lo_server_thread_add_method(st, "/pattern*test", NULL,
+                                pattern_handler, "glob");
 
     lo_server_thread_add_method(st, "/subtest", "i", subtest_handler, st);
 
@@ -1293,16 +1386,21 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 #ifndef _MSC_VER                /* MS compiler refuses to compile this case */
     lo_send(a, "/bar", "ff", 0.12345678f, 1.0 / 0.0);
 #endif
-    lo_send(a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123,
+    lo_send(a, "/lotsofformats", "fisbmhtdSccTFNIb", 0.12345678f, 123,
             "123", btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999,
-            "sym", 'X', 'Y');
+            "sym", 'X', 'Y', btest_empty);
     lo_send(a, "/coerce", "fdihsS", 0.1f, 0.2, 123, 124LL, "aaa", "bbb");
     lo_send(a, "/coerce", "ffffss", 0.1f, 0.2f, 123.0, 124.0, "aaa",
             "bbb");
     lo_send(a, "/coerce", "ddddSS", 0.1, 0.2, 123.0, 124.0, "aaa", "bbb");
+    lo_send(a, "/patternXYZtest", "");
+    lo_send(a, "/pattern123test", "");
+    lo_send(a, "/patterntest", "");
     lo_send(a, "/a/b/c/d", "sfsff", "one", 0.12345678f, "three",
             -0.00000023001f, 1.0);
     lo_send(a, "/a/b/c/d", "b", btest);
+
+    SLEEP_MS(1000);
 
     /* Delete methods */
     lo_server_thread_del_method(st, "/coerce", "dfhiSs");
@@ -1319,6 +1417,7 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
         lo_server_free(s);
     }
 
+    lo_blob_free(btest_empty);
     lo_blob_free(btest);
 
     *pst = st;
@@ -1327,18 +1426,19 @@ void test_server_thread(lo_server_thread *pst, lo_address *pa)
 
 void test_message(lo_address a)
 {
-    lo_blob btest;
+    lo_blob btest, btest_empty;
     lo_timetag tt = { 0x1, 0x80000000 };
     lo_message m;
 
     DOING("test_message");
 
     btest = lo_blob_new(sizeof(testdata), testdata);
+    btest_empty = lo_blob_new(0, NULL);
 
     TEST(test_varargs
-         (a, "/lotsofformats", "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
+         (a, "/lotsofformats", "fisbmhtdSccTFNIb", 0.12345678f, 123, "123",
           btest, midi_data, 0x0123456789abcdefULL, tt, 0.9999, "sym", 'X',
-          'Y', LO_ARGS_END) == 0);
+          'Y', btest_empty, LO_ARGS_END) == 0);
 
 #ifdef __GNUC__
 #ifndef USE_ANSI_C
@@ -1359,13 +1459,18 @@ void test_message(lo_address a)
 
     // test lo_message_add
     m = lo_message_new();
-    TEST(lo_message_add(m, "fisbmhtdSccTFNI", 0.12345678f, 123, "123",
+    TEST(lo_message_add(m, "fisbmhtdSccTFNIb", 0.12345678f, 123, "123",
                         btest, midi_data, 0x0123456789abcdefULL, tt,
-                        0.9999, "sym", 'X', 'Y') == 0);
+                        0.9999, "sym", 'X', 'Y', btest_empty) == 0);
 
-	lo_send_message(a, "/lotsofformats", m);
+    lo_send_message(a, "/lotsofformats", m);
+
+    TEST(lo_message_get_argc(m) == 16);
+    lo_message_clear(m);
+    TEST(lo_message_get_argc(m) == 0);
 
     lo_message_free(m);
+    lo_blob_free(btest_empty);
     lo_blob_free(btest);
 }
 
@@ -1387,9 +1492,13 @@ void test_subtest(lo_server_thread st)
 
 #ifdef WIN32
     {
-        char cwd[2048];
-        _getcwd(cwd, 2048);
-        snprintf(cmd, 2048, "%s" PATHDELIM "subtest" EXTEXE, cwd);
+        char cwd[MAX_PATH];
+        // Calculate path to subtest.exe
+        GetModuleFileName(NULL, cwd, MAX_PATH);
+        const char* pathdelim_str = PATHDELIM;
+        char *lastBackslash = strrchr(cwd, *pathdelim_str);
+        *lastBackslash = 0; // Null-terminate at the last backslash to get the directory
+        snprintf(cmd, sizeof(cmd), "%s" PATHDELIM "subtest" EXTEXE, cwd);
     }
     printf("spawning subtest with `%s'\n", cmd);
     for (i=0; i<2; i++) {
@@ -1439,7 +1548,7 @@ void test_subtest(lo_server_thread st)
     }
 
     TEST(reply_count == 3);
-    TEST(pattern_count == 5);
+    TEST(pattern_count == 8);
     TEST(subtest_count == 2);
     TEST(subtest_reply_count == 22);
     printf("\n");
@@ -1465,8 +1574,27 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
 
+    TEST(lo_bundle_count(b) == 1);
+    lo_bundle_clear(b);
+    TEST(lo_bundle_count(b) == 0);
+
+    /* add the message again */
+    lo_bundle_add_message(b, "/bundle", m1);
+    TEST(lo_bundle_count(b) == 1);
+
+    TEST(lo_timetag_diff(lo_bundle_get_timestamp(b), t) == 0);
+    t.sec -= 1;
+    TEST(lo_timetag_diff(lo_bundle_get_timestamp(b), t) == 1);
+    lo_bundle_set_timestamp(b, t);
+    TEST(lo_timetag_diff(lo_bundle_get_timestamp(b), t) == 0);
+
+    lo_message_incref(m1);
+
     /* This should be safe for multiple copies of the same message. */
-    lo_bundle_free_messages(b);
+    lo_bundle_free_recursive(b);
+
+    TEST(lo_message_decref(m1) == 0);
+    lo_message_free(m1);
 
     {
         lo_timetag t = { 1, 2 };
@@ -1515,8 +1643,8 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_message_add_string(m1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     lo_bundle_add_message(b, "/bundle", m1);
     lo_send_bundle(a, b);
-    lo_message_free(m1);
     lo_bundle_free(b);
+    lo_message_free(m1);
 
     lo_timetag_now(&sched);
 
@@ -1529,8 +1657,8 @@ void test_bundle(lo_server_thread st, lo_address a)
     lo_bundle_add_message(b, "/bundle", m1);
 
     lo_send_bundle(a, b);
-    lo_message_free(m1);
     lo_bundle_free(b);
+    lo_message_free(m1);
 
     lo_send_timestamped(a, sched, "/bundle", "s",
                         "lo_send_timestamped() test");
@@ -1662,6 +1790,8 @@ void test_tcp()
     DOING("test_tcp");
     
     ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", foo_handler, ts);
+    lo_server_add_method(ts, "/reply", "s", reply_handler, NULL);
     addr = lo_server_get_url(ts);
     ta = lo_address_new_from_url(addr);
     if (lo_address_errno(ta)) {
@@ -1672,7 +1802,74 @@ void test_tcp()
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_send(ta, "/tcp", "f", 23.0) == 16);
     TEST(lo_server_recv(ts) == 16);
+    TEST(lo_server_recv_noblock(ts, 5000) == 16);
+    TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 5.0f, 6) == 24);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
+    TEST(lo_server_recv_noblock(ts, 5000) == 20); // reply
+    free(addr);
+    lo_server_free(ts);
+    lo_address_free(ta);
+}
+
+void test_tcp_slip1()
+{
+    /* TCP tests */
+    lo_address ta;
+    lo_server ts;
+    char *addr;
+
+    DOING("test_tcp_slip1");
+
+    ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", foo_handler, ts);
+    lo_server_add_method(ts, "/reply", "s", reply_handler, NULL);
+    addr = lo_server_get_url(ts);
+    ta = lo_address_new_from_url(addr);
+    lo_address_set_stream_slip(ta, LO_SLIP_SINGLE);
+    if (lo_address_errno(ta)) {
+        printf("err: %s\n", lo_address_errstr(ta));
+        exit(1);
+    }
+    TEST(lo_server_get_protocol(ts) == LO_TCP);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 17);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 17);
     TEST(lo_server_recv(ts) == 16);
+    TEST(lo_server_recv_noblock(ts, 5000) == 16);
+    TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 7.0f, 8) == 25);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
+    TEST(lo_server_recv_noblock(ts, 5000) == 20); // reply
+    free(addr);
+    lo_server_free(ts);
+    lo_address_free(ta);
+}
+
+void test_tcp_slip2()
+{
+    /* TCP tests */
+    lo_address ta;
+    lo_server ts;
+    char *addr;
+
+    DOING("test_tcp_slip2");
+
+    ts = lo_server_new_with_proto(NULL, LO_TCP, error);
+    lo_server_add_method(ts, "/foo/bar", "fi", foo_handler, ts);
+    lo_server_add_method(ts, "/reply", "s", reply_handler, NULL);
+    addr = lo_server_get_url(ts);
+    ta = lo_address_new_from_url(addr);
+    lo_address_set_stream_slip(ta, LO_SLIP_DOUBLE);
+    if (lo_address_errno(ta)) {
+        printf("err: %s\n", lo_address_errstr(ta));
+        exit(1);
+    }
+    TEST(lo_server_get_protocol(ts) == LO_TCP);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 18);
+    TEST(lo_send(ta, "/tcp", "f", 23.0) == 18);
+    TEST(lo_server_recv(ts) == 16);
+    TEST(lo_server_recv(ts) == 16);
+    TEST(lo_send_from(ta, ts, LO_TT_IMMEDIATE, "/foo/bar", "fi", 9.0f, 10) == 26);
+    TEST(lo_server_recv_noblock(ts, 5000) == 24); // foo
+    TEST(lo_server_recv_noblock(ts, 5000) == 20); // reply
     free(addr);
     lo_server_free(ts);
     lo_address_free(ta);

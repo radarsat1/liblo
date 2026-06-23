@@ -7,7 +7,8 @@ liblo is a lightweight library that provides an easy to use implementation of
 the OSC protocol. For more information about the OSC protocol, please see:
 
   - [OSC at CNMAT](http://www.cnmat.berkeley.edu/OpenSoundControl/)
-  - [opensoundcontrol.org](http://www.opensoundcontrol.org/)
+  - [https://opensoundcontrol.stanford.edu/](https://opensoundcontrol.stanford.edu/)
+  - [https://en.wikipedia.org/wiki/Open_Sound_Control](https://en.wikipedia.org/wiki/Open_Sound_Control)
 
 The official liblo homepage is here:
 
@@ -87,3 +88,13 @@ sockets. IPv6 is currently disabled by default, but you can enable it
 using
 
     ./configure --enable-ipv6
+
+## Poll() vs Select()
+
+Some platforms may have both `poll()` and `select()` available for listening efficiently on multiple servers/sockets. In this case, liblo will default to using `poll` since it is considered to be more scalable. However, on some platforms (e.g. MacOS) the liblo code path using `select()` is considerably faster. You may wish to explictly disable support for `poll` if your applications do not require extreme scalability and are sensitive to small differences in efficiency. This can be done when compiling the library from source, either using configure:
+
+    ./configure --disable-poll
+
+or if using cmake:
+
+    cmake -DWITH_POLL=OFF <path>

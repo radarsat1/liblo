@@ -11,8 +11,13 @@
 #include <algorithm>
 #include <unordered_map>
 #include <string>
-#include <sstream>
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 #include <initializer_list>
+#ifndef LO_USE_EXCEPTIONS
+#include <cassert>
+#endif
 
 /**
  * \file lo_cpp.h The liblo C++ wrapper
@@ -47,7 +52,7 @@
             std::unique_ptr<handler>(new handler_type<r ht>(h)));       \
         lo_method m = _add_method(path, types,                          \
             [](const char *path, const char *types,                     \
-               lo_arg **argv, int argc, void *msg,                      \
+               lo_arg **argv, int argc, lo_message msg,                 \
                void *data)->int                                         \
             {                                                           \
                 r1 (*static_cast<handler_type<r ht>*>(data)) args;      \
@@ -74,21 +79,70 @@ namespace lo {
     // "std::string", and "int".
     class string_type {
       public:
+        string_type(const string_type& s) { _s = s._s; }
         string_type(const char *s=0) { _s = s; }
         string_type(const std::string &s) { _s = s.c_str(); }
+#if __cplusplus >= 201703L
+        string_type(const std::string_view& s) {
+            if (s[s.length()]==0) _s = s.data();
+            else { _p.reset(new std::string(s)); _s = _p->c_str(); }
+        }
+#endif
         operator const char*() const { return _s; }
         std::string s() const { return _s?_s:""; }
         const char *_s;
+        std::unique_ptr<std::string> _p;
     };
 
     class num_string_type : public string_type {
       public:
-      num_string_type(const char *s) : string_type(s) {}
-      num_string_type(const std::string &s) : string_type(s) {}
-        num_string_type(int n) { std::ostringstream ss; ss << n;
-            _p.reset(new std::string(ss.str())); _s = _p->c_str(); }
-        std::unique_ptr<std::string> _p;
+        num_string_type(const char *s) : string_type(s) {}
+        num_string_type(const std::string &s) : string_type(s) {}
+#if __cplusplus >= 201703L
+        num_string_type(const std::string_view& s) : string_type(s) {}
+#endif
+        num_string_type(int n)
+          {_p.reset(new std::string(std::to_string(n))); _s = _p->c_str(); }
     };
+
+/*
+ * Error handling:
+ *
+ * Define LO_USE_EXCEPTIONS to throw the following exceptions instead
+ * of aborting on error.  The alternative (and default) is that
+ * assert() will crash your program in debug mode, and you should
+ * check is_valid() before operations that might break the assertion.
+ *
+ * Note that in the latter case, the program may return a C++ class
+ * that will not contain a valid liblo object, this is why
+ * LO_CHECK_AFTER does not do anything; it is up to user code to check
+ * is_valid() after constructing Server() and ServerThread(). On the
+ * contrary, when LO_USE_EXCEPTIONS is enabled, an Error exception
+ * will be thrown if the object was not successfully created.
+ *
+ * Rules:
+ *
+ * - Constructors that create underlying liblo objects shall either
+ *   fail silently, depending on calling code to check is_valid(), or
+ *   throw lo::Error() in the case of LO_USE_EXCEPTIONS.
+ *
+ * - Constructors that receive an existing liblo object do not throw
+ *   any exceptions if the passed in object is nullptr.
+ *
+ * - All other functions shall assert() or throw lo::Invalid() if the
+ *   underlying liblo object is not valid.
+ *
+ */
+
+#ifdef LO_USE_EXCEPTIONS
+    struct Invalid {};
+    struct Error {};
+#define LO_CHECK_BEFORE if (!is_valid()) throw Invalid();
+#define LO_CHECK_AFTER if (!is_valid()) throw Error();
+#else
+#define LO_CHECK_BEFORE assert(is_valid());
+#define LO_CHECK_AFTER
+#endif
 
     class ServerThread;
 
@@ -110,13 +164,14 @@ namespace lo {
       public:
         Address(const string_type &host, const num_string_type &port,
                 int proto=LO_UDP)
-          { address = lo_address_new_with_proto(proto, host, port); owned=true; }
+          { address = lo_address_new_with_proto(proto, host, port); owned=true;
+            LO_CHECK_AFTER; }
 
         Address(const string_type &url)
-          { address = lo_address_new_from_url(url); owned=true; }
+          { address = lo_address_new_from_url(url); owned=true; LO_CHECK_AFTER; }
 
         Address(lo_address a, bool _owned=true)
-          { address = a; owned=_owned; }
+          { address = a; owned=_owned; LO_CHECK_AFTER; }
 
         ~Address()
           { if (address && owned) lo_address_free(address); }
@@ -124,20 +179,23 @@ namespace lo {
         Address& operator=(Address b) { b.swap(*this); return *this; }
         void swap(Address& b) throw () { std::swap(this->address, b.address); }
 
+        bool is_valid() const { return address!=nullptr; }
+
         int ttl() const
-          { return lo_address_get_ttl(address); }
+          { LO_CHECK_BEFORE; return lo_address_get_ttl(address); }
 
         void set_ttl(int ttl)
-          { lo_address_set_ttl(address, ttl); }
+          { LO_CHECK_BEFORE; lo_address_set_ttl(address, ttl); }
 
         int send(const string_type &path) const
-          { return lo_send(address, path, ""); }
+          { LO_CHECK_BEFORE; return lo_send(address, path, ""); }
 
         // In these functions we append "$$" to the type string, which
         // simply instructs lo_message_add_varargs() not to use
         // LO_MARKER checking at the end of the argument list.
         int send(const string_type &path, const string_type type, ...) const
         {
+            LO_CHECK_BEFORE;
             va_list q;
             va_start(q, type);
             lo_message m = lo_message_new();
@@ -145,12 +203,14 @@ namespace lo {
             lo_message_add_varargs(m, t.c_str(), q);
             int r = lo_send_message(address, path, m);
             lo_message_free(m);
+            va_end(q);
             return r;
         }
 
         int send(lo_timetag ts, const string_type &path,
                  const string_type type, ...) const
         {
+            LO_CHECK_BEFORE;
             va_list q;
             va_start(q, type);
             lo_message m = lo_message_new();
@@ -160,14 +220,15 @@ namespace lo {
             lo_bundle_add_message(b, path, m);
             int r = lo_send_bundle(address, b);
             lo_bundle_free_messages(b);
+            va_end(q);
             return r;
         }
 
         int send(const string_type &path, lo_message m) const
-            { return lo_send_message(address, path, m); }
+            { LO_CHECK_BEFORE; return lo_send_message(address, path, m); }
 
         int send(lo_bundle b)
-            { return lo_send_bundle(address, b); }
+            { LO_CHECK_BEFORE; return lo_send_bundle(address, b); }
 
         int send_from(lo::ServerThread &from, const string_type &path,
                       const string_type type, ...) const;
@@ -175,6 +236,7 @@ namespace lo {
         int send_from(lo_server from, const string_type &path,
                       const string_type type, ...) const
         {
+            LO_CHECK_BEFORE;
             va_list q;
             va_start(q, type);
             lo_message m = lo_message_new();
@@ -182,6 +244,7 @@ namespace lo {
             lo_message_add_varargs(m, t.c_str(), q);
             int r = lo_send_message_from(address, from, path, m);
             lo_message_free(m);
+            va_end(q);
             return r;
         }
 
@@ -189,6 +252,7 @@ namespace lo {
                       const string_type &path,
                       const string_type type, ...) const
         {
+            LO_CHECK_BEFORE;
             va_list q;
             va_start(q, type);
             lo_message m = lo_message_new();
@@ -198,34 +262,36 @@ namespace lo {
             lo_bundle_add_message(b, path, m);
             int r = lo_send_bundle_from(address, from, b);
             lo_bundle_free_messages(b);
+            va_end(q);
             return r;
         }
 
         int send_from(lo_server from, const string_type &path, lo_message m) const
-            { return lo_send_message_from(address, from, path, m); }
+          { LO_CHECK_BEFORE; return lo_send_message_from(address, from, path, m); }
 
         int send_from(lo::ServerThread &from, lo_bundle b) const;
 
         int send_from(lo_server from, lo_bundle b) const
-            { return lo_send_bundle_from(address, from, b); }
+          { LO_CHECK_BEFORE; return lo_send_bundle_from(address, from, b); }
 
         int get_errno() const
-          { return lo_address_errno(address); }
+          { LO_CHECK_BEFORE; return lo_address_errno(address); }
 
         std::string errstr() const
-          { auto s(lo_address_errstr(address)); return std::string(s?s:""); }
+          { LO_CHECK_BEFORE; auto s(lo_address_errstr(address)); return std::string(s?s:""); }
 
         std::string hostname() const
-          { auto s(lo_address_get_hostname(address)); return std::string(s?s:""); }
+          { LO_CHECK_BEFORE; auto s(lo_address_get_hostname(address)); return std::string(s?s:""); }
 
         std::string port() const
-          { auto s(lo_address_get_port(address)); return std::string(s?s:""); }
+          { LO_CHECK_BEFORE; auto s(lo_address_get_port(address)); return std::string(s?s:""); }
 
         int protocol() const
-          { return lo_address_get_protocol(address); }
+          { LO_CHECK_BEFORE; return lo_address_get_protocol(address); }
 
         std::string url() const
         {
+            LO_CHECK_BEFORE;
             char* s(lo_address_get_url(address));
             std::string result(s?s:"");
             free(s);
@@ -233,16 +299,16 @@ namespace lo {
         }
 
         std::string iface() const
-          { auto s(lo_address_get_iface(address)); return std::string(s?s:""); }
+          { LO_CHECK_BEFORE; auto s(lo_address_get_iface(address)); return std::string(s?s:""); }
 
         void set_iface(const string_type &iface, const string_type &ip)
-          { lo_address_set_iface(address, iface, ip); }
+          { LO_CHECK_BEFORE; lo_address_set_iface(address, iface, ip); }
 
         int set_tcp_nodelay(int enable)
-          { return lo_address_set_tcp_nodelay(address, enable); }
+          { LO_CHECK_BEFORE; return lo_address_set_tcp_nodelay(address, enable); }
 
-        int set_stream_slip(int enable)
-          { return lo_address_set_stream_slip(address, enable); }
+        int set_stream_slip(lo_slip_encoding encoding)
+          { LO_CHECK_BEFORE; return lo_address_set_stream_slip(address, encoding); }
 
         operator lo_address() const
             { return address; }
@@ -257,7 +323,7 @@ namespace lo {
     {
       public:
         Message()
-            : message(lo_message_new()) { lo_message_incref(message); }
+            : message(lo_message_new()) { if (message) lo_message_incref(message); LO_CHECK_AFTER; }
 
         Message(lo_message m)
             : message(m) { if (m) { lo_message_incref(m); } }
@@ -269,11 +335,15 @@ namespace lo {
         Message(const string_type types, ...)
         {
             message = lo_message_new();
-            lo_message_incref(message);
-            va_list q;
-            va_start(q, types);
-            std::string t(std::string(types)+"$$");
-            add_varargs(t.c_str(), q);
+            if (message) {
+                lo_message_incref(message);
+                va_list q;
+                va_start(q, types);
+                std::string t(std::string(types)+"$$");
+                add_varargs(t.c_str(), q);
+                va_end(q);
+            }
+            LO_CHECK_AFTER;
         }
 
         ~Message()
@@ -282,119 +352,127 @@ namespace lo {
         Message& operator=(Message m) { m.swap(*this); return *this; }
         void swap(Message& m) throw () { std::swap(this->message, m.message); }
 
+        bool is_valid() const { return message!=nullptr; }
+
         int add(const string_type types, ...)
         {
+            LO_CHECK_BEFORE;
             va_list q;
             va_start(q, types);
             std::string t(std::string(types)+"$$");
-            return add_varargs(t.c_str(), q);
+            int ret = add_varargs(t.c_str(), q);
+            va_end(q);
+            return ret;
         }
 
         int add_varargs(const string_type &types, va_list ap)
-            { return lo_message_add_varargs(message, types, ap); }
+            { LO_CHECK_BEFORE; return lo_message_add_varargs(message, types, ap); }
 
         int add_int32(int32_t a)
-            { return lo_message_add_int32(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_int32(message, a); }
 
         int add_float(float a)
-            { return lo_message_add_float(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_float(message, a); }
 
         int add_string(const string_type &a)
-            { return lo_message_add_string(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_string(message, a); }
 
         int add_blob(lo_blob a)
-            { return lo_message_add_blob(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_blob(message, a); }
 
         int add_int64(int64_t a)
-            { return lo_message_add_int64(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_int64(message, a); }
 
         int add_timetag(lo_timetag a)
-            { return lo_message_add_timetag(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_timetag(message, a); }
 
         int add_double(double a)
-            { return lo_message_add_double(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_double(message, a); }
 
         int add_symbol(const string_type &a)
-            { return lo_message_add_symbol(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_symbol(message, a); }
 
         int add_char(char a)
-            { return lo_message_add_char(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_char(message, a); }
 
         int add_midi(uint8_t a[4])
-            { return lo_message_add_midi(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_midi(message, a); }
 
         int add_bool(bool b)
-            { if (b)
+            { LO_CHECK_BEFORE;
+              if (b)
                 return lo_message_add_true(message);
               else
                 return lo_message_add_false(message); }
 
         int add_true()
-            { return lo_message_add_true(message); }
+            { LO_CHECK_BEFORE; return lo_message_add_true(message); }
 
         int add_false()
-            { return lo_message_add_false(message); }
+            { LO_CHECK_BEFORE; return lo_message_add_false(message); }
 
         int add_nil()
-            { return lo_message_add_nil(message); }
+            { LO_CHECK_BEFORE; return lo_message_add_nil(message); }
 
         int add_infinitum()
-            { return lo_message_add_infinitum(message); }
+            { LO_CHECK_BEFORE; return lo_message_add_infinitum(message); }
 
         // Note, for polymorphic versions of "add", below, we can't do
         // this for "string" or "symbol" types, since it is ambiguous
         // with "add(types, ...)" above.
 
         int add(int32_t a)
-            { return lo_message_add_int32(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_int32(message, a); }
 
         int add(float a)
-            { return lo_message_add_float(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_float(message, a); }
 
         int add(lo_blob a)
-            { return lo_message_add_blob(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_blob(message, a); }
 
         int add(int64_t a)
-            { return lo_message_add_int64(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_int64(message, a); }
 
         int add(lo_timetag a)
-            { return lo_message_add_timetag(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_timetag(message, a); }
 
         int add(double a)
-            { return lo_message_add_double(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_double(message, a); }
 
         int add(char a)
-            { return lo_message_add_char(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_char(message, a); }
 
         int add(uint8_t a[4])
-            { return lo_message_add_midi(message, a); }
+            { LO_CHECK_BEFORE; return lo_message_add_midi(message, a); }
 
         int add(bool b)
-            { if (b)
+            { LO_CHECK_BEFORE;
+              if (b)
                 return lo_message_add_true(message);
               else
                 return lo_message_add_false(message); }
 
         Address source() const
-            { return Address(lo_message_get_source(message), false); }
+            { LO_CHECK_BEFORE; return Address(lo_message_get_source(message), false); }
 
         lo_timetag timestamp() const
-            { return lo_message_get_timestamp(message); }
+            { LO_CHECK_BEFORE; return lo_message_get_timestamp(message); }
 
         std::string types() const
-            { auto s(lo_message_get_types(message)); return std::string(s?s:""); }
+            { LO_CHECK_BEFORE;
+              auto s(lo_message_get_types(message)); return std::string(s?s:""); }
 
         int argc() const
-            { return lo_message_get_argc(message); }
+            { LO_CHECK_BEFORE; return lo_message_get_argc(message); }
 
         lo_arg **argv() const
-            { return lo_message_get_argv(message); }
+            { LO_CHECK_BEFORE; return lo_message_get_argv(message); }
 
         size_t length(const string_type &path) const
-            { return lo_message_length(message, path); }
+            { LO_CHECK_BEFORE; return lo_message_length(message, path); }
 
         void *serialise(const string_type &path, void *to, size_t *size) const
-            { return lo_message_serialise(message, path, to, size); }
+            { LO_CHECK_BEFORE; return lo_message_serialise(message, path, to, size); }
 
         typedef std::pair<int, Message> maybe;
 
@@ -405,10 +483,13 @@ namespace lo {
               return maybe(result, m); }
 
         void print() const
-            { lo_message_pp(message); }
+            { LO_CHECK_BEFORE; lo_message_pp(message); }
 
         lo::Message clone() const
-            { return lo::Message(lo_message_clone(message)); }
+            { LO_CHECK_BEFORE; return lo::Message(lo_message_clone(message)); }
+
+        Message& clear()
+            { lo_message_clear(message); return *this; }
 
         operator lo_message() const
             { return message; }
@@ -438,6 +519,7 @@ namespace lo {
 					    (_error_handler = std::unique_ptr<handler>(
 										       new handler_error(e))).get());
             }
+            LO_CHECK_AFTER;
         }
 
         /** Constructor taking a port number and error handler. */
@@ -454,6 +536,7 @@ namespace lo {
 					    (_error_handler = std::unique_ptr<handler>(
 										       new handler_error(e))).get());
             }
+            LO_CHECK_AFTER;
         }
 
         /** Constructor taking a multicast group, port number,
@@ -478,15 +561,17 @@ namespace lo {
 					    (_error_handler = std::unique_ptr<handler>(
 										       new handler_error(e))).get());
             }
+            LO_CHECK_AFTER;
         }
 
         /** Constructor taking a port number and error handler. */
         Server(const num_string_type &port, lo_err_handler err_h=0)
-            : Server(lo_server_new(port, err_h)) {}
+            : Server(lo_server_new(port, err_h)) { LO_CHECK_AFTER; }
 
         /** Constructor taking a port number, protocol, and error handler. */
         Server(const num_string_type &port, int proto, lo_err_handler err_h=0)
-            : Server(lo_server_new_with_proto(port, proto, err_h)) {}
+            : Server(lo_server_new_with_proto(port, proto, err_h))
+            { LO_CHECK_AFTER; }
 
         /** Constructor taking a multicast group, port number,
          * interface identifier or IP, and error handler. */
@@ -495,7 +580,8 @@ namespace lo {
             : Server((iface._s || ip._s)
                      ? lo_server_new_multicast_iface(group, port,
                                                      iface, ip, err_h)
-                     : lo_server_new_multicast(group, port, err_h)) {}
+                     : lo_server_new_multicast(group, port, err_h))
+            { LO_CHECK_AFTER; }
 
         /** Destructor */
         virtual ~Server()
@@ -509,7 +595,7 @@ namespace lo {
          * handler and user data pointer. */
         Method add_method(const string_type &path, const string_type &types,
                         lo_method_handler h, void *data) const
-            { return _add_method(path, types, h, data); }
+            { LO_CHECK_BEFORE; return _add_method(path, types, h, data); }
 
         // Alternative callback prototypes
 
@@ -541,6 +627,7 @@ namespace lo {
 
         int del_method(const string_type &path, const string_type &typespec)
         {
+            LO_CHECK_BEFORE;
             _handlers.erase(path.s() + "," + typespec.s());
             lo_server_del_method(server, path, typespec);
             return 0;
@@ -548,29 +635,32 @@ namespace lo {
 
         int del_method(const lo_method& m)
         {
+          LO_CHECK_BEFORE;
           for (auto &i : _handlers) {
-            std::remove_if(i.second.begin(), i.second.end(),
+            auto it = std::remove_if(i.second.begin(), i.second.end(),
                            [&](std::unique_ptr<handler>& h){return h->method == m;});
+            i.second.erase(it, i.second.end());
           }
           return lo_server_del_lo_method(server, m);
         }
 
         int dispatch_data(void *data, size_t size)
-            { return lo_server_dispatch_data(server, data, size); }
+            { LO_CHECK_BEFORE; return lo_server_dispatch_data(server, data, size); }
 
         int wait(int timeout)
-            { return lo_server_wait(server, timeout); }
+            { LO_CHECK_BEFORE; return lo_server_wait(server, timeout); }
 
         int recv()
-            { return lo_server_recv(server); }
+            { LO_CHECK_BEFORE; return lo_server_recv(server); }
 
         int recv(int timeout)
-            { return lo_server_recv_noblock(server, timeout); }
+            { LO_CHECK_BEFORE; return lo_server_recv_noblock(server, timeout); }
 
         int add_bundle_handlers(lo_bundle_start_handler sh,
                                 lo_bundle_end_handler eh,
                                 void *user_data)
         {
+            LO_CHECK_BEFORE;
             return lo_server_add_bundle_handlers(server, sh, eh, user_data);
         }
 
@@ -599,16 +689,17 @@ namespace lo {
         }
 
         int socket_fd() const
-            { return lo_server_get_socket_fd(server); }
+            { LO_CHECK_BEFORE; return lo_server_get_socket_fd(server); }
 
         int port() const
-            { return lo_server_get_port(server); }
+            { LO_CHECK_BEFORE; return lo_server_get_port(server); }
 
         int protocol() const
-            { return lo_server_get_protocol(server); }
+            { LO_CHECK_BEFORE; return lo_server_get_protocol(server); }
 
         std::string url() const
         {
+            LO_CHECK_BEFORE;
             char* s(lo_server_get_url(server));
             std::string result(s?s:"");
             free(s);
@@ -617,15 +708,16 @@ namespace lo {
 
         int enable_queue(int queue_enabled,
                          int dispatch_remaining=1)
-            { return lo_server_enable_queue(server,
+            { LO_CHECK_BEFORE;
+              return lo_server_enable_queue(server,
                                             queue_enabled,
                                             dispatch_remaining); }
 
         int events_pending() const
-            { return lo_server_events_pending(server); }
+            { LO_CHECK_BEFORE; return lo_server_events_pending(server); }
 
         double next_event_delay() const
-            { return lo_server_next_event_delay(server); }
+            { LO_CHECK_BEFORE; return lo_server_next_event_delay(server); }
 
         operator lo_server() const
             { return server; }
@@ -656,6 +748,7 @@ namespace lo {
         virtual Method _add_method(const char *path, const char *types,
                                    lo_method_handler h, void *data) const
         {
+            LO_CHECK_BEFORE;
             return lo_server_add_method(server, path, types, h, data);
         }
     };
@@ -668,7 +761,8 @@ namespace lo {
           : Server(0)
         { server_thread = lo_server_thread_new(port, err_h);
           if (server_thread)
-            server = lo_server_thread_get_server(server_thread); }
+            server = lo_server_thread_get_server(server_thread);
+          LO_CHECK_AFTER; }
 
         template <typename E>
         ServerThread(const num_string_type &port, E&& e)
@@ -689,13 +783,16 @@ namespace lo {
 					    (_error_handler = std::unique_ptr<handler>(
                             new handler_error(e))).get());
                 }
+                LO_CHECK_AFTER;
             }
 
         ServerThread(const num_string_type &port, int proto, lo_err_handler err_h)
           : Server(0)
         { server_thread = lo_server_thread_new_with_proto(port, proto, err_h);
           if (server_thread)
-            server = lo_server_thread_get_server(server_thread); }
+            server = lo_server_thread_get_server(server_thread);
+          LO_CHECK_AFTER;
+        }
 
         template <typename E>
         ServerThread(const num_string_type &port, int proto, E&& e)
@@ -716,6 +813,7 @@ namespace lo {
 					    (_error_handler = std::unique_ptr<handler>(
                             new handler_error(e))).get());
                 }
+                LO_CHECK_AFTER;
             }
 
         ServerThread(const string_type &group, const num_string_type &port,
@@ -727,7 +825,9 @@ namespace lo {
           else
             server_thread = lo_server_thread_new_multicast(group, port, err_h);
           if (server_thread)
-            server = lo_server_thread_get_server(server_thread); }
+            server = lo_server_thread_get_server(server_thread);
+          LO_CHECK_AFTER;
+        }
 
         virtual ~ServerThread()
             { server = 0;
@@ -738,6 +838,7 @@ namespace lo {
             -> typename std::enable_if<
                 std::is_same<decltype(init()), int>::value, void>::type
             {
+                LO_CHECK_BEFORE;
                 if (server_thread) {
                     _cb_handlers.reset(new handler_cb_pair(init, cleanup));
                     lo_server_thread_set_callbacks(server_thread,
@@ -772,8 +873,8 @@ namespace lo {
                 }
             }
 
-        void start() { lo_server_thread_start(server_thread); }
-        void stop() { lo_server_thread_stop(server_thread); }
+        void start() { LO_CHECK_BEFORE; lo_server_thread_start(server_thread); }
+        void stop() { LO_CHECK_BEFORE; lo_server_thread_stop(server_thread); }
 
         operator lo_server_thread() const
             { return server_thread; }
@@ -789,6 +890,7 @@ namespace lo {
         virtual Method _add_method(const char *path, const char *types,
                                    lo_method_handler h, void *data) const
         {
+            LO_CHECK_BEFORE;
             return lo_server_thread_add_method(server_thread, path, types, h, data);
         }
     };
@@ -800,6 +902,7 @@ namespace lo {
 	int Address::send_from(lo::ServerThread &from, const string_type &path,
 						   const string_type type, ...) const
 	{
+    LO_CHECK_BEFORE;
 		va_list q;
 		va_start(q, type);
 		lo_message m = lo_message_new();
@@ -808,12 +911,14 @@ namespace lo {
 		lo_server s = static_cast<lo::Server&>(from);
 		int r = lo_send_message_from(address, s, path, m);
 		lo_message_free(m);
+		va_end(q);
 		return r;
 	}
 
 	inline
 	int Address::send_from(lo::ServerThread &from, lo_bundle b) const
 	{
+    LO_CHECK_BEFORE;
 		lo_server s = static_cast<lo::Server&>(from);
 		return lo_send_bundle_from(address, s, b);
 	}
@@ -823,11 +928,11 @@ namespace lo {
     {
       public:
         Blob(int32_t size, const void *data=0)
-            : blob(lo_blob_new(size, data)) {}
+            : blob(lo_blob_new(size, data)) { LO_CHECK_AFTER; }
 
         template <typename T>
         Blob(const T &t)
-            : blob(lo_blob_new(t.size()*sizeof(t[0]), &t[0])) {}
+            : blob(lo_blob_new(t.size()*sizeof(t[0]), &t[0])) { LO_CHECK_AFTER; }
 
         virtual ~Blob()
             { lo_blob_free(blob); }
@@ -835,14 +940,16 @@ namespace lo {
         Blob& operator=(Blob b) { b.swap(*this); return *this; }
         void swap(Blob& b) throw () { std::swap(this->blob, b.blob); }
 
+        bool is_valid() const { return blob!=nullptr; }
+
         uint32_t datasize() const
-            { return lo_blob_datasize(blob); }
+            { LO_CHECK_BEFORE; return lo_blob_datasize(blob); }
 
         void *dataptr() const
-            { return lo_blob_dataptr(blob); }
+            { LO_CHECK_BEFORE; return lo_blob_dataptr(blob); }
 
         uint32_t size() const
-            { return lo_blobsize(blob); }
+            { LO_CHECK_BEFORE; return lo_blobsize(blob); }
 
         operator lo_blob() const
             { return blob; };
@@ -882,10 +989,13 @@ namespace lo {
         };
         typedef ElementT<Bundle> Element;
 
-        Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE); lo_bundle_incref(bundle); }
+        Bundle() { bundle = lo_bundle_new(LO_TT_IMMEDIATE);
+                   if (bundle) lo_bundle_incref(bundle);
+                   LO_CHECK_AFTER; }
 
         Bundle(lo_timetag tt)
-            : bundle(lo_bundle_new(tt)) { lo_bundle_incref(bundle); }
+            : bundle(lo_bundle_new(tt)) { if (bundle) lo_bundle_incref(bundle);
+                                          LO_CHECK_AFTER; }
 
         Bundle(lo_bundle b)
             : bundle(b) { if (b) { lo_bundle_incref(b); } }
@@ -894,14 +1004,18 @@ namespace lo {
                lo_timetag tt=LO_TT_IMMEDIATE)
             : bundle(lo_bundle_new(tt))
         {
-            lo_bundle_incref(bundle);
-            lo_bundle_add_message(bundle, path, m);
+            if (bundle) {
+                lo_bundle_incref(bundle);
+                lo_bundle_add_message(bundle, path, m);
+            }
+            LO_CHECK_AFTER;
         }
 
         Bundle(const std::initializer_list<Element> &elements,
                lo_timetag tt=LO_TT_IMMEDIATE)
             : bundle(lo_bundle_new(tt))
         {
+            if (bundle) {
             lo_bundle_incref(bundle);
             for (auto const &e : elements) {
                 if (e.type == LO_ELEMENT_MESSAGE) {
@@ -911,6 +1025,8 @@ namespace lo {
                     lo_bundle_add_bundle(bundle, e.bundle);
                 }
             }
+            }
+            LO_CHECK_AFTER;
         }
 
         Bundle(const Bundle &b)
@@ -922,37 +1038,42 @@ namespace lo {
         Bundle& operator=(Bundle b) { b.swap(*this); return *this; }
         void swap(Bundle& b) throw () { std::swap(this->bundle, b.bundle); }
 
+        bool is_valid() const { return bundle!=nullptr; }
+
         int add(const string_type &path, lo_message m)
-            { return lo_bundle_add_message(bundle, path, m); }
+            { LO_CHECK_BEFORE; return lo_bundle_add_message(bundle, path, m); }
 
         int add(const lo_bundle b)
-            { return lo_bundle_add_bundle(bundle, b); }
+            { LO_CHECK_BEFORE; return lo_bundle_add_bundle(bundle, b); }
 
         size_t length() const
-            { return lo_bundle_length(bundle); }
+            { LO_CHECK_BEFORE; return lo_bundle_length(bundle); }
 
         unsigned int count() const
-            { return lo_bundle_count(bundle); }
+            { LO_CHECK_BEFORE; return lo_bundle_count(bundle); }
 
         lo_message get_message(int index, const char **path=0) const
-            { return lo_bundle_get_message(bundle, index, path); }
+            { LO_CHECK_BEFORE; return lo_bundle_get_message(bundle, index, path); }
 
         Message get_message(int index, std::string &path) const
-            { const char *p;
+            { LO_CHECK_BEFORE;
+              const char *p;
               lo_message m=lo_bundle_get_message(bundle, index, &p);
               path = p?p:0;
               return Message(m); }
 
         PathMsg get_message(int index) const
-            { const char *p;
+            { LO_CHECK_BEFORE;
+              const char *p;
               lo_message m = lo_bundle_get_message(bundle, index, &p);
               return PathMsg(p?p:0, m); }
 
         Bundle get_bundle(int index) const
-            { return lo_bundle_get_bundle(bundle, index); }
+            { LO_CHECK_BEFORE; return lo_bundle_get_bundle(bundle, index); }
 
         Element get_element(int index, const char **path=0) const
             {
+                LO_CHECK_BEFORE;
                 switch (lo_bundle_get_type(bundle, index)) {
                 case LO_ELEMENT_MESSAGE: {
                     const char *p;
@@ -967,16 +1088,22 @@ namespace lo {
             }
 
         lo_timetag timestamp()
-            { return lo_bundle_get_timestamp(bundle); }
+            { LO_CHECK_BEFORE; return lo_bundle_get_timestamp(bundle); }
+
+        Bundle& set_timestamp(lo_timetag t)
+            { LO_CHECK_BEFORE; lo_bundle_set_timestamp(bundle, t); return *this; }
 
         void *serialise(void *to, size_t *size) const
-            { return lo_bundle_serialise(bundle, to, size); }
+            { LO_CHECK_BEFORE; return lo_bundle_serialise(bundle, to, size); }
 
         void print() const
-            { lo_bundle_pp(bundle); }
+            { LO_CHECK_BEFORE; lo_bundle_pp(bundle); }
 
         operator lo_bundle() const
             { return bundle; }
+
+        Bundle& clear()
+            { LO_CHECK_BEFORE; lo_bundle_clear(bundle); return *this; }
 
       protected:
         lo_bundle bundle;

@@ -1,131 +1,78 @@
+#!/bin/sh
 
-# Previously, you should have set up an Android toolchain, e.g.
-# ~/android-ndk-r7b/build/tools/make-standalone-toolchain.sh --platform=android-9 --install-dir=$HOME/android-ndk-r7b/standalone-toolchain-api9
+set -x
+set -e
 
-ANDROID_NDK_PATH=$HOME/android-ndk-r9c
-ANDROID_PLATFORM=19
-ANDROID_ARCH=arm
-ANDROID_TOOLCHAIN=arm-linux-androideabi-4.8
+# Vars
+export NDK_PROJECT_PATH=$PWD
+export NDK_TARGET=arm-none-linux-android21
+export NDK_HOST=arm-linux-androideabi
 
-case $(uname -m) in
-*i[3456]86*)
-BITS=x86
- ;;
-*x86_64*)
-BITS=x86_64
- ;;
-*)
-echo Couldn\'t determine bitness of kernel.
-exit 1
-esac
-
-case $(uname) in
-
-# ---- Linux
-*Linux*)
-ANDROID_BUILD_PLATFORM=linux-$BITS
-GCC_BUILD_PLATFORM=i686-pc-linux-gnu
- ;;
-
-*Darwin*)
-# ---- Darwin
-ANDROID_BUILD_PLATFORM=darwin-$BITS
-GCC_BUILD_PLATFORM=i686-apple-darwin11
- ;;
-
-*MINGW*)
-ANDROID_BUILD_PLATFORM=windows
-GCC_BUILD_PLATFORM=i386-pc-mingw32
- ;;
-
-*)
-echo Unknown platform
-exit 1
- ;;
-
-esac
-
-ANDROID_NDK_TOOLCHAIN=$ANDROID_NDK_PATH/toolchains/$ANDROID_TOOLCHAIN/prebuilt/$ANDROID_BUILD_PLATFORM
-ANDROID_NDK_PLATFORM=$ANDROID_NDK_PATH/platforms/android-$ANDROID_PLATFORM/arch-$ANDROID_ARCH
-ANDROID_NDK_HOST=$ANDROID_ARCH-linux-androideabi
-
-# Sanity checks before getting into configure/make
-if ! [ -x $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc ]; then
-  echo "C compiler not found,"
-  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc
-  exit 1
+if [ $(basename $PWD) = build ]; then
+    echo Please run this script from liblo main directory:
+    echo "   build/android_build.sh"
+    exit 1
 fi
 
-if ! [ -x $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++ ]; then
-  echo "C++ compiler not found,"
-  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++
-  exit 1
-fi
+# Directory containing ndk-build
+NDK=$PWD/android-ndk-r21
 
-if ! $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc -v 2>/dev/null; then
-  echo "C compiler would not run,"
-  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-gcc
-  exit 1
-fi
+if ! which ndk-build; then
+    if ! [ -d android-ndk-r21 ]; then
 
-if ! $ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++ -v 2>/dev/null; then
-  echo "C compiler would not run,"
-  echo '  '$ANDROID_NDK_TOOLCHAIN/bin/$ANDROID_NDK_HOST-g++
-  exit 1
-fi
-
-# Also, if you get errors about an unrecognized configuration, you
-# need a recent version of config.sub and config.guess, available at:
-# http://git.savannah.gnu.org/gitweb/?p=config.git;a=tree
-
-fixconfigsubguess() {
-    cd ..
-    if ! test -e configure; then
-        NOCONFIGURE=true ./autogen.sh
+        echo "Could not find ndk-build on PATH, or the Android NDK"
+        echo "locally, so downloading (~1GB)."
+        echo
+        echo "  hit Ctrl-C if this is not what you want!"
+        echo
+        sleep 2
+        wget https://dl.google.com/android/repository/android-ndk-r21-linux-x86_64.zip
+        if ! [ "$(md5sum android-ndk-r21-linux-x86_64.zip)" = "d2598b112f077f6d1f4d8d79363d6a96  android-ndk-r21-linux-x86_64.zip" ]; then
+            echo "Downloaded zip file did not match expected MD5 checksum!"
+            exit 1
+        fi
+        echo "Checksum OK."
+        echo "Unzipping NDK.."
+        unzip -q android-ndk-r21-linux-x86_64.zip
     fi
-    rm config.sub
-    rm config.guess
-    if curl -V; then
-      curl >config.sub 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD'
-      curl >config.guess 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD'
-    elif wget -V; then
-      wget -O config.sub 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD'
-      wget -O config.guess 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD'
-    else
-      echo Error: Need curl or wget to get config.sub and config.guess
-      exit 1
-    fi
-    cd build
-}
 
-# Check for some known-bad config.sub/config.guess files
-# and replace them if found.
-# (These were found in MingW autoconf 2.68)
-checkconfigsubguess() {
-if (echo "513a0fb7db33b8a0c5ba5345fc70ff62 *../config.sub" \
-	| md5sum --status -c -) \
-|| (echo "513a0fb7db33b8a0c5ba5345fc70ff62 *../config.guess" \
-	| md5sum --status -c -);
-then
-    fixconfigsubguess
+    # Ensure ndk-build as well as clang/clang++ are on the PATH.
+    # The NDK clang must take precedence.
+    export PATH=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH:$NDK
 fi
-}
 
-# Uncomment the following line to do the above automatically.  It is
-# not enabled by default because the correct files will be distributed
-# with the tarball.
-#fixconfigsubguess
-checkconfigsubguess
+if [ -f configure ]; then
+    CONF=./configure
+else
+    CONF=./autogen.sh
+fi
 
-mkdir -p android
-cd android
+# We must run configure to get liblo's config.h and lo.h.
+echo Running configure
+$CONF --host $NDK_HOST CC=`which clang` CXX=`which clang++` CFLAGS="-target $NDK_TARGET --sysroot $NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot -nostdinc++ -DANDROID -fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes"
 
-PATH=$ANDROID_NDK_TOOLCHAIN/bin:$PATH
+if ! [ -f Application.mk ]; then
+  cat >Application.mk <<EOF
+APP_ABI := arm64-v8a
+APP_PLATFORM := android-21
+APP_STL := c++_static
+APP_BUILD_SCRIPT := Android.mk
+EOF
+  echo Wrote Application.mk
+fi
 
-../../configure \
-  --host=$ANDROID_NDK_HOST \
-  --build=$GCC_BUILD_PLATFORM \
-  CC="$ANDROID_NDK_HOST-gcc --sysroot=$ANDROID_NDK_PLATFORM" \
-  CXX="$ANDROID_NDK_HOST-g++ --sysroot=$ANDROID_NDK_PLATFORM"
+if ! [ -f Android.mk ]; then
+  cat >Android.mk <<EOF
+LOCAL_PATH := \$(call my-dir)
+include \$(CLEAR_VARS)
+LOCAL_MODULE := liblo
+LOCAL_CFLAGS := -DHAVE_CONFIG_H
+LOCAL_SRC_FILES := src/address.c src/method.c src/server_thread.c   \\
+  src/timetag.c src/blob.c src/pattern_match.c src/subtest.c        \\
+  src/version.c src/bundle.c src/send.c src/message.c src/server.c
+include \$(BUILD_SHARED_LIBRARY)
+EOF
+  echo Wrote Android.mk
+fi
 
-make
+ndk-build NDK_APPLICATION_MK=./Application.mk V=1

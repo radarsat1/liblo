@@ -34,11 +34,13 @@ noinst_PROGRAMS = testlo subtest test_bidirectional_tcp
 TESTS = testlo
 if HAVE_LAMBDA
 noinst_PROGRAMS += cpp_test
+noinst_PROGRAMS += cpp_test_exceptions
 endif
 if ENABLE_NETWORK_TESTS
 TESTS += test_bidirectional_tcp
 if HAVE_LAMBDA
 TESTS += cpp_test
+TESTS += cpp_test_exceptions
 endif
 endif
 endif
@@ -60,9 +62,13 @@ cpp_test_CXXFLAGS = -I$(top_srcdir)
 cpp_test_SOURCES = cpp_test.cpp
 cpp_test_LDADD = liblo.la
 
+cpp_test_exceptions_CXXFLAGS = -I$(top_srcdir) -DLO_USE_EXCEPTIONS
+cpp_test_exceptions_SOURCES = cpp_test.cpp
+cpp_test_exceptions_LDADD = liblo.la
+
 test: all
 if COMPILE_TESTS
-	for i in $(TESTS); do echo Running $$i; if ! ./$$i; then exit 1; fi; done
+	for i in $(TESTS); do echo Running $$i; if ! ./$$i 2>&1; then exit 1; fi; done
 endif
 
 memtest: all

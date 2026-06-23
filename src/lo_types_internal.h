@@ -18,7 +18,9 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
+#ifndef ESP_PLATFORM
 #define closesocket close
+#endif
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -28,7 +30,7 @@
 typedef SSIZE_T ssize_t;
 #endif
 
-#ifndef UINT_PTR
+#if !defined(UINT_PTR) && !defined(WIN32)
   #ifdef HAVE_UINTPTR_T
     #include <stdint.h>
     #define UINT_PTR uintptr_t
@@ -50,8 +52,9 @@ typedef SSIZE_T ssize_t;
 /** \brief Bitflags for optional protocol features, set by
  *         lo_address_set_flags(). */
 typedef enum {
-    LO_SLIP=0x01,     /*!< SLIP decoding */
-    LO_NODELAY=0x02,  /*!< Set the TCP_NODELAY socket option. */
+    LO_SLIP=0x01,         /*!< SLIP decoding */
+    LO_NODELAY=0x02,      /*!< Set the TCP_NODELAY socket option. */
+    LO_SLIP_DBL_END=0x04, /*!< Set SLIP encoding to double-END. */
 } lo_proto_flags;
 
 /** \brief Bitflags for optional server features. */
@@ -127,6 +130,7 @@ typedef int (*lo_bundle_end_handler) (void *user_data);
 typedef struct _lo_method {
     const char *path;
     const char *typespec;
+    int has_pattern;
     lo_method_handler handler;
     char *user_data;
     struct _lo_method *next;
@@ -137,14 +141,15 @@ struct socket_context {
     size_t buffer_size;
     unsigned int buffer_msg_offset;
     unsigned int buffer_read_offset;
-    int is_slip;                        //<! 1 if slip mode, 0 otherwise, -1 for unknown
-    int slip_state;                     //<! state variable for slip decoding
+    int is_slip;    /*!< 1 if slip mode, 0 otherwise, -1 for unknown */
+    int slip_state; /*!< state variable for slip decoding */
 };
 
 #ifdef HAVE_POLL
     typedef struct pollfd lo_server_fd_type;
 #else
-    typedef struct { int fd; } lo_server_fd_type;
+    typedef struct { int fd; int revents; } lo_server_fd_type;
+    #define POLLIN 0x001
 #endif
 
 typedef struct _lo_server {

@@ -25,6 +25,10 @@
 #include <errno.h>
 #include <sys/types.h>
 
+#if !defined(WIN32)
+#include <ifaddrs.h> // ifaddr, see is_local_broadcast method
+#endif
+
 #if defined(WIN32) || defined(_MSC_VER)
 #include <io.h>
 #include <winsock2.h>
@@ -103,7 +107,9 @@ int lo_send(lo_address t, const char *path, const char *types, ...)
     int line = 0;
     va_list ap;
     va_start(ap, types);
-    return lo_send_varargs_internal(t, file, line, path, types, ap);
+    int ret = lo_send_varargs_internal(t, file, line, path, types, ap);
+    va_end(ap);
+    return ret;
 }
 #endif
 
@@ -115,7 +121,9 @@ int lo_send_internal(lo_address t, const char *file, const int line,
 {
     va_list ap;
     va_start(ap, types);
-    return lo_send_varargs_internal(t, file, line, path, types, ap);
+    int ret = lo_send_varargs_internal(t, file, line, path, types, ap);
+    va_end(ap);
+    return ret;
 }
 
 static
@@ -138,8 +146,8 @@ int lo_send_timestamped_varargs_internal(lo_address t, const char *file,
         ret = lo_send_bundle(t, b);
     }
 
-    lo_message_free(msg);
     lo_bundle_free(b);
+    lo_message_free(msg);
 
     return ret;
 }
@@ -153,8 +161,10 @@ int lo_send_timestamped(lo_address t, lo_timetag ts,
     int line = 0;
     va_list ap;
     va_start(ap, types);
-    return lo_send_timestamped_varargs_internal(t, file, line, ts, path,
-                                                types, ap);
+    int ret = lo_send_timestamped_varargs_internal(t, file, line, ts, path,
+                                                   types, ap);
+    va_end(ap);
+    return ret;
 }
 #endif
 
@@ -166,8 +176,10 @@ int lo_send_timestamped_internal(lo_address t, const char *file,
 {
     va_list ap;
     va_start(ap, types);
-    return lo_send_timestamped_varargs_internal(t, file, line, ts, path,
-                                                types, ap);
+    int ret = lo_send_timestamped_varargs_internal(t, file, line, ts, path,
+                                                   types, ap);
+    va_end(ap);
+    return ret;
 }
 
 static
@@ -214,12 +226,14 @@ int lo_send_from(lo_address to, lo_server from, lo_timetag ts,
     int line = 0;
     va_list ap;
     va_start(ap, types);
-    return lo_send_from_varargs_internal(to, from, file, line, ts,
-                                         path, types, ap);
+    int ret = lo_send_from_varargs_internal(to, from, file, line, ts,
+                                            path, types, ap);
+    va_end(ap);
+    return ret;
 }
 #endif
 
-/* Don't call lo_send_from_internal directly, use macros wrapping this 
+/* Don't call lo_send_from_internal directly, use macros wrapping this
  * function with appropriate values for file and line */
 
 int lo_send_from_internal(lo_address to, lo_server from, const char *file,
@@ -228,122 +242,106 @@ int lo_send_from_internal(lo_address to, lo_server from, const char *file,
 {
     va_list ap;
     va_start(ap, types);
-    return lo_send_from_varargs_internal(to, from, file, line, ts,
-                                         path, types, ap);
+    int ret = lo_send_from_varargs_internal(to, from, file, line, ts,
+                                            path, types, ap);
+    va_end(ap);
+    return ret;
 }
 
-#if 0
+#if !defined(WIN32)
+static int is_local_broadcast(struct addrinfo *ai){ 
+    struct ifaddrs *ifap, *ifa;
+    uint32_t destination_addr = ((struct sockaddr_in *) ai->ai_addr)->sin_addr.s_addr;
+    int result;
 
-This(incomplete)
-function converts from printf - style formats to OSC typetags,
-    but I think its dangerous and mislieading so its not available at the
-    moment.static char *format_to_types(const char *format);
+    getifaddrs(&ifap);
 
-static char *format_to_types(const char *format)
-{
-    const char *ptr;
-    char *types = malloc(sizeof(format) + 1);
-    char *out = types;
-    int inspec = 0;
-    int width = 0;
-    int number = 0;
+    result = 0;
 
-    if (!format) {
-        return NULL;
-    }
+    // loop over all network interfaces
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family==AF_INET) {
+            // get this machine's address for the current interface (ie. 192.168.1.6)
+            uint32_t cur_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
+            // get the subnet mask for the current interface (ie. 255.255.0.0)
+            uint32_t cur_subn = ((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr.s_addr;
 
-    for (ptr = format; *ptr; ptr++) {
-        if (inspec) {
-            if (*ptr == 'l') {
-                width++;
-            } else if (*ptr >= '0' && *ptr <= '9') {
-                number *= 10;
-                number += *ptr - '0';
-            } else if (*ptr == 'd') {
-                if (width < 2 && number < 64) {
-                    *out++ = LO_INT32;
-                } else {
-                    *out++ = LO_INT64;
+            // check if the subnet part (ie. 192.168._._) of the given address matches
+            if ((cur_subn & cur_addr) == (cur_subn & destination_addr)) {
+                // check if the non-subnet (ie. _._.1.6) part of the destination address
+                // indicates that it is a broadcast address (all ones)
+                if ((cur_subn | destination_addr) == 0xFFFFFFFF) {
+                    result = 1;
                 }
-            } else if (*ptr == 'f') {
-                if (width < 2 && number < 64) {
-                    *out++ = LO_FLOAT;
-                } else {
-                    *out++ = LO_DOUBLE;
-                }
-            } else if (*ptr == '%') {
-                fprintf(stderr,
-                        "liblo warning, unexpected '%%' in format\n");
-                inspec = 1;
-                width = 0;
-                number = 0;
-            } else {
-                fprintf(stderr,
-                        "liblo warning, unrecognised character '%c' "
-                        "in format\n", *ptr);
-            }
-        } else {
-            if (*ptr == '%') {
-                inspec = 1;
-                width = 0;
-                number = 0;
-            } else if (*ptr == LO_TRUE || *ptr == LO_FALSE
-                       || *ptr == LO_NIL || *ptr == LO_INFINITUM) {
-                *out++ = *ptr;
-            } else {
-                fprintf(stderr,
-                        "liblo warning, unrecognised character '%c' "
-                        "in format\n", *ptr);
+
+                break;
             }
         }
     }
-    *out++ = '\0';
 
-    return types;
+    freeifaddrs(ifap);
+    return result;
 }
-
 #endif
+
+static int is_broadcast(struct addrinfo *ai) {
+    struct sockaddr_in *si = (struct sockaddr_in *) ai->ai_addr;
+    unsigned char *ip = (unsigned char *) &(si->sin_addr);
+    if(AF_INET == ai->ai_family) {
+        // is it the "global" broadcast address?
+        if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255 && ip[3] == 255)
+            return 1;
+
+        #if !defined(WIN32)
+            // check if the address is the "local" broadcast
+            // addres of any of the active network interfaces
+            return is_local_broadcast(ai);
+        #endif
+    }
+    return 0;
+}
 
 static int create_socket(lo_address a)
 {
-    if (a->protocol == LO_UDP || a->protocol == LO_TCP) {
-
+    switch(a->protocol) {
+    case LO_UDP:
         a->socket = socket(a->ai->ai_family, a->ai->ai_socktype, 0);
         if (a->socket == -1) {
             a->errnum = geterror();
             a->errstr = NULL;
             return -1;
         }
-
-        if (a->protocol == LO_TCP) {
-            // Only call connect() for TCP sockets - we use sendto() for UDP
-            if ((connect(a->socket, a->ai->ai_addr, a->ai->ai_addrlen))) {
-                a->errnum = geterror();
-                a->errstr = NULL;
-                closesocket(a->socket);
-                a->socket = -1;
-                return -1;
-            }
+        // if UDP and destination address is broadcast,
+        // then allow broadcast on the socket
+        if (is_broadcast(a->ai)) {
+            int opt = 1;
+            setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
+                (const char*)&opt, sizeof(int));
         }
-        // if UDP and destination address is broadcast allow broadcast on the
-        // socket
-        else if (a->protocol == LO_UDP && a->ai->ai_family == AF_INET) {
-            // If UDP, and destination address is broadcast,
-            // then allow broadcast on the socket.
-            struct sockaddr_in *si = (struct sockaddr_in *) a->ai->ai_addr;
-            unsigned char *ip = (unsigned char *) &(si->sin_addr);
-
-            if (ip[0] == 255 && ip[1] == 255 && ip[2] == 255
-                && ip[3] == 255) {
-                int opt = 1;
-                setsockopt(a->socket, SOL_SOCKET, SO_BROADCAST,
-						   (const char*)&opt, sizeof(int));
-            }
+        break;
+    case LO_TCP: {
+        struct addrinfo *ai = a->ai;
+        int sfd = -1;
+        for(ai=a->ai; ai != NULL; ai = ai->ai_next) {
+            sfd = socket(ai->ai_family, ai->ai_socktype, 0);
+            if (-1 == sfd)
+                continue;
+            if(-1 != connect(sfd, ai->ai_addr, ai->ai_addrlen))
+                break;
+            closesocket(sfd);
         }
-
+        if(NULL == ai) {
+            /* all addresses failed */
+            a->socket = -1;
+            a->errnum = geterror();
+            a->errstr = NULL;
+            return -1;
+        }
+        a->socket = sfd;
     }
+        break;
 #if !defined(WIN32) && !defined(_MSC_VER)
-    else if (a->protocol == LO_UNIX) {
+    case LO_UNIX: {
         struct sockaddr_un sa;
 
         a->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
@@ -364,8 +362,9 @@ static int create_socket(lo_address a)
             return -1;
         }
     }
+        break;
 #endif
-    else {
+    default:
         /* unknown protocol */
         return -2;
     }
@@ -387,7 +386,7 @@ static int create_socket(lo_address a)
 				   (const char*)&option, sizeof(option));
     }
 #endif
-    
+
     return 0;
 }
 
@@ -399,10 +398,13 @@ static int create_socket(lo_address a)
 #define SLIP_ESC_ESC    0335    /* ESC ESC_ESC means ESC data byte */
 
 static unsigned char *slip_encode(const unsigned char *data,
-                                  size_t *data_len)
+                                  size_t *data_len,
+                                  int double_end_slip_enabled)
 {
     size_t i, j = 0, len=*data_len;
     unsigned char *slipdata = (unsigned char *) malloc(len*2);
+    if (double_end_slip_enabled)
+        slipdata[j++] = SLIP_END;
     for (i=0; i<len; i++) {
         switch (data[i])
         {
@@ -445,7 +447,7 @@ static int send_data(lo_address a, lo_server from, char *data,
     if (!a->ai) {
         ret = lo_address_resolve(a);
         if (ret)
-            return ret;
+            return (int) ret;
     }
     // Re-use existing socket?
     if (from && a->protocol == LO_UDP) {
@@ -456,13 +458,15 @@ static int send_data(lo_address a, lo_server from, char *data,
         if (a->socket == -1) {
             ret = create_socket(a);
             if (ret)
-                return ret;
+                return (int) ret;
+        }
 
-            // If we are sending TCP, we may later receive on sending
-            // socket, so add it to the from server's socket list.
-            if (from && a->protocol == LO_TCP
-                && (a->socket >= from->sources_len
-                    || from->sources[a->socket].host == NULL))
+        // If we are sending TCP, we may later receive on sending
+        // socket, so add it to the from server's socket list.
+        if (from && a->protocol == LO_TCP)
+        {
+            if (a->socket >= from->sources_len
+                || from->sources[a->socket].host == NULL)
             {
                 lo_server_add_socket(from, a->socket, a, 0, 0);
 
@@ -485,12 +489,12 @@ static int send_data(lo_address a, lo_server from, char *data,
             struct addrinfo* ai;
             if (a->addr.size == sizeof(struct in_addr)) {
                 setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
-                           (const char*)&a->addr.a, a->addr.size);
+                           (const char*)&a->addr.a, (socklen_t) a->addr.size);
             }
 #ifdef ENABLE_IPV6
             else if (a->addr.size == sizeof(struct in6_addr)) {
                 setsockopt(sock, IPPROTO_IP, IPV6_MULTICAST_IF,
-                           (const char*)&a->addr.a, a->addr.size);
+                           (const char*)&a->addr.a, (socklen_t) a->addr.size);
             }
 #endif
             if (a->ttl >= 0) {
@@ -508,22 +512,24 @@ static int send_data(lo_address a, lo_server from, char *data,
             } while (ret == -1 && ai != NULL);
             if (ret == -1 && ai != NULL && a->ai!=ai)
                 a->ai = ai;
+#if !defined(WIN32) && !defined(_MSC_VER)
+        } else if (a->protocol == LO_UNIX && from && from->protocol == LO_UNIX) {
+            struct sockaddr_un saddr;
+            size_t len = data_len;
+
+            saddr.sun_family = AF_UNIX;
+            strncpy(saddr.sun_path, a->port, sizeof(saddr.sun_path) - 1);
+
+            ret = sendto(from->sockets[0].fd, data, len, MSG_NOSIGNAL, (struct sockaddr*)&saddr, sizeof(struct sockaddr_un));
+#endif
         } else {
-            struct addrinfo* ai = a->ai;
 
             size_t len = data_len;
             if (a->flags & LO_SLIP)
-                data = (char*)slip_encode((unsigned char*)data, &len);
+                data = (char*)slip_encode((unsigned char*)data, &len,
+                                          a->flags & LO_SLIP_DBL_END);
 
-            do {
-                ret = send(sock, data, len, MSG_NOSIGNAL);
-                if (a->protocol == LO_TCP)
-                    ai = ai->ai_next;
-                else
-                    ai = 0;
-            } while (ret == -1 && ai != NULL);
-            if (ret == -1 && ai != NULL && a->ai!=ai)
-                a->ai = ai;
+            ret = send(sock, data, len, MSG_NOSIGNAL);
 
             if (a->flags & LO_SLIP)
                 free(data);
@@ -545,7 +551,7 @@ static int send_data(lo_address a, lo_server from, char *data,
         a->errstr = NULL;
     }
 
-    return ret;
+    return (int) ret;
 }
 
 
