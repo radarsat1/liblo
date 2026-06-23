@@ -117,6 +117,13 @@ typedef struct _lo_message {
     /* timestamp from bundle (LO_TT_IMMEDIATE for unbundled messages) */
     lo_timetag ts;
     int refcount;
+    /* lo_message_freeze() cache: serialised bytes + the path they were
+     * serialised with. NULL when the message is not frozen. Invalidated by
+     * any mutation (add/clear). frozen_owned==1 means liblo must free it. */
+    char *frozen_path;
+    void *frozen;
+    size_t frozen_len;
+    int frozen_owned;
 } *lo_message;
 
 typedef int (*lo_method_handler) (const char *path, const char *types,
