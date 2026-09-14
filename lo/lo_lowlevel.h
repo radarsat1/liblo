@@ -399,6 +399,30 @@ void *lo_message_serialise(lo_message m, const char *path, void *to,
 			   size_t *size);
 
 /**
+ * \brief  Cache the serialised form of a message for a given path.
+ *
+ * After freezing, lo_send_message() (and lo_send_message_from()) called with
+ * the same \a path send the cached bytes directly, skipping the per-call
+ * allocation and serialisation. This is useful for a message whose path is
+ * fixed and which is sent repeatedly or to many destinations.
+ *
+ * The cache is dropped automatically by any \ref lo_message_add_int32
+ * "lo_message_add*()" or lo_message_clear() (so the bytes can never go stale),
+ * and is freed by lo_message_free() when liblo owns it. Sending with a path
+ * other than \a path transparently re-serialises and leaves the cache intact.
+ *
+ * \param m    The message to freeze (must already contain its arguments).
+ * \param path The path the cached form is serialised for.
+ * \param buf  Optional caller-owned buffer to serialise into; must be at least
+ *             lo_message_length(m, path) bytes. If NULL, liblo allocates and
+ *             owns the cache.
+ * \param size Size of \a buf in bytes (ignored when \a buf is NULL).
+ * \return 0 on success, -1 on error (NULL args, allocation failure, or a
+ *         caller buffer that is too small).
+ */
+int lo_message_freeze(lo_message m, const char *path, void *buf, size_t size);
+
+/**
  * \brief  Deserialise a raw OSC message and return a new lo_message object.
  * Opposite of lo_message_serialise().
  *

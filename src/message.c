@@ -86,8 +86,27 @@ lo_message lo_message_new()
     m->argv = NULL;
     m->ts = LO_TT_IMMEDIATE;
     m->refcount = 0;
+    m->frozen_path = NULL;
+    m->frozen = NULL;
+    m->frozen_len = 0;
+    m->frozen_owned = 0;
 
     return m;
+}
+
+/* Drop any cached serialisation made by lo_message_freeze(). Called on every
+ * mutation and on free. Safe to call on an unfrozen message. */
+static void lo_message_unfreeze(lo_message m)
+{
+    if (m->frozen && m->frozen_owned)
+        free(m->frozen);
+    m->frozen = NULL;
+    m->frozen_len = 0;
+    m->frozen_owned = 0;
+    if (m->frozen_path) {
+        free(m->frozen_path);
+        m->frozen_path = NULL;
+    }
 }
 
 void lo_message_incref(lo_message m)
@@ -125,6 +144,11 @@ lo_message lo_message_clone(lo_message m)
     c->argv = NULL;
     c->ts = LO_TT_IMMEDIATE;
     c->refcount = 0;
+    /* a clone starts unfrozen; the caller may re-freeze it if wanted */
+    c->frozen_path = NULL;
+    c->frozen = NULL;
+    c->frozen_len = 0;
+    c->frozen_owned = 0;
 
     return c;
 }
@@ -133,6 +157,7 @@ void lo_message_free(lo_message m)
 {
     if (m && (--m->refcount) <= 0)
     {
+        lo_message_unfreeze(m);
         free(m->types);
         free(m->data);
         free(m->argv);
@@ -143,10 +168,53 @@ void lo_message_free(lo_message m)
 void lo_message_clear(lo_message m)
 {
     if (m) {
+        lo_message_unfreeze(m);
         m->datalen = 0;
         m->typelen = 1;
         m->types[1] = '\0';
     }
+}
+
+/* Cache the serialised form of m for path, so subsequent lo_send_message()
+ * calls with the same path skip re-serialising and allocating. If buf is
+ * NULL, liblo allocates and owns the cache; otherwise buf (>= the needed
+ * size) is used in place and stays owned by the caller. The cache is dropped
+ * automatically by any lo_message_add_*()/lo_message_clear(), and freed by
+ * lo_message_free() when liblo owns it. Returns 0 on success, -1 on error. */
+int lo_message_freeze(lo_message m, const char *path, void *buf, size_t size)
+{
+    size_t need;
+    char *pcopy;
+
+    if (!m || !path)
+        return -1;
+
+    need = lo_message_length(m, path);
+    if (buf && size < need)            /* caller buffer too small: no change */
+        return -1;
+
+    pcopy = (char*) malloc(strlen(path) + 1);
+    if (!pcopy)
+        return -1;
+    strcpy(pcopy, path);
+
+    lo_message_unfreeze(m);            /* drop any previous cache */
+
+    if (buf) {
+        m->frozen = buf;
+        m->frozen_owned = 0;
+    } else {
+        m->frozen = malloc(need);
+        if (!m->frozen) {
+            free(pcopy);
+            return -1;
+        }
+        m->frozen_owned = 1;
+    }
+
+    lo_message_serialise(m, path, m->frozen, &m->frozen_len);
+    m->frozen_path = pcopy;
+    return 0;
 }
 
 /* Don't call lo_message_add_varargs_internal directly, use
@@ -510,6 +578,9 @@ static int lo_message_add_typechar(lo_message m, char t)
         free(m->argv);
         m->argv = NULL;
     }
+    /* every lo_message_add_*() routes through here: drop any frozen cache */
+    if (m->frozen)
+        lo_message_unfreeze(m);
     return 0;
 }
 
@@ -912,6 +983,10 @@ lo_message lo_message_deserialise(void *data, size_t size, int *result)
     msg->argv = NULL;
     msg->ts = LO_TT_IMMEDIATE;
     msg->refcount = 0;
+    msg->frozen_path = NULL;
+    msg->frozen = NULL;
+    msg->frozen_len = 0;
+    msg->frozen_owned = 0;
 
     // path
     len = (int) lo_validate_string(data, remain);

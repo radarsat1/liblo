@@ -563,6 +563,20 @@ int lo_send_message(lo_address a, const char *path, lo_message msg)
 int lo_send_message_from(lo_address a, lo_server from, const char *path,
                          lo_message msg)
 {
+    // Fast path: if the message was frozen with this same path, reuse the
+    // cached serialisation and send it directly -- no allocation, no
+    // re-serialise. On a path mismatch we fall through to the normal path,
+    // which serialises transparently (the frozen cache for the other path
+    // is left untouched).
+    if (msg->frozen && msg->frozen_path && path
+        && strcmp(path, msg->frozen_path) == 0)
+    {
+        int ret = send_data(a, from, (char*) msg->frozen, msg->frozen_len);
+        if (ret == -1 && a->protocol == LO_TCP)
+            ret = send_data(a, from, (char*) msg->frozen, msg->frozen_len);
+        return ret;
+    }
+
     const size_t data_len = lo_message_length(msg, path);
     char *data = (char*) lo_message_serialise(msg, path, NULL, NULL);
 

@@ -97,6 +97,7 @@ uint8_t midi_data[4] = { 0xff, 0xf7, 0xAA, 0x00 };
 
 void exitcheck(void);
 void test_deserialise(void);
+void test_freeze(void);
 void test_validation(lo_address a);
 void test_multicast(lo_server_thread st);
 void error(int num, const char *m, const char *path);
@@ -171,6 +172,7 @@ int main()
     test_version();
     test_patterns();
     test_deserialise();
+    test_freeze();
     test_types();
     test_url();
     test_address();
@@ -723,6 +725,48 @@ void test_deserialise()
     *(uint32_t *) (data + 8) = lo_htoo32((uint32_t) 99999);
     msg = lo_message_deserialise(data, 256, &result);
     TEST(NULL == msg && LO_EINVALIDARG == result);
+}
+
+void test_freeze(void)
+{
+    lo_message m;
+    size_t len;
+    char *ref;
+    char buf[128];
+    char toosmall[4];
+
+    DOING("test_freeze");
+
+    m = lo_message_new();
+    lo_message_add_int32(m, 42);
+    lo_message_add_float(m, 3.14f);
+    len = lo_message_length(m, "/foo");
+
+    /* liblo-owned freeze caches a copy equal to a fresh serialise */
+    TEST(0 == lo_message_freeze(m, "/foo", NULL, 0));
+    TEST(NULL != m->frozen && m->frozen_len == len && 1 == m->frozen_owned);
+    TEST(NULL != m->frozen_path && !strcmp(m->frozen_path, "/foo"));
+    ref = (char*) calloc(len, sizeof(char));
+    lo_message_serialise(m, "/foo", ref, NULL);
+    TEST(0 == memcmp(ref, m->frozen, len));
+    free(ref);
+
+    /* any mutation drops the cache so it can never go stale */
+    lo_message_add_int32(m, 7);
+    TEST(NULL == m->frozen && NULL == m->frozen_path);
+
+    /* caller-owned freeze: too-small buffer is rejected with no state change */
+    len = lo_message_length(m, "/foo");
+    TEST(len <= sizeof(buf));
+    TEST(-1 == lo_message_freeze(m, "/foo", toosmall, sizeof(toosmall)));
+    TEST(NULL == m->frozen);
+
+    /* caller-owned freeze into a sufficient buffer: liblo does not take it */
+    TEST(0 == lo_message_freeze(m, "/foo", buf, sizeof(buf)));
+    TEST(m->frozen == buf && 0 == m->frozen_owned);
+
+    /* lo_message_free() must drop the path copy without freeing caller's buf */
+    lo_message_free(m);
 }
 
 void test_validation(lo_address a)
