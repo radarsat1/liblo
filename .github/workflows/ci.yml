@@ -32,6 +32,34 @@ jobs:
         path: |
           liblo*.tar.gz
 
+  C-only:
+    runs-on: ubuntu-latest
+    container: debian:bookworm-slim
+    timeout-minutes: 20
+    steps:
+    - name: Install C build dependencies
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends gcc make cmake autoconf automake libtool autoconf-archive pkg-config git ca-certificates
+    - uses: actions/checkout@v4
+    - name: Verify no C++ compiler is installed
+      run: |
+        # 2026-10-09: Test the actual C-only environment, not an invalid CXX path.
+        for compiler in g++ c++ clang++; do
+          if command -v "$compiler"; then exit 1; fi
+        done
+    - name: Build with CMake
+      run: |
+        cmake -S cmake -B build-cmake -DWITH_TESTS=OFF
+        cmake --build build-cmake --parallel 2
+    - name: Build with Autotools
+      run: |
+        env NOCONFIGURE=1 am_opt=--copy ./autogen.sh
+        mkdir build-autotools
+        cd build-autotools
+        ../configure --disable-tests --disable-doc
+        make -j2
+
   MacOS:
     runs-on: macos-14
     timeout-minutes: 20
